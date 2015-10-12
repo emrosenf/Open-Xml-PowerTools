@@ -1,15 +1,29 @@
-﻿using System;
+﻿/***************************************************************************
+
+Copyright (c) Microsoft Corporation 2012-2015.
+
+This code is licensed using the Microsoft Public License (Ms-PL).  The text of the license can be found here:
+
+http://www.microsoft.com/resources/sharedsource/licensingbasics/publiclicense.mspx
+
+Published at http://OpenXmlDeveloper.org
+Resource Center and Documentation: http://openxmldeveloper.org/wiki/w/wiki/powertools-for-open-xml.aspx
+
+Developer: Eric White
+Blog: http://www.ericwhite.com
+Twitter: @EricWhiteDev
+Email: eric@ericwhite.com
+
+***************************************************************************/
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-#if X64
-namespace OpenXmlPowerTools.Tests.X64
-#else
-namespace OpenXmlPowerTools.Tests
-#endif
+namespace OpenXmlPowerTools
 {
     public class TestUtil
     {
@@ -46,26 +60,4 @@ namespace OpenXmlPowerTools.Tests
             }
         }
     }
-
-#if false
-    class TestUtil
-    {
-        public static DirectoryInfo SourceDir = new DirectoryInfo("../../../TestFiles/");
-        public static DirectoryInfo TempDir = null;
-
-        public static void TempDirSetup()
-        {
-            if (TempDir == null)
-            {
-                var homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
-                var homePath = Environment.GetEnvironmentVariable("HOMEPATH");
-                var now = DateTime.Now;
-                var tempDirName = String.Format("OxPt-Test-{0:00}-{1:00}-{2:00}-{3:00}{4:00}{5:00}", now.Year - 2000, now.Month, now.Day, now.Hour, now.Minute, now.Second);
-                TempDir = new DirectoryInfo(Path.Combine(homeDrive, homePath, "Documents", tempDirName));
-                TempDir.Create();
-            }
-        }
-
-    }
-#endif
 }
