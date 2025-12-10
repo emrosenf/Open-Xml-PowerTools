@@ -7072,7 +7072,7 @@ namespace OpenXmlPowerTools
                     if (ancestorBeingConstructed.Name == W.r)
                     {
                         var groupedChildren = g
-                            .GroupAdjacent(gc => gc.ContentElement.Name.ToString());
+                            .GroupAdjacent(gc => gc.ContentElement.Name.ToString() + "|" + gc.CorrelationStatus.ToString());
                         var newChildElements = groupedChildren
                             .Select(gc =>
                             {
