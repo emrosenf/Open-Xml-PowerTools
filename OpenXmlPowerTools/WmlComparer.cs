@@ -7517,6 +7517,12 @@ namespace OpenXmlPowerTools
 
             var clone = new XElement(rPr);
 
+            // Keep only formatting we want to track (bold, italic, underline). Drop size, color, etc.
+            var allowed = new HashSet<XName> { W.b, W.bCs, W.i, W.iCs, W.u, W.uCs };
+            clone.Elements()
+                .Where(e => !allowed.Contains(e.Name))
+                .Remove();
+
             if (s_NormalizedRPrLogCount < 5)
             {
                 WmlComparer.Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) rPr={clone.ToString(SaveOptions.DisableFormatting)}");
