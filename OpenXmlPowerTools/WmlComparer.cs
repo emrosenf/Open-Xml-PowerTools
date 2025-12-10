@@ -2360,6 +2360,8 @@ namespace OpenXmlPowerTools
             int considered = 0;
             int changes = 0;
             int logged = 0;
+            int beforeNonNull = 0;
+            int afterNonNull = 0;
 
             foreach (var atom in atoms)
             {
@@ -2372,6 +2374,11 @@ namespace OpenXmlPowerTools
 
                 var beforeRPr = atom.ComparisonUnitAtomBefore.NormalizedRPr;
                 var afterRPr = atom.NormalizedRPr;
+
+                if (beforeRPr != null)
+                    beforeNonNull++;
+                if (afterRPr != null)
+                    afterNonNull++;
 
                 var differs = (beforeRPr == null && afterRPr != null) ||
                     (beforeRPr != null && afterRPr == null) ||
@@ -2393,7 +2400,7 @@ namespace OpenXmlPowerTools
                 }
             }
 
-            Trace(settings, $"ReconcileFormattingChanges: considered={considered}, changes={changes}");
+            Trace(settings, $"ReconcileFormattingChanges: considered={considered}, changes={changes}, beforeRPr!=null={beforeNonNull}, afterRPr!=null={afterNonNull}");
         }
 
         private static void ProcessFootnoteEndnote(
@@ -7372,6 +7379,7 @@ namespace OpenXmlPowerTools
         public string FormattingSignature;
         public XElement NormalizedRPr;
         public XElement FormattingChangeRPrBefore;
+        private static int s_NormalizedRPrLogCount = 0;
 
         public ComparisonUnitAtom(XElement contentElement, XElement[] ancestorElements, OpenXmlPart part, WmlComparerSettings settings)
         {
@@ -7411,16 +7419,37 @@ namespace OpenXmlPowerTools
                 return null;
 
             var run = AncestorElements?.Reverse().FirstOrDefault(ae => ae.Name == W.r);
+            bool foundViaAncestors = run != null;
             if (run == null)
                 run = ContentElement.Ancestors(W.r).FirstOrDefault();
             if (run == null)
+            {
+                if (s_NormalizedRPrLogCount < 5)
+                {
+                    Trace(settings, "ComputeNormalizedRPr: no run ancestor found");
+                    s_NormalizedRPrLogCount++;
+                }
                 return null;
+            }
 
             var rPr = run.Element(W.rPr);
             if (rPr == null)
+            {
+                if (s_NormalizedRPrLogCount < 5)
+                {
+                    Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) but no rPr");
+                    s_NormalizedRPrLogCount++;
+                }
                 return null;
+            }
 
             var clone = new XElement(rPr);
+
+            if (s_NormalizedRPrLogCount < 5)
+            {
+                Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) rPr={clone.ToString(SaveOptions.DisableFormatting)}");
+                s_NormalizedRPrLogCount++;
+            }
 
             clone
                 .DescendantsAndSelf()
