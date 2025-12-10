@@ -7516,7 +7516,8 @@ namespace OpenXmlPowerTools
                 text = text.ToUpper(settings.CultureInfo);
             if (settings.ConflateBreakingAndNonbreakingSpaces)
                 text = text.Replace(' ', '\x00a0');
-            // Do not include formatting in the hash; we want textual alignment even when formatting differs.
+            if (settings.TrackFormattingChanges && FormattingSignature != null)
+                text += "|fmt:" + FormattingSignature;
             return contentElement.Name.LocalName + text;
         }
 
