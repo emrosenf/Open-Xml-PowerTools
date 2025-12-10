@@ -2337,7 +2337,8 @@ namespace OpenXmlPowerTools
             if (settings == null || !settings.TrackFormattingChanges)
                 return;
 
-            var changes = 0;
+            int considered = 0;
+            int changes = 0;
 
             foreach (var atom in atoms)
             {
@@ -2345,6 +2346,8 @@ namespace OpenXmlPowerTools
                     continue;
                 if (atom.CorrelationStatus != CorrelationStatus.Equal && atom.CorrelationStatus != CorrelationStatus.FormatChanged)
                     continue;
+
+                considered++;
 
                 var beforeRPr = atom.ComparisonUnitAtomBefore.NormalizedRPr;
                 var afterRPr = atom.NormalizedRPr;
@@ -2362,7 +2365,7 @@ namespace OpenXmlPowerTools
             }
 
             if (settings.LogCallback != null)
-                settings.LogCallback($"Formatting changes detected: {changes}");
+                settings.LogCallback($"ReconcileFormattingChanges: considered={considered}, changes={changes}");
         }
 
         private static void ProcessFootnoteEndnote(
