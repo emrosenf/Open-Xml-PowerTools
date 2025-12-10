@@ -7072,23 +7072,57 @@ namespace OpenXmlPowerTools
                     if (ancestorBeingConstructed.Name == W.r)
                     {
                         var groupedChildren = g
-                            .GroupAdjacent(gc => gc.ContentElement.Name.ToString() + "|" + gc.CorrelationStatus.ToString());
-                        var newChildElements = groupedChildren
-                            .Select(gc =>
+                            .GroupAdjacent(gc => gc.ContentElement.Name.ToString() + "|" + gc.CorrelationStatus.ToString())
+                            .ToList();
+
+                        var runs = groupedChildren.Select(gc =>
+                        {
+                            var name = gc.First().ContentElement.Name;
+                            object childNodes;
+                            if (name == W.t || name == W.delText)
                             {
-                                var name = gc.First().ContentElement.Name;
-                                if (name == W.t || name == W.delText)
+                                var textOfTextElement = gc.Select(gce => gce.ContentElement.Value).StringConcatenate();
+                                childNodes = new XElement(name,
+                                    GetXmlSpaceAttribute(textOfTextElement),
+                                    textOfTextElement);
+                            }
+                            else
+                            {
+                                childNodes = gc.Select(gce => gce.ContentElement);
+                            }
+
+                            var runProps = ancestorBeingConstructed.Elements(W.rPr);
+                            var newRun = new XElement(W.r, runProps, childNodes);
+
+                            if (settings.TrackFormattingChanges)
+                            {
+                                var formatChangeRPr = gc
+                                    .Select(x => x.FormattingChangeRPrBefore)
+                                    .FirstOrDefault(r => r != null);
+
+                                if (formatChangeRPr != null)
                                 {
-                                    var textOfTextElement = gc.Select(gce => gce.ContentElement.Value).StringConcatenate();
-                                    return (object)(new XElement(name,
-                                        GetXmlSpaceAttribute(textOfTextElement),
-                                        textOfTextElement));
+                                    var clonedBeforeRPr = new XElement(formatChangeRPr);
+                                    var targetRPr = newRun.Element(W.rPr);
+                                    if (targetRPr == null)
+                                    {
+                                        targetRPr = new XElement(W.rPr);
+                                        newRun.AddFirst(targetRPr);
+                                    }
+                                    targetRPr.Elements(W.rPrChange).Remove();
+                                    targetRPr.AddFirst(
+                                        new XElement(W.rPrChange,
+                                            new XAttribute(W.author, settings.AuthorForRevisions),
+                                            new XAttribute(W.id, s_MaxId++),
+                                            new XAttribute(W.date, settings.DateTimeForRevisions),
+                                            clonedBeforeRPr));
                                 }
-                                else
-                                    return gc.Select(gce => gce.ContentElement);
-                            });
-                        var runProps = ancestorBeingConstructed.Elements(W.rPr);
-                        return new XElement(W.r, runProps, newChildElements);
+                            }
+
+                            return newRun;
+                        }).ToList();
+
+                        return runs;
                     }
 
                     var re = RecursionElements.FirstOrDefault(z => z.ElementName == ancestorBeingConstructed.Name);
