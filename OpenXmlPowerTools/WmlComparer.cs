@@ -89,7 +89,7 @@ namespace OpenXmlPowerTools
         public static bool s_True = true;
         public static bool s_SaveIntermediateFilesForDebugging = false;
 
-        private static void Trace(WmlComparerSettings settings, string message)
+        internal static void Trace(WmlComparerSettings settings, string message)
         {
             try
             {
@@ -3345,6 +3345,7 @@ namespace OpenXmlPowerTools
         {
             Inserted,
             Deleted,
+            FormatChanged,
         }
 
         public class WmlComparerRevision
@@ -3447,10 +3448,49 @@ namespace OpenXmlPowerTools
 
                     var footnotesRevisionList = GetFootnoteEndnoteRevisionList(wDoc.MainDocumentPart.FootnotesPart, W.footnote, settings);
                     var endnotesRevisionList = GetFootnoteEndnoteRevisionList(wDoc.MainDocumentPart.EndnotesPart, W.endnote, settings);
-                    var finalRevisionList = mainDocPartRevisionList.Concat(footnotesRevisionList).Concat(endnotesRevisionList).ToList();
+                    var formattingRevisions = GetFormattingRevisionList(wDoc.MainDocumentPart);
+                    var footnotesFormatting = GetFormattingRevisionList(wDoc.MainDocumentPart.FootnotesPart);
+                    var endnotesFormatting = GetFormattingRevisionList(wDoc.MainDocumentPart.EndnotesPart);
+
+                    var finalRevisionList = mainDocPartRevisionList
+                        .Concat(formattingRevisions)
+                        .Concat(footnotesRevisionList)
+                        .Concat(footnotesFormatting)
+                        .Concat(endnotesRevisionList)
+                        .Concat(endnotesFormatting)
+                        .ToList();
                     return finalRevisionList;
                 }
             }
+        }
+
+        private static IEnumerable<WmlComparerRevision> GetFormattingRevisionList(OpenXmlPart part)
+        {
+            if (part == null)
+                return Enumerable.Empty<WmlComparerRevision>();
+
+            var xDoc = part.GetXDocument();
+            var formattingRevisions = xDoc
+                .Descendants(W.r)
+                .Select(r => new
+                {
+                    Run = r,
+                    Change = r.Element(W.rPr)?.Element(W.rPrChange),
+                })
+                .Where(rc => rc.Change != null)
+                .Select(rc => new WmlComparerRevision
+                {
+                    RevisionType = WmlComparerRevisionType.FormatChanged,
+                    RevisionXElement = rc.Change,
+                    Author = (string)rc.Change.Attribute(W.author),
+                    Date = (string)rc.Change.Attribute(W.date),
+                    ContentXElement = rc.Run,
+                    PartUri = part.Uri,
+                    PartContentType = part.ContentType,
+                    Text = rc.Run.Elements(W.t).Select(t => t.Value).StringConcatenate(),
+                });
+
+            return formattingRevisions;
         }
 
         private static IEnumerable<WmlComparerRevision> GetFootnoteEndnoteRevisionList(OpenXmlPart footnotesEndnotesPart,
@@ -7426,7 +7466,7 @@ namespace OpenXmlPowerTools
             {
                 if (s_NormalizedRPrLogCount < 5)
                 {
-                    Trace(settings, "ComputeNormalizedRPr: no run ancestor found");
+                    WmlComparer.Trace(settings, "ComputeNormalizedRPr: no run ancestor found");
                     s_NormalizedRPrLogCount++;
                 }
                 return null;
@@ -7437,7 +7477,7 @@ namespace OpenXmlPowerTools
             {
                 if (s_NormalizedRPrLogCount < 5)
                 {
-                    Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) but no rPr");
+                    WmlComparer.Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) but no rPr");
                     s_NormalizedRPrLogCount++;
                 }
                 return null;
@@ -7447,7 +7487,7 @@ namespace OpenXmlPowerTools
 
             if (s_NormalizedRPrLogCount < 5)
             {
-                Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) rPr={clone.ToString(SaveOptions.DisableFormatting)}");
+                WmlComparer.Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) rPr={clone.ToString(SaveOptions.DisableFormatting)}");
                 s_NormalizedRPrLogCount++;
             }
 
