@@ -1641,6 +1641,9 @@ namespace OpenXmlPowerTools
             // the following gets a flattened list of ComparisonUnitAtoms, with status indicated in each ComparisonUnitAtom: Deleted, Inserted, or Equal
             var listOfComparisonUnitAtoms = FlattenToComparisonUnitAtomList(correlatedSequence, settings);
 
+            if (settings.TrackFormattingChanges)
+                ReconcileFormattingChanges(listOfComparisonUnitAtoms, settings);
+
             if (s_False)
             {
                 var sb = new StringBuilder();
@@ -2326,6 +2329,33 @@ namespace OpenXmlPowerTools
             {
                 var newPara = WordprocessingMLUtil.CoalesceAdjacentRunsWithIdenticalFormatting(para);
                 para.ReplaceNodes(newPara.Nodes());
+            }
+        }
+
+        private static void ReconcileFormattingChanges(List<ComparisonUnitAtom> atoms, WmlComparerSettings settings)
+        {
+            if (settings == null || !settings.TrackFormattingChanges)
+                return;
+
+            foreach (var atom in atoms)
+            {
+                if (atom.ComparisonUnitAtomBefore == null)
+                    continue;
+                if (atom.CorrelationStatus != CorrelationStatus.Equal && atom.CorrelationStatus != CorrelationStatus.FormatChanged)
+                    continue;
+
+                var beforeRPr = atom.ComparisonUnitAtomBefore.NormalizedRPr;
+                var afterRPr = atom.NormalizedRPr;
+
+                var differs = (beforeRPr == null && afterRPr != null) ||
+                    (beforeRPr != null && afterRPr == null) ||
+                    (beforeRPr != null && afterRPr != null && beforeRPr.ToString(SaveOptions.DisableFormatting) != afterRPr.ToString(SaveOptions.DisableFormatting));
+
+                if (differs)
+                {
+                    atom.CorrelationStatus = CorrelationStatus.FormatChanged;
+                    atom.FormattingChangeRPrBefore = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
+                }
             }
         }
 
@@ -3142,64 +3172,23 @@ namespace OpenXmlPowerTools
                                     var textBefore = before.ContentElement.Value;
                                     var textAfter = after.ContentElement.Value;
 
-                                    bool forceFormatSplit = false;
+                                    bool formatDiff = false;
                                     if (settings.TrackFormattingChanges && textBefore == textAfter)
                                     {
-                                        forceFormatSplit = before.FormattingSignature != after.FormattingSignature;
-                                        if (!forceFormatSplit)
+                                        formatDiff = before.FormattingSignature != after.FormattingSignature;
+                                        if (!formatDiff)
                                         {
-                                            // Fallback: compare normalized rPr of ancestor runs
-                                            XElement NormalizeRPr(XElement run)
-                                            {
-                                                if (run == null)
-                                                    return null;
-                                                var rPr = run.Element(W.rPr);
-                                                if (rPr == null)
-                                                    return null;
-                                                var clone = new XElement(rPr);
-                                                clone
-                                                    .DescendantsAndSelf()
-                                                    .Attributes()
-                                                    .Where(a =>
-                                                        a.Name.Namespace == PtOpenXml.pt ||
-                                                        a.Name == PtOpenXml.Unid ||
-                                                        a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
-                                                    .Remove();
-                                                return clone;
-                                            }
-
-                                            var beforeRun = before.ContentElement.Ancestors(W.r).FirstOrDefault();
-                                            var afterRun = after.ContentElement.Ancestors(W.r).FirstOrDefault();
-                                            var beforeRPr = NormalizeRPr(beforeRun);
-                                            var afterRPr = NormalizeRPr(afterRun);
-                                            forceFormatSplit = (beforeRPr == null && afterRPr != null) ||
+                                            var beforeRPr = before.NormalizedRPr;
+                                            var afterRPr = after.NormalizedRPr;
+                                            formatDiff = (beforeRPr == null && afterRPr != null) ||
                                                 (beforeRPr != null && afterRPr == null) ||
                                                 (beforeRPr != null && afterRPr != null && beforeRPr.ToString(SaveOptions.DisableFormatting) != afterRPr.ToString(SaveOptions.DisableFormatting));
                                         }
                                     }
 
-                                    if (forceFormatSplit)
-                                    {
-                                        return new[]
-                                        {
-                                            new ComparisonUnitAtom(before.ContentElement, before.AncestorElements, before.Part, settings)
-                                            {
-                                                CorrelationStatus = CorrelationStatus.Deleted,
-                                                ContentElementBefore = before.ContentElement,
-                                                ComparisonUnitAtomBefore = before,
-                                            },
-                                            new ComparisonUnitAtom(after.ContentElement, after.AncestorElements, after.Part, settings)
-                                            {
-                                                CorrelationStatus = CorrelationStatus.Inserted,
-                                                ContentElementBefore = before.ContentElement,
-                                                ComparisonUnitAtomBefore = before,
-                                            }
-                                        };
-                                    }
-
                                     var atom = new ComparisonUnitAtom(after.ContentElement, after.AncestorElements, after.Part, settings)
                                     {
-                                        CorrelationStatus = CorrelationStatus.Equal,
+                                        CorrelationStatus = formatDiff ? CorrelationStatus.FormatChanged : CorrelationStatus.Equal,
                                         ContentElementBefore = before.ContentElement,
                                         ComparisonUnitAtomBefore = before,
                                     };
@@ -4657,17 +4646,13 @@ namespace OpenXmlPowerTools
 
                         if (settings.TrackFormattingChanges)
                         {
-                            var beforeRun = g
-                                .Select(gc => gc.ComparisonUnitAtomBefore)
-                                .Where(b => b != null)
-                                .Where(b => b.FormattingSignature != g.First().FormattingSignature)
-                                .Select(b => b.ContentElement.Ancestors(W.r).FirstOrDefault())
+                            var formatChangeRPr = g
+                                .Select(gc => gc.FormattingChangeRPrBefore)
                                 .FirstOrDefault(r => r != null);
 
-                            if (beforeRun != null)
+                            if (formatChangeRPr != null)
                             {
-                                var beforeRPr = beforeRun.Element(W.rPr);
-                                var clonedBeforeRPr = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
+                                var clonedBeforeRPr = new XElement(formatChangeRPr);
 
                                 var targetRPr = newRun.Element(W.rPr);
                                 if (targetRPr == null)
@@ -7348,6 +7333,8 @@ namespace OpenXmlPowerTools
         public OpenXmlPart Part;
         public XElement RevTrackElement;
         public string FormattingSignature;
+        public XElement NormalizedRPr;
+        public XElement FormattingChangeRPrBefore;
 
         public ComparisonUnitAtom(XElement contentElement, XElement[] ancestorElements, OpenXmlPart part, WmlComparerSettings settings)
         {
@@ -7378,9 +7365,10 @@ namespace OpenXmlPowerTools
             }
 
             FormattingSignature = ComputeFormattingSignature(settings);
+            NormalizedRPr = ComputeNormalizedRPr(settings);
         }
 
-        private string ComputeFormattingSignature(WmlComparerSettings settings)
+        private XElement ComputeNormalizedRPr(WmlComparerSettings settings)
         {
             if (settings == null || !settings.TrackFormattingChanges)
                 return null;
@@ -7404,10 +7392,15 @@ namespace OpenXmlPowerTools
                     a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
                 .Remove();
 
-            if (!clone.HasElements && !clone.Attributes().Any())
-                return null;
+            return clone.HasElements || clone.Attributes().Any() ? clone : null;
+        }
 
-            return clone.ToString(SaveOptions.DisableFormatting);
+        private string ComputeFormattingSignature(WmlComparerSettings settings)
+        {
+            var normalized = ComputeNormalizedRPr(settings);
+            if (normalized == null)
+                return null;
+            return normalized.ToString(SaveOptions.DisableFormatting);
         }
 
         private string GetSha1HashStringForElement(XElement contentElement, WmlComparerSettings settings)
