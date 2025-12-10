@@ -89,10 +89,23 @@ namespace OpenXmlPowerTools
         public static bool s_True = true;
         public static bool s_SaveIntermediateFilesForDebugging = false;
 
+        private static void Trace(WmlComparerSettings settings, string message)
+        {
+            try
+            {
+                if (settings?.LogCallback != null)
+                    settings.LogCallback(message);
+                File.AppendAllText("/tmp/redlines-log.txt", message + Environment.NewLine);
+            }
+            catch
+            {
+                // ignore logging failures
+            }
+        }
+
         public static WmlDocument Compare(WmlDocument source1, WmlDocument source2, WmlComparerSettings settings)
         {
-            if (settings?.LogCallback != null)
-                settings.LogCallback("Compare: starting");
+            Trace(settings, "Compare: starting");
             return CompareInternal(source1, source2, settings, true);
         }
 
@@ -1643,8 +1656,10 @@ namespace OpenXmlPowerTools
             // the following gets a flattened list of ComparisonUnitAtoms, with status indicated in each ComparisonUnitAtom: Deleted, Inserted, or Equal
             var listOfComparisonUnitAtoms = FlattenToComparisonUnitAtomList(correlatedSequence, settings);
 
-            if (settings.LogCallback != null)
-                settings.LogCallback($"Flattened atoms count: {listOfComparisonUnitAtoms.Count}");
+            var statusCounts = listOfComparisonUnitAtoms
+                .GroupBy(a => a.CorrelationStatus)
+                .ToDictionary(g => g.Key.ToString(), g => g.Count());
+            Trace(settings, $"Flattened atoms count: {listOfComparisonUnitAtoms.Count} statuses={string.Join(",", statusCounts.Select(kv => kv.Key + ":" + kv.Value))}");
 
             if (settings.TrackFormattingChanges)
                 ReconcileFormattingChanges(listOfComparisonUnitAtoms, settings);
@@ -2362,11 +2377,11 @@ namespace OpenXmlPowerTools
                     (beforeRPr != null && afterRPr == null) ||
                     (beforeRPr != null && afterRPr != null && beforeRPr.ToString(SaveOptions.DisableFormatting) != afterRPr.ToString(SaveOptions.DisableFormatting));
 
-                if (settings.LogCallback != null && logged < 5)
+                if (logged < 5)
                 {
                     var beforeSig = beforeRPr != null ? beforeRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
                     var afterSig = afterRPr != null ? afterRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
-                    settings.LogCallback($"FmtCheck #{considered}: status={atom.CorrelationStatus} before={beforeSig} after={afterSig}");
+                    Trace(settings, $"FmtCheck #{considered}: status={atom.CorrelationStatus} before={beforeSig} after={afterSig}");
                     logged++;
                 }
 
@@ -2378,8 +2393,7 @@ namespace OpenXmlPowerTools
                 }
             }
 
-            if (settings.LogCallback != null)
-                settings.LogCallback($"ReconcileFormattingChanges: considered={considered}, changes={changes}");
+            Trace(settings, $"ReconcileFormattingChanges: considered={considered}, changes={changes}");
         }
 
         private static void ProcessFootnoteEndnote(
