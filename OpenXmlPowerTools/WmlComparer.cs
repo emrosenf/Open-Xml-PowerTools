@@ -2357,18 +2357,19 @@ namespace OpenXmlPowerTools
                     (beforeRPr != null && afterRPr == null) ||
                     (beforeRPr != null && afterRPr != null && beforeRPr.ToString(SaveOptions.DisableFormatting) != afterRPr.ToString(SaveOptions.DisableFormatting));
 
+                if (settings.LogCallback != null && logged < 5)
+                {
+                    var beforeSig = beforeRPr != null ? beforeRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                    var afterSig = afterRPr != null ? afterRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                    settings.LogCallback($"FmtCheck #{considered}: status={atom.CorrelationStatus} before={beforeSig} after={afterSig}");
+                    logged++;
+                }
+
                 if (differs)
                 {
                     atom.CorrelationStatus = CorrelationStatus.FormatChanged;
                     atom.FormattingChangeRPrBefore = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
                     changes++;
-                    if (settings.LogCallback != null && logged < 10)
-                    {
-                        var beforeSig = beforeRPr != null ? beforeRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
-                        var afterSig = afterRPr != null ? afterRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
-                        settings.LogCallback($"FmtDiff #{changes}: before={beforeSig} after={afterSig}");
-                        logged++;
-                    }
                 }
             }
 
