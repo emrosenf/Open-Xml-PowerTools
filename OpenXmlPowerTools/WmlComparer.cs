@@ -4654,8 +4654,6 @@ namespace OpenXmlPowerTools
                             }
 
                             var statusForGrouping = gc.CorrelationStatus;
-                            if (statusForGrouping == CorrelationStatus.FormatChanged)
-                                statusForGrouping = CorrelationStatus.Equal;
 
                             if (gc.AncestorElements.Skip(level).Any(ae => ae.Name == W.txbxContent))
                                 key += "|" + CorrelationStatus.Equal.ToString();
