@@ -91,6 +91,8 @@ namespace OpenXmlPowerTools
 
         public static WmlDocument Compare(WmlDocument source1, WmlDocument source2, WmlComparerSettings settings)
         {
+            if (settings?.LogCallback != null)
+                settings.LogCallback("Compare: starting");
             return CompareInternal(source1, source2, settings, true);
         }
 
@@ -1640,6 +1642,9 @@ namespace OpenXmlPowerTools
 
             // the following gets a flattened list of ComparisonUnitAtoms, with status indicated in each ComparisonUnitAtom: Deleted, Inserted, or Equal
             var listOfComparisonUnitAtoms = FlattenToComparisonUnitAtomList(correlatedSequence, settings);
+
+            if (settings.LogCallback != null)
+                settings.LogCallback($"Flattened atoms count: {listOfComparisonUnitAtoms.Count}");
 
             if (settings.TrackFormattingChanges)
                 ReconcileFormattingChanges(listOfComparisonUnitAtoms, settings);
