@@ -2339,6 +2339,7 @@ namespace OpenXmlPowerTools
 
             int considered = 0;
             int changes = 0;
+            int logged = 0;
 
             foreach (var atom in atoms)
             {
@@ -2361,6 +2362,13 @@ namespace OpenXmlPowerTools
                     atom.CorrelationStatus = CorrelationStatus.FormatChanged;
                     atom.FormattingChangeRPrBefore = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
                     changes++;
+                    if (settings.LogCallback != null && logged < 10)
+                    {
+                        var beforeSig = beforeRPr != null ? beforeRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                        var afterSig = afterRPr != null ? afterRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                        settings.LogCallback($"FmtDiff #{changes}: before={beforeSig} after={afterSig}");
+                        logged++;
+                    }
                 }
             }
 
