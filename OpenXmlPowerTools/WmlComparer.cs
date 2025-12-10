@@ -7410,7 +7410,9 @@ namespace OpenXmlPowerTools
             if (settings == null || !settings.TrackFormattingChanges)
                 return null;
 
-            var run = ContentElement.Ancestors(W.r).FirstOrDefault();
+            var run = AncestorElements?.Reverse().FirstOrDefault(ae => ae.Name == W.r);
+            if (run == null)
+                run = ContentElement.Ancestors(W.r).FirstOrDefault();
             if (run == null)
                 return null;
 
