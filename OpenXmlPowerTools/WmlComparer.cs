@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // TODO Line 1202 there are inefficient calls to PutXDocument() for footnotes and endnotes
@@ -57,6 +57,7 @@ namespace OpenXmlPowerTools
         public double DetailThreshold = 0.15;
         public bool CaseInsensitive = false;
         public bool ConflateBreakingAndNonbreakingSpaces = true;
+        public bool TrackFormattingChanges = true;
         public CultureInfo CultureInfo = null;
         public Action<string> LogCallback = null;
         public int StartingIdForFootnotesEndnotes = 1;
@@ -3138,13 +3139,73 @@ namespace OpenXmlPowerTools
                             .Zip(contentAtomsAfter,
                                 (before, after) =>
                                 {
-                                    return new ComparisonUnitAtom(after.ContentElement, after.AncestorElements, after.Part, settings)
+                                    var textBefore = before.ContentElement.Value;
+                                    var textAfter = after.ContentElement.Value;
+
+                                    bool forceFormatSplit = false;
+                                    if (settings.TrackFormattingChanges && textBefore == textAfter)
+                                    {
+                                        forceFormatSplit = before.FormattingSignature != after.FormattingSignature;
+                                        if (!forceFormatSplit)
+                                        {
+                                            // Fallback: compare normalized rPr of ancestor runs
+                                            XElement NormalizeRPr(XElement run)
+                                            {
+                                                if (run == null)
+                                                    return null;
+                                                var rPr = run.Element(W.rPr);
+                                                if (rPr == null)
+                                                    return null;
+                                                var clone = new XElement(rPr);
+                                                clone
+                                                    .DescendantsAndSelf()
+                                                    .Attributes()
+                                                    .Where(a =>
+                                                        a.Name.Namespace == PtOpenXml.pt ||
+                                                        a.Name == PtOpenXml.Unid ||
+                                                        a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
+                                                    .Remove();
+                                                return clone;
+                                            }
+
+                                            var beforeRun = before.ContentElement.Ancestors(W.r).FirstOrDefault();
+                                            var afterRun = after.ContentElement.Ancestors(W.r).FirstOrDefault();
+                                            var beforeRPr = NormalizeRPr(beforeRun);
+                                            var afterRPr = NormalizeRPr(afterRun);
+                                            forceFormatSplit = (beforeRPr == null && afterRPr != null) ||
+                                                (beforeRPr != null && afterRPr == null) ||
+                                                (beforeRPr != null && afterRPr != null && beforeRPr.ToString(SaveOptions.DisableFormatting) != afterRPr.ToString(SaveOptions.DisableFormatting));
+                                        }
+                                    }
+
+                                    if (forceFormatSplit)
+                                    {
+                                        return new[]
+                                        {
+                                            new ComparisonUnitAtom(before.ContentElement, before.AncestorElements, before.Part, settings)
+                                            {
+                                                CorrelationStatus = CorrelationStatus.Deleted,
+                                                ContentElementBefore = before.ContentElement,
+                                                ComparisonUnitAtomBefore = before,
+                                            },
+                                            new ComparisonUnitAtom(after.ContentElement, after.AncestorElements, after.Part, settings)
+                                            {
+                                                CorrelationStatus = CorrelationStatus.Inserted,
+                                                ContentElementBefore = before.ContentElement,
+                                                ComparisonUnitAtomBefore = before,
+                                            }
+                                        };
+                                    }
+
+                                    var atom = new ComparisonUnitAtom(after.ContentElement, after.AncestorElements, after.Part, settings)
                                     {
                                         CorrelationStatus = CorrelationStatus.Equal,
                                         ContentElementBefore = before.ContentElement,
                                         ComparisonUnitAtomBefore = before,
                                     };
+                                    return new[] { atom };
                                 })
+                            .SelectMany(a => a)
                             .ToList();
                         return comparisonUnitAtomList;
                     }
@@ -3584,6 +3645,12 @@ namespace OpenXmlPowerTools
                                 a.Name.Namespace != PtOpenXml.pt),
                         element.Nodes().Select(n => CloneBlockLevelContentForHashingInternal(mainDocumentPart, n, includeRelatedParts, settings)));
 
+                    if (settings.TrackFormattingChanges)
+                    {
+                        // Preserve paragraph-level rPr for hashing when tracking formatting
+                        return clonedPara;
+                    }
+
                     var groupedRuns = clonedPara
                         .Elements()
                         .GroupAdjacent(e => e.Name == W.r &&
@@ -3613,10 +3680,32 @@ namespace OpenXmlPowerTools
 
                 if (element.Name == W.r)
                 {
-                    var clonedRuns = element
-                        .Elements()
-                        .Where(e => e.Name != W.rPr)
-                        .Select(rc => new XElement(W.r, CloneBlockLevelContentForHashingInternal(mainDocumentPart, rc, includeRelatedParts, settings)));
+                    XElement NormalizeRPr(XElement run)
+                    {
+                        var rPr = run.Element(W.rPr);
+                        if (rPr == null)
+                            return null;
+                        var clone = new XElement(rPr);
+                        clone
+                            .DescendantsAndSelf()
+                            .Attributes()
+                            .Where(a =>
+                                a.Name.Namespace == PtOpenXml.pt ||
+                                a.Name == PtOpenXml.Unid ||
+                                a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
+                            .Remove();
+                        return clone.HasElements || clone.Attributes().Any() ? clone : null;
+                    }
+
+                    var normalizedRPr = settings.TrackFormattingChanges ? NormalizeRPr(element) : null;
+
+                    var clonedRuns = new XElement(W.r,
+                        normalizedRPr,
+                        element.Elements().Where(e => e.Name != W.rPr).Select(rc => CloneBlockLevelContentForHashingInternal(mainDocumentPart, rc, includeRelatedParts, settings)));
+
+                    if (!settings.TrackFormattingChanges)
+                        return clonedRuns.Elements();
+
                     return clonedRuns;
                 }
 
@@ -4490,10 +4579,15 @@ namespace OpenXmlPowerTools
                             {
                                 key = gc.AncestorUnids[level + 1];
                             }
+
+                            var statusForGrouping = gc.CorrelationStatus;
+                            if (statusForGrouping == CorrelationStatus.FormatChanged)
+                                statusForGrouping = CorrelationStatus.Equal;
+
                             if (gc.AncestorElements.Skip(level).Any(ae => ae.Name == W.txbxContent))
                                 key += "|" + CorrelationStatus.Equal.ToString();
                             else
-                                key += "|" + gc.CorrelationStatus.ToString();
+                                key += "|" + statusForGrouping.ToString();
                             return key;
                         })
                         .ToList();
@@ -4553,10 +4647,45 @@ namespace OpenXmlPowerTools
                             .ToList();
 
                         XElement rPr = ancestorBeingConstructed.Element(W.rPr);
+                        if (rPr != null)
+                            rPr = new XElement(rPr);
+
                         var newRun = new XElement(W.r,
                             ancestorBeingConstructed.Attributes().Where(a => a.Name.Namespace != PtOpenXml.pt),
                             rPr,
                             newChildElements);
+
+                        if (settings.TrackFormattingChanges)
+                        {
+                            var beforeRun = g
+                                .Select(gc => gc.ComparisonUnitAtomBefore)
+                                .Where(b => b != null)
+                                .Where(b => b.FormattingSignature != g.First().FormattingSignature)
+                                .Select(b => b.ContentElement.Ancestors(W.r).FirstOrDefault())
+                                .FirstOrDefault(r => r != null);
+
+                            if (beforeRun != null)
+                            {
+                                var beforeRPr = beforeRun.Element(W.rPr);
+                                var clonedBeforeRPr = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
+
+                                var targetRPr = newRun.Element(W.rPr);
+                                if (targetRPr == null)
+                                {
+                                    targetRPr = new XElement(W.rPr);
+                                    newRun.AddFirst(targetRPr);
+                                }
+
+                                targetRPr.Elements(W.rPrChange).Remove();
+                                targetRPr.AddFirst(
+                                    new XElement(W.rPrChange,
+                                        new XAttribute(W.author, settings.AuthorForRevisions),
+                                        new XAttribute(W.id, s_MaxId++),
+                                        new XAttribute(W.date, settings.DateTimeForRevisions),
+                                        clonedBeforeRPr));
+                            }
+                        }
+
                         return newRun;
                     }
 
@@ -7218,6 +7347,7 @@ namespace OpenXmlPowerTools
         public ComparisonUnitAtom ComparisonUnitAtomBefore;
         public OpenXmlPart Part;
         public XElement RevTrackElement;
+        public string FormattingSignature;
 
         public ComparisonUnitAtom(XElement contentElement, XElement[] ancestorElements, OpenXmlPart part, WmlComparerSettings settings)
         {
@@ -7246,6 +7376,38 @@ namespace OpenXmlPowerTools
                 var shaHashString = GetSha1HashStringForElement(ContentElement, settings);
                 SHA1Hash = PtUtils.SHA1HashStringForUTF8String(shaHashString);
             }
+
+            FormattingSignature = ComputeFormattingSignature(settings);
+        }
+
+        private string ComputeFormattingSignature(WmlComparerSettings settings)
+        {
+            if (settings == null || !settings.TrackFormattingChanges)
+                return null;
+
+            var run = ContentElement.Ancestors(W.r).FirstOrDefault();
+            if (run == null)
+                return null;
+
+            var rPr = run.Element(W.rPr);
+            if (rPr == null)
+                return null;
+
+            var clone = new XElement(rPr);
+
+            clone
+                .DescendantsAndSelf()
+                .Attributes()
+                .Where(a =>
+                    a.Name.Namespace == PtOpenXml.pt ||
+                    a.Name == PtOpenXml.Unid ||
+                    a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
+                .Remove();
+
+            if (!clone.HasElements && !clone.Attributes().Any())
+                return null;
+
+            return clone.ToString(SaveOptions.DisableFormatting);
         }
 
         private string GetSha1HashStringForElement(XElement contentElement, WmlComparerSettings settings)
@@ -7255,6 +7417,8 @@ namespace OpenXmlPowerTools
                 text = text.ToUpper(settings.CultureInfo);
             if (settings.ConflateBreakingAndNonbreakingSpaces)
                 text = text.Replace(' ', '\x00a0');
+            if (settings.TrackFormattingChanges && FormattingSignature != null)
+                text += "|fmt:" + FormattingSignature;
             return contentElement.Name.LocalName + text;
         }
 
@@ -7458,6 +7622,7 @@ namespace OpenXmlPowerTools
         Inserted,
         Deleted,
         Equal,
+        FormatChanged,
         Group,
     }
 
