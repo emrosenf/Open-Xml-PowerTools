@@ -89,13 +89,15 @@ namespace OpenXmlPowerTools
         public static bool s_True = true;
         public static bool s_SaveIntermediateFilesForDebugging = false;
 
-        private static void Trace(WmlComparerSettings settings, string message)
+        internal static void Trace(WmlComparerSettings settings, string message)
         {
             try
             {
                 if (settings?.LogCallback != null)
                     settings.LogCallback(message);
-                File.AppendAllText("/tmp/redlines-log.txt", message + Environment.NewLine);
+                // Only log to file if REDLINES_DEBUG env var is set
+                if (Environment.GetEnvironmentVariable("REDLINES_DEBUG") != null)
+                    File.AppendAllText("/tmp/redlines-log.txt", message + Environment.NewLine);
             }
             catch
             {
@@ -2394,6 +2396,14 @@ namespace OpenXmlPowerTools
 
                 if (differs)
                 {
+                    if (changes < 20)
+                    {
+                        var textVal = atom.ContentElement.Value;
+                        var beforeSig = beforeRPr != null ? beforeRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                        var afterSig = afterRPr != null ? afterRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                        Trace(settings, $"FmtDiff text='{textVal}' before={beforeSig} after={afterSig}");
+                    }
+
                     atom.CorrelationStatus = CorrelationStatus.FormatChanged;
                     atom.FormattingChangeRPrBefore = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
                     changes++;
@@ -3179,17 +3189,10 @@ namespace OpenXmlPowerTools
         // the following gets a flattened list of ComparisonUnitAtoms, with status indicated in each ComparisonUnitAtom: Deleted, Inserted, or Equal
         private static List<ComparisonUnitAtom> FlattenToComparisonUnitAtomList(List<CorrelatedSequence> correlatedSequence, WmlComparerSettings settings)
         {
+            int loggedAtoms = 0;
             var listOfComparisonUnitAtoms = correlatedSequence
                 .Select(cs =>
                 {
-
-                    // need to write some code here to find out if we are assembling a paragraph (or anything) that contains the following unid.
-                    // why do are we dropping content???????
-                    //string searchFor = "0ecb9184";
-
-
-
-
 
 
 
@@ -3202,12 +3205,14 @@ namespace OpenXmlPowerTools
                         var contentAtomsBefore = cs
                             .ComparisonUnitArray1
                             .Select(ca => ca.DescendantContentAtoms())
-                            .SelectMany(m => m);
+                            .SelectMany(m => m)
+                            .ToList();
 
                         var contentAtomsAfter = cs
                             .ComparisonUnitArray2
                             .Select(ca => ca.DescendantContentAtoms())
-                            .SelectMany(m => m);
+                            .SelectMany(m => m)
+                            .ToList();
 
                         var comparisonUnitAtomList = contentAtomsBefore
                             .Zip(contentAtomsAfter,
@@ -3236,6 +3241,26 @@ namespace OpenXmlPowerTools
                                         ContentElementBefore = before.ContentElement,
                                         ComparisonUnitAtomBefore = before,
                                     };
+
+                                    // Set FormattingChangeRPrBefore immediately for FormatChanged atoms
+                                    if (formatDiff && before.NormalizedRPr != null)
+                                    {
+                                        atom.FormattingChangeRPrBefore = new XElement(before.NormalizedRPr);
+                                    }
+                                    else if (formatDiff)
+                                    {
+                                        atom.FormattingChangeRPrBefore = new XElement(W.rPr);
+                                    }
+
+                                    // Only log formatting changes (not every atom)
+                                    if (formatDiff && loggedAtoms < 20 && settings.TrackFormattingChanges)
+                                    {
+                                        var beforeSig = before.FormattingSignature ?? "<null>";
+                                        var afterSig = after.FormattingSignature ?? "<null>";
+                                        Trace(settings, $"FlattenAtom: text='{textAfter}' formatDiff=true beforeSig={beforeSig.Substring(0, Math.Min(40, beforeSig.Length))} afterSig={afterSig.Substring(0, Math.Min(40, afterSig.Length))}");
+                                        loggedAtoms++;
+                                    }
+
                                     return new[] { atom };
                                 })
                             .SelectMany(a => a)
@@ -3345,6 +3370,7 @@ namespace OpenXmlPowerTools
         {
             Inserted,
             Deleted,
+            FormatChanged,
         }
 
         public class WmlComparerRevision
@@ -3447,10 +3473,49 @@ namespace OpenXmlPowerTools
 
                     var footnotesRevisionList = GetFootnoteEndnoteRevisionList(wDoc.MainDocumentPart.FootnotesPart, W.footnote, settings);
                     var endnotesRevisionList = GetFootnoteEndnoteRevisionList(wDoc.MainDocumentPart.EndnotesPart, W.endnote, settings);
-                    var finalRevisionList = mainDocPartRevisionList.Concat(footnotesRevisionList).Concat(endnotesRevisionList).ToList();
+                    var formattingRevisions = GetFormattingRevisionList(wDoc.MainDocumentPart);
+                    var footnotesFormatting = GetFormattingRevisionList(wDoc.MainDocumentPart.FootnotesPart);
+                    var endnotesFormatting = GetFormattingRevisionList(wDoc.MainDocumentPart.EndnotesPart);
+
+                    var finalRevisionList = mainDocPartRevisionList
+                        .Concat(formattingRevisions)
+                        .Concat(footnotesRevisionList)
+                        .Concat(footnotesFormatting)
+                        .Concat(endnotesRevisionList)
+                        .Concat(endnotesFormatting)
+                        .ToList();
                     return finalRevisionList;
                 }
             }
+        }
+
+        private static IEnumerable<WmlComparerRevision> GetFormattingRevisionList(OpenXmlPart part)
+        {
+            if (part == null)
+                return Enumerable.Empty<WmlComparerRevision>();
+
+            var xDoc = part.GetXDocument();
+            var formattingRevisions = xDoc
+                .Descendants(W.r)
+                .Select(r => new
+                {
+                    Run = r,
+                    Change = r.Element(W.rPr)?.Element(W.rPrChange),
+                })
+                .Where(rc => rc.Change != null)
+                .Select(rc => new WmlComparerRevision
+                {
+                    RevisionType = WmlComparerRevisionType.FormatChanged,
+                    RevisionXElement = rc.Change,
+                    Author = (string)rc.Change.Attribute(W.author),
+                    Date = (string)rc.Change.Attribute(W.date),
+                    ContentXElement = rc.Run,
+                    PartUri = part.Uri,
+                    PartContentType = part.ContentType,
+                    Text = rc.Run.Elements(W.t).Select(t => t.Value).StringConcatenate(),
+                });
+
+            return formattingRevisions;
         }
 
         private static IEnumerable<WmlComparerRevision> GetFootnoteEndnoteRevisionList(OpenXmlPart footnotesEndnotesPart,
@@ -4604,6 +4669,7 @@ namespace OpenXmlPowerTools
                     var ancestorBeingConstructed = g.First().AncestorElements[level]; // these will all be the same, by definition
 
                     // need to group by corr stat
+                    // IMPORTANT: Also group by formatting signature to prevent merging atoms with different formatting changes
                     var groupedChildren = g
                         .GroupAdjacent(gc =>
                         {
@@ -4614,13 +4680,32 @@ namespace OpenXmlPowerTools
                             }
 
                             var statusForGrouping = gc.CorrelationStatus;
-                            if (statusForGrouping == CorrelationStatus.FormatChanged)
-                                statusForGrouping = CorrelationStatus.Equal;
 
                             if (gc.AncestorElements.Skip(level).Any(ae => ae.Name == W.txbxContent))
                                 key += "|" + CorrelationStatus.Equal.ToString();
                             else
                                 key += "|" + statusForGrouping.ToString();
+
+                            // Add formatting signature to key to prevent merging atoms with different formatting
+                            // This ensures that atoms with FormatChanged status that have different before/after
+                            // formatting will be placed in separate runs, each with their own w:rPrChange
+                            if (settings != null && settings.TrackFormattingChanges)
+                            {
+                                if (gc.CorrelationStatus == CorrelationStatus.FormatChanged)
+                                {
+                                    // Use before formatting signature to group - atoms with same before formatting belong together
+                                    var beforeSig = gc.FormattingChangeRPrBefore?.ToString(SaveOptions.DisableFormatting) ?? "<null>";
+                                    var afterSig = gc.NormalizedRPr?.ToString(SaveOptions.DisableFormatting) ?? "<null>";
+                                    key += "|FMT:" + beforeSig + "|TO:" + afterSig;
+                                }
+                                else if (gc.CorrelationStatus == CorrelationStatus.Equal)
+                                {
+                                    // For Equal atoms, include formatting signature so equal content with different formatting
+                                    // is grouped separately
+                                    var sig = gc.FormattingSignature ?? "<null>";
+                                    key += "|SIG:" + sig;
+                                }
+                            }
                             return key;
                         })
                         .ToList();
@@ -5014,6 +5099,16 @@ namespace OpenXmlPowerTools
                 props1, props2, props3, newChildElements);
 
             return reconstructedElement;
+        }
+
+        private static XElement ReconstructElement(OpenXmlPart part, IGrouping<string, ComparisonUnitAtom> g, XElement ancestorBeingConstructed, XName[] childPropElementNames, int level, WmlComparerSettings settings)
+        {
+            var newChildElements = CoalesceRecurse(part, g, level + 1, settings);
+            IEnumerable<XElement> childProps = null;
+            if (childPropElementNames != null)
+                childProps = ancestorBeingConstructed.Elements().Where(a => childPropElementNames.Contains(a.Name));
+
+            return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
         }
 
         private static List<CorrelatedSequence> DetectUnrelatedSources(ComparisonUnit[] cu1, ComparisonUnit[] cu2, WmlComparerSettings settings)
@@ -6956,7 +7051,7 @@ namespace OpenXmlPowerTools
         internal static XDocument Coalesce(ComparisonUnitAtom[] comparisonUnitAtomList)
         {
             XDocument newXDoc = new XDocument();
-            var newBodyChildren = CoalesceRecurse(comparisonUnitAtomList, 0);
+            var newBodyChildren = CoalesceRecurse(null, comparisonUnitAtomList, 0, null);
             newXDoc.Add(new XElement(W.document,
                 new XAttribute(XNamespace.Xmlns + "w", W.w.NamespaceName),
                 new XAttribute(XNamespace.Xmlns + "pt14", PtOpenXml.pt.NamespaceName),
@@ -6969,119 +7064,9 @@ namespace OpenXmlPowerTools
             return newXDoc;
         }
 
-        private static object CoalesceRecurse(IEnumerable<ComparisonUnitAtom> list, int level)
-        {
-            var grouped = list
-                .GroupBy(sr =>
-                {
-                    // per the algorithm, The following condition will never evaluate to true
-                    // if it evaluates to true, then the basic mechanism for breaking a hierarchical structure into flat and back is broken.
-
-                    // for a table, we initially get all ComparisonUnitAtoms for the entire table, then process.  When processing a row,
-                    // no ComparisonUnitAtoms will have ancestors outside the row.  Ditto for cells, and on down the tree.
-                    if (level >= sr.AncestorElements.Length)
-                        throw new OpenXmlPowerToolsException("Internal error 4 - why do we have ComparisonUnitAtom objects with fewer ancestors than its siblings?");
-
-                    var unid = (string)sr.AncestorElements[level].Attribute(PtOpenXml.Unid);
-                    return unid;
-                });
-
-            if (s_False)
-            {
-                var sb = new StringBuilder();
-                foreach (var group in grouped)
-                {
-                    sb.AppendFormat("Group Key: {0}", group.Key);
-                    sb.Append(Environment.NewLine);
-                    foreach (var groupChildItem in group)
-                    {
-                        sb.Append("  ");
-                        sb.Append(groupChildItem.ToString(0));
-                        sb.Append(Environment.NewLine);
-                    }
-                    sb.Append(Environment.NewLine);
-                }
-                var sbs = sb.ToString();
-            }
-
-            var elementList = grouped
-                .Select(g =>
-                {
-                    // see the comment above at the beginning of CoalesceRecurse
-                    if (level >= g.First().AncestorElements.Length)
-                        throw new OpenXmlPowerToolsException("Internal error 3 - why do we have ComparisonUnitAtom objects with fewer ancestors than its siblings?");
-
-                    var ancestorBeingConstructed = g.First().AncestorElements[level];
-
-                    if (ancestorBeingConstructed.Name == W.p)
-                    {
-                        var groupedChildren = g
-                            .GroupAdjacent(gc => gc.ContentElement.Name.ToString());
-                        var newChildElements = groupedChildren
-                            .Where(gc => gc.First().ContentElement.Name != W.pPr)
-                            .Select(gc =>
-                            {
-                                return CoalesceRecurse(gc, level + 1);
-                            });
-                        var newParaProps = groupedChildren
-                            .Where(gc => gc.First().ContentElement.Name == W.pPr)
-                            .Select(gc => gc.Select(gce => gce.ContentElement));
-                        return new XElement(W.p,
-                            ancestorBeingConstructed.Attributes(),
-                            newParaProps, newChildElements);
-                    }
-
-                    if (ancestorBeingConstructed.Name == W.r)
-                    {
-                        var groupedChildren = g
-                            .GroupAdjacent(gc => gc.ContentElement.Name.ToString());
-                        var newChildElements = groupedChildren
-                            .Select(gc =>
-                            {
-                                var name = gc.First().ContentElement.Name;
-                                if (name == W.t || name == W.delText)
-                                {
-                                    var textOfTextElement = gc.Select(gce => gce.ContentElement.Value).StringConcatenate();
-                                    return (object)(new XElement(name,
-                                        GetXmlSpaceAttribute(textOfTextElement),
-                                        textOfTextElement));
-                                }
-                                else
-                                    return gc.Select(gce => gce.ContentElement);
-                            });
-                        var runProps = ancestorBeingConstructed.Elements(W.rPr);
-                        return new XElement(W.r, runProps, newChildElements);
-                    }
-
-                    var re = RecursionElements.FirstOrDefault(z => z.ElementName == ancestorBeingConstructed.Name);
-                    if (re != null)
-                    {
-                        return ReconstructElement(g, ancestorBeingConstructed, re.ChildElementPropertyNames, level);
-                    }
-
-                    var newElement = new XElement(ancestorBeingConstructed.Name,
-                        ancestorBeingConstructed.Attributes(),
-                        CoalesceRecurse(g, level + 1));
-
-                    return newElement;
-                })
-                .ToList();
-            return elementList;
-        }
-
-        private static XElement ReconstructElement(IGrouping<string, ComparisonUnitAtom> g, XElement ancestorBeingConstructed, XName[] childPropElementNames, int level)
-        {
-            var newChildElements = CoalesceRecurse(g, level + 1);
-            IEnumerable<XElement> childProps = null;
-            if (childPropElementNames != null)
-                childProps = ancestorBeingConstructed.Elements()
-                    .Where(a => childPropElementNames.Contains(a.Name));
-
-            var reconstructedElement = new XElement(ancestorBeingConstructed.Name, childProps, newChildElements);
-            return reconstructedElement;
-        }
 
         private static void MoveLastSectPrIntoLastParagraph(XElement contentParent)
+
         {
             var lastSectPrList = contentParent.Elements(W.sectPr).ToList();
             if (lastSectPrList.Count() > 1)
@@ -7426,7 +7411,7 @@ namespace OpenXmlPowerTools
             {
                 if (s_NormalizedRPrLogCount < 5)
                 {
-                    Trace(settings, "ComputeNormalizedRPr: no run ancestor found");
+                    WmlComparer.Trace(settings, "ComputeNormalizedRPr: no run ancestor found");
                     s_NormalizedRPrLogCount++;
                 }
                 return null;
@@ -7437,7 +7422,7 @@ namespace OpenXmlPowerTools
             {
                 if (s_NormalizedRPrLogCount < 5)
                 {
-                    Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) but no rPr");
+                    WmlComparer.Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) but no rPr");
                     s_NormalizedRPrLogCount++;
                 }
                 return null;
@@ -7445,9 +7430,15 @@ namespace OpenXmlPowerTools
 
             var clone = new XElement(rPr);
 
+            // Keep only formatting we want to track (bold, italic, underline). Drop size, color, etc.
+            var allowed = new HashSet<XName> { W.b, W.bCs, W.i, W.iCs, W.u };
+            clone.Elements()
+                .Where(e => !allowed.Contains(e.Name))
+                .Remove();
+
             if (s_NormalizedRPrLogCount < 5)
             {
-                Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) rPr={clone.ToString(SaveOptions.DisableFormatting)}");
+                WmlComparer.Trace(settings, $"ComputeNormalizedRPr: run found (via ancestors={foundViaAncestors}) rPr={clone.ToString(SaveOptions.DisableFormatting)}");
                 s_NormalizedRPrLogCount++;
             }
 
@@ -7478,8 +7469,7 @@ namespace OpenXmlPowerTools
                 text = text.ToUpper(settings.CultureInfo);
             if (settings.ConflateBreakingAndNonbreakingSpaces)
                 text = text.Replace(' ', '\x00a0');
-            if (settings.TrackFormattingChanges && FormattingSignature != null)
-                text += "|fmt:" + FormattingSignature;
+            // Do not include formatting in the hash; use text for alignment, then layer formatting detection separately.
             return contentElement.Name.LocalName + text;
         }
 
