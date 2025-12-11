@@ -2394,6 +2394,14 @@ namespace OpenXmlPowerTools
 
                 if (differs)
                 {
+                    if (changes < 20)
+                    {
+                        var textVal = atom.ContentElement.Value;
+                        var beforeSig = beforeRPr != null ? beforeRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                        var afterSig = afterRPr != null ? afterRPr.ToString(SaveOptions.DisableFormatting) : "<null>";
+                        Trace(settings, $"FmtDiff text='{textVal}' before={beforeSig} after={afterSig}");
+                    }
+
                     atom.CorrelationStatus = CorrelationStatus.FormatChanged;
                     atom.FormattingChangeRPrBefore = beforeRPr != null ? new XElement(beforeRPr) : new XElement(W.rPr);
                     changes++;
