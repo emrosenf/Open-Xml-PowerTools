@@ -4673,18 +4673,22 @@ namespace OpenXmlPowerTools
                     var groupedChildren = g
                         .GroupAdjacent(gc =>
                         {
-                            var key = "";
-                            if (level < (gc.AncestorElements.Length - 1))
-                            {
-                                key = gc.AncestorUnids[level + 1];
-                            }
+                            // Build key efficiently - avoid multiple string concatenations
+                            var ancestorUnid = level < (gc.AncestorElements.Length - 1) ? gc.AncestorUnids[level + 1] : "";
 
                             var statusForGrouping = gc.CorrelationStatus;
 
-                            if (gc.AncestorElements.Skip(level).Any(ae => ae.Name == W.txbxContent))
-                                key += "|" + CorrelationStatus.Equal.ToString();
-                            else
-                                key += "|" + statusForGrouping.ToString();
+                            // Check for txbxContent ancestor without allocating with Skip()
+                            bool inTxbxContent = false;
+                            for (int i = level; i < gc.AncestorElements.Length; i++)
+                            {
+                                if (gc.AncestorElements[i].Name == W.txbxContent)
+                                {
+                                    inTxbxContent = true;
+                                    break;
+                                }
+                            }
+                            var statusStr = inTxbxContent ? "Equal" : statusForGrouping.ToString();
 
                             // Add formatting signature to key to prevent merging atoms with different formatting
                             // This ensures that atoms with FormatChanged status that have different before/after
@@ -4693,20 +4697,19 @@ namespace OpenXmlPowerTools
                             {
                                 if (gc.CorrelationStatus == CorrelationStatus.FormatChanged)
                                 {
-                                    // Use before formatting signature to group - atoms with same before formatting belong together
-                                    var beforeSig = gc.FormattingChangeRPrBefore?.ToString(SaveOptions.DisableFormatting) ?? "<null>";
-                                    var afterSig = gc.NormalizedRPr?.ToString(SaveOptions.DisableFormatting) ?? "<null>";
-                                    key += "|FMT:" + beforeSig + "|TO:" + afterSig;
+                                    // Use cached signatures to avoid repeated ToString() calls
+                                    var beforeSig = gc.FormattingChangeRPrBeforeSignature ?? "<null>";
+                                    var afterSig = gc.FormattingSignature ?? "<null>";
+                                    return $"{ancestorUnid}|{statusStr}|FMT:{beforeSig}|TO:{afterSig}";
                                 }
                                 else if (gc.CorrelationStatus == CorrelationStatus.Equal)
                                 {
-                                    // For Equal atoms, include formatting signature so equal content with different formatting
-                                    // is grouped separately
+                                    // Use cached signature
                                     var sig = gc.FormattingSignature ?? "<null>";
-                                    key += "|SIG:" + sig;
+                                    return $"{ancestorUnid}|{statusStr}|SIG:{sig}";
                                 }
                             }
-                            return key;
+                            return $"{ancestorUnid}|{statusStr}";
                         })
                         .ToList();
 
@@ -7364,7 +7367,51 @@ namespace OpenXmlPowerTools
         public string FormattingSignature;
         public XElement NormalizedRPr;
         public XElement FormattingChangeRPrBefore;
+        private string _formattingChangeRPrBeforeSignature;
+        public string FormattingChangeRPrBeforeSignature
+        {
+            get
+            {
+                if (_formattingChangeRPrBeforeSignature == null && FormattingChangeRPrBefore != null)
+                    _formattingChangeRPrBeforeSignature = FormattingChangeRPrBefore.ToString(SaveOptions.DisableFormatting);
+                return _formattingChangeRPrBeforeSignature;
+            }
+        }
         private static int s_NormalizedRPrLogCount = 0;
+
+        // Static HashSets for performance - avoid recreation per atom
+        private static readonly HashSet<XName> s_AllowedFormattingProperties = new HashSet<XName> { 
+            // Text style
+            W.b,           // bold
+            W.bCs,         // bold complex script
+            W.i,           // italic
+            W.iCs,         // italic complex script
+            W.u,           // underline (with style attribute)
+            
+            // Font properties
+            W.sz,          // font size (half-points)
+            W.szCs,        // font size complex script
+            W.color,       // font color (hex value)
+            W.rFonts,      // font family (multiple attributes)
+            
+            // Highlighting and effects
+            W.highlight,   // text highlight (color name)
+            W.strike,      // strikethrough
+            W.dstrike,     // double strikethrough
+            
+            // Capitalization
+            W.caps,        // all caps
+            W.smallCaps,   // small caps
+        };
+
+        private static readonly HashSet<XName> s_PropsWithValues = new HashSet<XName> {
+            W.u,          // underline style (single, double, etc.)
+            W.color,      // color value (hex like "FF0000")
+            W.sz,         // size value (half-points like "24")
+            W.szCs,       // size value (complex script)
+            W.rFonts,     // font family (ascii, hAnsi, cs, eastAsia attributes)
+            W.highlight,  // highlight color (yellow, green, etc.)
+        };
 
         public ComparisonUnitAtom(XElement contentElement, XElement[] ancestorElements, OpenXmlPart part, WmlComparerSettings settings)
         {
@@ -7394,8 +7441,9 @@ namespace OpenXmlPowerTools
                 SHA1Hash = PtUtils.SHA1HashStringForUTF8String(shaHashString);
             }
 
-            FormattingSignature = ComputeFormattingSignature(settings);
+            // Compute NormalizedRPr once and derive FormattingSignature from it
             NormalizedRPr = ComputeNormalizedRPr(settings);
+            FormattingSignature = NormalizedRPr?.ToString(SaveOptions.DisableFormatting);
         }
 
         private XElement ComputeNormalizedRPr(WmlComparerSettings settings)
@@ -7403,8 +7451,21 @@ namespace OpenXmlPowerTools
             if (settings == null || !settings.TrackFormattingChanges)
                 return null;
 
-            var run = AncestorElements?.Reverse().FirstOrDefault(ae => ae.Name == W.r);
-            bool foundViaAncestors = run != null;
+            // Find run ancestor - search from end of array (closest ancestor) to avoid Reverse() allocation
+            XElement run = null;
+            bool foundViaAncestors = false;
+            if (AncestorElements != null)
+            {
+                for (int i = AncestorElements.Length - 1; i >= 0; i--)
+                {
+                    if (AncestorElements[i].Name == W.r)
+                    {
+                        run = AncestorElements[i];
+                        foundViaAncestors = true;
+                        break;
+                    }
+                }
+            }
             if (run == null)
                 run = ContentElement.Ancestors(W.r).FirstOrDefault();
             if (run == null)
@@ -7430,33 +7491,10 @@ namespace OpenXmlPowerTools
 
             var clone = new XElement(rPr);
 
-            // Keep all formatting properties we want to track
-            var allowed = new HashSet<XName> { 
-                // Text style (existing)
-                W.b,           // bold
-                W.bCs,         // bold complex script
-                W.i,           // italic
-                W.iCs,         // italic complex script
-                W.u,           // underline (with style attribute)
-                
-                // Font properties (NEW)
-                W.sz,          // font size (half-points)
-                W.szCs,        // font size complex script
-                W.color,       // font color (hex value)
-                W.rFonts,      // font family (multiple attributes)
-                
-                // Highlighting and effects (NEW)
-                W.highlight,   // text highlight (color name)
-                W.strike,      // strikethrough
-                W.dstrike,     // double strikethrough
-                
-                // Capitalization (NEW)
-                W.caps,        // all caps
-                W.smallCaps,   // small caps
-            };
-            clone.Elements()
-                .Where(e => !allowed.Contains(e.Name))
-                .Remove();
+            // Remove elements not in our allowed set (use static HashSet for performance)
+            var elementsToRemove = clone.Elements().Where(e => !s_AllowedFormattingProperties.Contains(e.Name)).ToList();
+            foreach (var elem in elementsToRemove)
+                elem.Remove();
 
             if (s_NormalizedRPrLogCount < 5)
             {
@@ -7464,51 +7502,36 @@ namespace OpenXmlPowerTools
                 s_NormalizedRPrLogCount++;
             }
 
-            // Properties that need their value attributes preserved for comparison
-            var propsWithValues = new HashSet<XName> {
-                W.u,          // underline style (single, double, etc.)
-                W.color,      // color value (hex like "FF0000")
-                W.sz,         // size value (half-points like "24")
-                W.szCs,       // size value (complex script)
-                W.rFonts,     // font family (ascii, hAnsi, cs, eastAsia attributes)
-                W.highlight,  // highlight color (yellow, green, etc.)
-            };
-
-            clone
-                .DescendantsAndSelf()
-                .Attributes()
-                .Where(a =>
+            // Remove internal/tracking attributes (use static HashSet for performance)
+            var attrsToRemove = new List<XAttribute>();
+            foreach (var elem in clone.DescendantsAndSelf())
+            {
+                foreach (var attr in elem.Attributes())
                 {
                     // Always remove internal/tracking attributes
-                    if (a.Name.Namespace == PtOpenXml.pt ||
-                        a.Name == PtOpenXml.Unid ||
-                        a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
-                        return true;
-                    
-                    // For properties with meaningful values, keep specific attributes
-                    var parent = a.Parent;
-                    if (parent != null && propsWithValues.Contains(parent.Name))
+                    if (attr.Name.Namespace == PtOpenXml.pt ||
+                        attr.Name == PtOpenXml.Unid ||
+                        attr.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Keep these value-bearing attributes
-                        if (a.Name == W.val ||
-                            a.Name == W.ascii || a.Name == W.hAnsi || 
-                            a.Name == W.cs || a.Name == W.eastAsia)
-                            return false;  // DO NOT remove
+                        attrsToRemove.Add(attr);
                     }
-                    
-                    return false;  // Keep other attributes by default
-                })
-                .Remove();
+                    // For properties with meaningful values, keep specific attributes
+                    else if (s_PropsWithValues.Contains(elem.Name))
+                    {
+                        // Keep w:val and font-related attributes, remove others
+                        if (attr.Name != W.val &&
+                            attr.Name != W.ascii && attr.Name != W.hAnsi && 
+                            attr.Name != W.cs && attr.Name != W.eastAsia)
+                        {
+                            attrsToRemove.Add(attr);
+                        }
+                    }
+                }
+            }
+            foreach (var attr in attrsToRemove)
+                attr.Remove();
 
             return clone.HasElements || clone.Attributes().Any() ? clone : null;
-        }
-
-        private string ComputeFormattingSignature(WmlComparerSettings settings)
-        {
-            var normalized = ComputeNormalizedRPr(settings);
-            if (normalized == null)
-                return null;
-            return normalized.ToString(SaveOptions.DisableFormatting);
         }
 
         private string GetSha1HashStringForElement(XElement contentElement, WmlComparerSettings settings)
