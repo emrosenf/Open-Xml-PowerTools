@@ -5072,31 +5072,6 @@ namespace OpenXmlPowerTools
             return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
         }
 
-        private static XDocument AssembleCoalescedDocument(
-            IEnumerable<object> newBodyChildren)
-        {
-
-            var newChildElements = CoalesceRecurse(part, g, level + 1, settings);
-
-            object props1 = null;
-            if (props1XName != null)
-                props1 = ancestorBeingConstructed.Elements(props1XName);
-
-            object props2 = null;
-            if (props2XName != null)
-                props2 = ancestorBeingConstructed.Elements(props2XName);
-
-            object props3 = null;
-            if (props3XName != null)
-                props3 = ancestorBeingConstructed.Elements(props3XName);
-
-            var reconstructedElement = new XElement(ancestorBeingConstructed.Name,
-                ancestorBeingConstructed.Attributes(),
-                props1, props2, props3, newChildElements);
-
-            return reconstructedElement;
-        }
-
         private static List<CorrelatedSequence> DetectUnrelatedSources(ComparisonUnit[] cu1, ComparisonUnit[] cu2, WmlComparerSettings settings)
         {
             if (cu1.OfType<ComparisonUnitGroup>().Take(4).Count() > 3 &&
