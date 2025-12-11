@@ -7430,8 +7430,30 @@ namespace OpenXmlPowerTools
 
             var clone = new XElement(rPr);
 
-            // Keep only formatting we want to track (bold, italic, underline). Drop size, color, etc.
-            var allowed = new HashSet<XName> { W.b, W.bCs, W.i, W.iCs, W.u };
+            // Keep all formatting properties we want to track
+            var allowed = new HashSet<XName> { 
+                // Text style (existing)
+                W.b,           // bold
+                W.bCs,         // bold complex script
+                W.i,           // italic
+                W.iCs,         // italic complex script
+                W.u,           // underline (with style attribute)
+                
+                // Font properties (NEW)
+                W.sz,          // font size (half-points)
+                W.szCs,        // font size complex script
+                W.color,       // font color (hex value)
+                W.rFonts,      // font family (multiple attributes)
+                
+                // Highlighting and effects (NEW)
+                W.highlight,   // text highlight (color name)
+                W.strike,      // strikethrough
+                W.dstrike,     // double strikethrough
+                
+                // Capitalization (NEW)
+                W.caps,        // all caps
+                W.smallCaps,   // small caps
+            };
             clone.Elements()
                 .Where(e => !allowed.Contains(e.Name))
                 .Remove();
@@ -7442,13 +7464,40 @@ namespace OpenXmlPowerTools
                 s_NormalizedRPrLogCount++;
             }
 
+            // Properties that need their value attributes preserved for comparison
+            var propsWithValues = new HashSet<XName> {
+                W.u,          // underline style (single, double, etc.)
+                W.color,      // color value (hex like "FF0000")
+                W.sz,         // size value (half-points like "24")
+                W.szCs,       // size value (complex script)
+                W.rFonts,     // font family (ascii, hAnsi, cs, eastAsia attributes)
+                W.highlight,  // highlight color (yellow, green, etc.)
+            };
+
             clone
                 .DescendantsAndSelf()
                 .Attributes()
                 .Where(a =>
-                    a.Name.Namespace == PtOpenXml.pt ||
-                    a.Name == PtOpenXml.Unid ||
-                    a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Always remove internal/tracking attributes
+                    if (a.Name.Namespace == PtOpenXml.pt ||
+                        a.Name == PtOpenXml.Unid ||
+                        a.Name.LocalName.StartsWith("rsid", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    
+                    // For properties with meaningful values, keep specific attributes
+                    var parent = a.Parent;
+                    if (parent != null && propsWithValues.Contains(parent.Name))
+                    {
+                        // Keep these value-bearing attributes
+                        if (a.Name == W.val ||
+                            a.Name == W.ascii || a.Name == W.hAnsi || 
+                            a.Name == W.cs || a.Name == W.eastAsia)
+                            return false;  // DO NOT remove
+                    }
+                    
+                    return false;  // Keep other attributes by default
+                })
                 .Remove();
 
             return clone.HasElements || clone.Attributes().Any() ? clone : null;
