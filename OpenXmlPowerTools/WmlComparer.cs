@@ -5062,6 +5062,41 @@ namespace OpenXmlPowerTools
             return reconstructedElement;
         }
 
+        private static XElement ReconstructElement(OpenXmlPart part, IGrouping<string, ComparisonUnitAtom> g, XElement ancestorBeingConstructed, XName[] childPropElementNames, int level, WmlComparerSettings settings)
+        {
+            var newChildElements = CoalesceRecurse(part, g, level + 1, settings);
+            IEnumerable<XElement> childProps = null;
+            if (childPropElementNames != null)
+                childProps = ancestorBeingConstructed.Elements().Where(a => childPropElementNames.Contains(a.Name));
+
+            return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
+        }
+
+        private static XDocument AssembleCoalescedDocument(
+            IEnumerable<object> newBodyChildren)
+        {
+
+            var newChildElements = CoalesceRecurse(part, g, level + 1, settings);
+
+            object props1 = null;
+            if (props1XName != null)
+                props1 = ancestorBeingConstructed.Elements(props1XName);
+
+            object props2 = null;
+            if (props2XName != null)
+                props2 = ancestorBeingConstructed.Elements(props2XName);
+
+            object props3 = null;
+            if (props3XName != null)
+                props3 = ancestorBeingConstructed.Elements(props3XName);
+
+            var reconstructedElement = new XElement(ancestorBeingConstructed.Name,
+                ancestorBeingConstructed.Attributes(),
+                props1, props2, props3, newChildElements);
+
+            return reconstructedElement;
+        }
+
         private static List<CorrelatedSequence> DetectUnrelatedSources(ComparisonUnit[] cu1, ComparisonUnit[] cu2, WmlComparerSettings settings)
         {
             if (cu1.OfType<ComparisonUnitGroup>().Take(4).Count() > 3 &&
@@ -7002,7 +7037,7 @@ namespace OpenXmlPowerTools
         internal static XDocument Coalesce(ComparisonUnitAtom[] comparisonUnitAtomList)
         {
             XDocument newXDoc = new XDocument();
-            var newBodyChildren = CoalesceRecurse(comparisonUnitAtomList, 0, null);
+            var newBodyChildren = CoalesceRecurse(null, comparisonUnitAtomList, 0, null);
             newXDoc.Add(new XElement(W.document,
                 new XAttribute(XNamespace.Xmlns + "w", W.w.NamespaceName),
                 new XAttribute(XNamespace.Xmlns + "pt14", PtOpenXml.pt.NamespaceName),
@@ -7015,7 +7050,7 @@ namespace OpenXmlPowerTools
             return newXDoc;
         }
 
-        private static object CoalesceRecurse(IEnumerable<ComparisonUnitAtom> list, int level, WmlComparerSettings settings)
+        private static object CoalesceRecurse(OpenXmlPart part, IEnumerable<ComparisonUnitAtom> list, int level, WmlComparerSettings settings)
         {
             var grouped = list
                 .GroupBy(sr =>
@@ -7039,7 +7074,7 @@ namespace OpenXmlPowerTools
                         var groupedChildren = g.GroupAdjacent(gc => gc.ContentElement.Name.ToString());
                         var newChildElements = groupedChildren
                             .Where(gc => gc.First().ContentElement.Name != W.pPr)
-                            .Select(gc => CoalesceRecurse(gc, level + 1, settings));
+                            .Select(gc => CoalesceRecurse(part, gc, level + 1, settings));
                         var newParaProps = groupedChildren
                             .Where(gc => gc.First().ContentElement.Name == W.pPr)
                             .Select(gc => gc.Select(gce => gce.ContentElement));
@@ -7107,12 +7142,12 @@ namespace OpenXmlPowerTools
                     var re = RecursionElements.FirstOrDefault(z => z.ElementName == ancestorBeingConstructed.Name);
                     if (re != null)
                     {
-                        return ReconstructElement(g, ancestorBeingConstructed, re.ChildElementPropertyNames, level);
+                        return ReconstructElement(part, g, ancestorBeingConstructed, re.ChildElementPropertyNames, null, null, level, settings);
                     }
 
                     var newElement = new XElement(ancestorBeingConstructed.Name,
                         ancestorBeingConstructed.Attributes(),
-                        CoalesceRecurse(g, level + 1, settings));
+                        CoalesceRecurse(part, g, level + 1, settings));
 
                     return newElement;
                 })
