@@ -7002,7 +7002,7 @@ namespace OpenXmlPowerTools
         internal static XDocument Coalesce(ComparisonUnitAtom[] comparisonUnitAtomList)
         {
             XDocument newXDoc = new XDocument();
-            var newBodyChildren = CoalesceRecurse(mainDocumentPartAfter, comparisonUnitAtomList, 0, settings);
+            var newBodyChildren = CoalesceRecurse(comparisonUnitAtomList, 0);
             newXDoc.Add(new XElement(W.document,
                 new XAttribute(XNamespace.Xmlns + "w", W.w.NamespaceName),
                 new XAttribute(XNamespace.Xmlns + "pt14", PtOpenXml.pt.NamespaceName),
@@ -7015,6 +7015,10 @@ namespace OpenXmlPowerTools
             return newXDoc;
         }
 
+        private static object CoalesceRecurse(IEnumerable<ComparisonUnitAtom> list, int level)
+        {
+            return CoalesceRecurse(null, list, level, null);
+        }
 
                     sb.Append(Environment.NewLine);
                 }
@@ -7073,7 +7077,7 @@ namespace OpenXmlPowerTools
                             var runProps = ancestorBeingConstructed.Elements(W.rPr);
                             var newRun = new XElement(W.r, runProps, childNodes);
 
-                            if (settings.TrackFormattingChanges)
+                            if (settings != null && settings.TrackFormattingChanges)
                             {
                                 var formatChangeRPr = gc
                                     .Select(x => x.FormattingChangeRPrBefore)
