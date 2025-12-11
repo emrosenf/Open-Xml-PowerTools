@@ -7002,7 +7002,7 @@ namespace OpenXmlPowerTools
         internal static XDocument Coalesce(ComparisonUnitAtom[] comparisonUnitAtomList)
         {
             XDocument newXDoc = new XDocument();
-            var newBodyChildren = CoalesceRecurse(comparisonUnitAtomList, 0);
+            var newBodyChildren = CoalesceRecurse(mainDocumentPartAfter, comparisonUnitAtomList, 0, settings);
             newXDoc.Add(new XElement(W.document,
                 new XAttribute(XNamespace.Xmlns + "w", W.w.NamespaceName),
                 new XAttribute(XNamespace.Xmlns + "pt14", PtOpenXml.pt.NamespaceName),
@@ -7015,36 +7015,7 @@ namespace OpenXmlPowerTools
             return newXDoc;
         }
 
-        private static object CoalesceRecurse(IEnumerable<ComparisonUnitAtom> list, int level)
-        {
-            var grouped = list
-                .GroupBy(sr =>
-                {
-                    // per the algorithm, The following condition will never evaluate to true
-                    // if it evaluates to true, then the basic mechanism for breaking a hierarchical structure into flat and back is broken.
 
-                    // for a table, we initially get all ComparisonUnitAtoms for the entire table, then process.  When processing a row,
-                    // no ComparisonUnitAtoms will have ancestors outside the row.  Ditto for cells, and on down the tree.
-                    if (level >= sr.AncestorElements.Length)
-                        throw new OpenXmlPowerToolsException("Internal error 4 - why do we have ComparisonUnitAtom objects with fewer ancestors than its siblings?");
-
-                    var unid = (string)sr.AncestorElements[level].Attribute(PtOpenXml.Unid);
-                    return unid;
-                });
-
-            if (s_False)
-            {
-                var sb = new StringBuilder();
-                foreach (var group in grouped)
-                {
-                    sb.AppendFormat("Group Key: {0}", group.Key);
-                    sb.Append(Environment.NewLine);
-                    foreach (var groupChildItem in group)
-                    {
-                        sb.Append("  ");
-                        sb.Append(groupChildItem.ToString(0));
-                        sb.Append(Environment.NewLine);
-                    }
                     sb.Append(Environment.NewLine);
                 }
                 var sbs = sb.ToString();
