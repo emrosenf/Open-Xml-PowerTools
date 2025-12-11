@@ -7067,7 +7067,7 @@ namespace OpenXmlPowerTools
                             .Where(gc => gc.First().ContentElement.Name != W.pPr)
                             .Select(gc =>
                             {
-                                return CoalesceRecurse(gc, level + 1);
+                                return CoalesceRecurse(part, gc, level + 1, settings);
                             });
                         var newParaProps = groupedChildren
                             .Where(gc => gc.First().ContentElement.Name == W.pPr)
@@ -7526,7 +7526,7 @@ namespace OpenXmlPowerTools
             var clone = new XElement(rPr);
 
             // Keep only formatting we want to track (bold, italic, underline). Drop size, color, etc.
-            var allowed = new HashSet<XName> { W.b, W.bCs, W.i, W.iCs, W.u, W.uCs };
+            var allowed = new HashSet<XName> { W.b, W.bCs, W.i, W.iCs, W.u };
             clone.Elements()
                 .Where(e => !allowed.Contains(e.Name))
                 .Remove();
