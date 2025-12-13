@@ -4997,9 +4997,15 @@ namespace OpenXmlPowerTools
                     if (ancestorBeingConstructed.Name == W.sdt)
                         return ReconstructElement(part, g, ancestorBeingConstructed, W.sdtPr, W.sdtEndPr, null, level, settings);
                     if (ancestorBeingConstructed.Name == W.pict)
-                        return ReconstructElement(part, g, ancestorBeingConstructed, VML.shapetype, null, null, level, settings);
+                        return ReconstructVmlElement(part, g, ancestorBeingConstructed, level, settings);
                     if (ancestorBeingConstructed.Name == VML.shape)
-                        return ReconstructElement(part, g, ancestorBeingConstructed, W10.wrap, null, null, level, settings);
+                        return ReconstructVmlElement(part, g, ancestorBeingConstructed, level, settings);
+                    if (ancestorBeingConstructed.Name == VML.group)
+                        return ReconstructVmlElement(part, g, ancestorBeingConstructed, level, settings);
+                    if (ancestorBeingConstructed.Name == VML.rect)
+                        return ReconstructVmlElement(part, g, ancestorBeingConstructed, level, settings);
+                    if (ancestorBeingConstructed.Name == VML.textbox)
+                        return ReconstructVmlElement(part, g, ancestorBeingConstructed, level, settings);
                     if (ancestorBeingConstructed.Name == W._object)
                         return ReconstructElement(part, g, ancestorBeingConstructed, VML.shapetype, VML.shape, O.OLEObject, level, settings);
                     if (ancestorBeingConstructed.Name == W.ruby)
@@ -5134,6 +5140,23 @@ namespace OpenXmlPowerTools
             IEnumerable<XElement> childProps = null;
             if (childPropElementNames != null)
                 childProps = ancestorBeingConstructed.Elements().Where(a => childPropElementNames.Contains(a.Name));
+
+            return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
+        }
+
+        // VML elements that contain recursive content (shapes, textboxes, etc.)
+        private static readonly XName[] VmlRecursiveElements = new[]
+        {
+            VML.shape, VML.rect, VML.group, VML.oval, VML.line, VML.arc, VML.curve, VML.roundrect, VML.polyline,
+            VML.textbox, W.txbxContent
+        };
+
+        // Reconstruct VML element, preserving all non-recursive property children
+        private static XElement ReconstructVmlElement(OpenXmlPart part, IGrouping<string, ComparisonUnitAtom> g, XElement ancestorBeingConstructed, int level, WmlComparerSettings settings)
+        {
+            var newChildElements = CoalesceRecurse(part, g, level + 1, settings);
+            // Preserve all children that are NOT recursive content containers
+            var childProps = ancestorBeingConstructed.Elements().Where(e => !VmlRecursiveElements.Contains(e.Name));
 
             return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
         }
