@@ -1469,6 +1469,287 @@ namespace OxPt
         }
 
         #endregion
+
+        #region Integration Test: Full Comparison Output for Manual Review
+
+        /// <summary>
+        /// This test creates a comprehensive comparison scenario with all types of changes,
+        /// and saves the original, modified, and comparison result to disk for manual review.
+        ///
+        /// Files are saved to: TestOutput/SmlComparer/
+        /// - Original.xlsx: The original workbook
+        /// - Modified.xlsx: The modified workbook with various changes
+        /// - Comparison.xlsx: The marked-up comparison result
+        /// - ComparisonResult.json: JSON summary of all detected changes
+        /// </summary>
+        [Fact]
+        public void SC041_FullComparison_SaveFilesForManualReview()
+        {
+            // Setup output directory
+            var outputDir = Path.Combine(Path.GetTempPath(), "SmlComparer_TestOutput");
+            if (Directory.Exists(outputDir))
+                Directory.Delete(outputDir, true);
+            Directory.CreateDirectory(outputDir);
+
+            // === CREATE ORIGINAL WORKBOOK ===
+            // Has 3 sheets with various data to demonstrate all change types
+            var originalData = new Dictionary<string, Dictionary<string, object>>
+            {
+                // Sheet 1: "Sales Data" - Will have rows inserted/deleted and values changed
+                ["Sales Data"] = new Dictionary<string, object>
+                {
+                    // Header row
+                    ["A1"] = "Product",
+                    ["B1"] = "Q1 Sales",
+                    ["C1"] = "Q2 Sales",
+                    ["D1"] = "Total",
+
+                    // Data rows
+                    ["A2"] = "Widget A",
+                    ["B2"] = 1000,
+                    ["C2"] = 1200,
+                    ["D2"] = new CellWithFormula { Formula = "B2+C2", Value = "2200" },
+
+                    ["A3"] = "Widget B",  // This row will be deleted
+                    ["B3"] = 800,
+                    ["C3"] = 900,
+                    ["D3"] = new CellWithFormula { Formula = "B3+C3", Value = "1700" },
+
+                    ["A4"] = "Widget C",
+                    ["B4"] = 1500,
+                    ["C4"] = 1600,
+                    ["D4"] = new CellWithFormula { Formula = "B4+C4", Value = "3100" },
+
+                    ["A5"] = "Widget D",
+                    ["B5"] = 2000,
+                    ["C5"] = 2100,  // This value will change
+                    ["D5"] = new CellWithFormula { Formula = "B5+C5", Value = "4100" },
+
+                    // Summary row
+                    ["A7"] = "Grand Total",
+                    ["D7"] = new CellWithFormula { Formula = "SUM(D2:D5)", Value = "11100" }
+                },
+
+                // Sheet 2: "Inventory" - Will be renamed to "Stock Levels"
+                ["Inventory"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Item",
+                    ["B1"] = "Quantity",
+                    ["C1"] = "Location",
+
+                    ["A2"] = "Part X-100",
+                    ["B2"] = 500,
+                    ["C2"] = "Warehouse A",
+
+                    ["A3"] = "Part X-200",
+                    ["B3"] = 300,
+                    ["C3"] = "Warehouse B",
+
+                    ["A4"] = "Part X-300",
+                    ["B4"] = 750,
+                    ["C4"] = "Warehouse A"
+                },
+
+                // Sheet 3: "Employees" - Will be deleted entirely
+                ["Employees"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Name",
+                    ["B1"] = "Department",
+
+                    ["A2"] = "John Smith",
+                    ["B2"] = "Sales",
+
+                    ["A3"] = "Jane Doe",
+                    ["B3"] = "Engineering"
+                }
+            };
+
+            // === CREATE MODIFIED WORKBOOK ===
+            var modifiedData = new Dictionary<string, Dictionary<string, object>>
+            {
+                // Sheet 1: "Sales Data" - Modified version
+                ["Sales Data"] = new Dictionary<string, object>
+                {
+                    // Header row (unchanged)
+                    ["A1"] = "Product",
+                    ["B1"] = "Q1 Sales",
+                    ["C1"] = "Q2 Sales",
+                    ["D1"] = "Total",
+
+                    // Data rows
+                    ["A2"] = "Widget A",  // Unchanged
+                    ["B2"] = 1000,
+                    ["C2"] = 1200,
+                    ["D2"] = new CellWithFormula { Formula = "B2+C2", Value = "2200" },
+
+                    // NEW ROW INSERTED: Widget A-Plus
+                    ["A3"] = "Widget A-Plus",
+                    ["B3"] = 1100,
+                    ["C3"] = 1300,
+                    ["D3"] = new CellWithFormula { Formula = "B3+C3", Value = "2400" },
+
+                    // Widget B DELETED - Widget C moves up
+                    ["A4"] = "Widget C",
+                    ["B4"] = 1500,
+                    ["C4"] = 1600,
+                    ["D4"] = new CellWithFormula { Formula = "B4+C4", Value = "3100" },
+
+                    // Widget D with VALUE CHANGED (C5: 2100 -> 2500)
+                    ["A5"] = "Widget D",
+                    ["B5"] = 2000,
+                    ["C5"] = 2500,  // CHANGED from 2100
+                    ["D5"] = new CellWithFormula { Formula = "B5+C5", Value = "4500" },
+
+                    // NEW ROW INSERTED: Widget E
+                    ["A6"] = "Widget E",
+                    ["B6"] = 3000,
+                    ["C6"] = 3200,
+                    ["D6"] = new CellWithFormula { Formula = "B6+C6", Value = "6200" },
+
+                    // Summary row (moved down, formula changed)
+                    ["A8"] = "Grand Total",
+                    ["D8"] = new CellWithFormula { Formula = "SUM(D2:D6)", Value = "18400" }  // Formula changed
+                },
+
+                // Sheet 2: RENAMED from "Inventory" to "Stock Levels"
+                ["Stock Levels"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Item",
+                    ["B1"] = "Quantity",
+                    ["C1"] = "Location",
+
+                    ["A2"] = "Part X-100",
+                    ["B2"] = 450,  // VALUE CHANGED from 500
+                    ["C2"] = "Warehouse A",
+
+                    ["A3"] = "Part X-200",
+                    ["B3"] = 300,  // Unchanged
+                    ["C3"] = "Warehouse B",
+
+                    ["A4"] = "Part X-300",
+                    ["B4"] = 750,  // Unchanged
+                    ["C4"] = "Warehouse A",
+
+                    // NEW ROW: Part X-400
+                    ["A5"] = "Part X-400",
+                    ["B5"] = 200,
+                    ["C5"] = "Warehouse C"
+                },
+
+                // Sheet 3: "Employees" DELETED
+
+                // Sheet 4: NEW SHEET "Contractors"
+                ["Contractors"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Name",
+                    ["B1"] = "Company",
+                    ["C1"] = "Rate",
+
+                    ["A2"] = "Bob Builder",
+                    ["B2"] = "BuildCo",
+                    ["C2"] = 75.00,
+
+                    ["A3"] = "Alice Coder",
+                    ["B3"] = "DevShop",
+                    ["C3"] = 125.00
+                }
+            };
+
+            // Create the workbooks
+            var originalDoc = CreateTestWorkbook(originalData);
+            var modifiedDoc = CreateTestWorkbook(modifiedData);
+
+            // Configure comparison settings
+            var settings = new SmlComparerSettings
+            {
+                EnableRowAlignment = true,
+                EnableSheetRenameDetection = true,
+                SheetRenameSimilarityThreshold = 0.6,
+                CompareValues = true,
+                CompareFormulas = true,
+                CompareFormatting = true,
+                AuthorForChanges = "SmlComparer Test"
+            };
+
+            // Run comparison
+            var result = SmlComparer.Compare(originalDoc, modifiedDoc, settings);
+            var markedDoc = SmlComparer.ProduceMarkedWorkbook(originalDoc, modifiedDoc, settings);
+
+            // Save files
+            var originalPath = Path.Combine(outputDir, "Original.xlsx");
+            var modifiedPath = Path.Combine(outputDir, "Modified.xlsx");
+            var comparisonPath = Path.Combine(outputDir, "Comparison.xlsx");
+            var jsonPath = Path.Combine(outputDir, "ComparisonResult.json");
+
+            File.WriteAllBytes(originalPath, originalDoc.DocumentByteArray);
+            File.WriteAllBytes(modifiedPath, modifiedDoc.DocumentByteArray);
+            File.WriteAllBytes(comparisonPath, markedDoc.DocumentByteArray);
+            File.WriteAllText(jsonPath, result.ToJson());
+
+            // Also write a human-readable summary
+            var summaryPath = Path.Combine(outputDir, "Summary.txt");
+            var summary = new StringBuilder();
+            summary.AppendLine("=== SmlComparer Test Results ===");
+            summary.AppendLine();
+            summary.AppendLine($"Output Directory: {outputDir}");
+            summary.AppendLine();
+            summary.AppendLine("=== Files Generated ===");
+            summary.AppendLine($"  - Original.xlsx: The original workbook");
+            summary.AppendLine($"  - Modified.xlsx: The modified workbook");
+            summary.AppendLine($"  - Comparison.xlsx: Marked-up comparison (open in Excel to see highlights)");
+            summary.AppendLine($"  - ComparisonResult.json: JSON export of all changes");
+            summary.AppendLine();
+            summary.AppendLine("=== Summary Statistics ===");
+            summary.AppendLine($"  Total Changes: {result.TotalChanges}");
+            summary.AppendLine($"  Value Changes: {result.ValueChanges}");
+            summary.AppendLine($"  Formula Changes: {result.FormulaChanges}");
+            summary.AppendLine($"  Format Changes: {result.FormatChanges}");
+            summary.AppendLine($"  Cells Added: {result.CellsAdded}");
+            summary.AppendLine($"  Cells Deleted: {result.CellsDeleted}");
+            summary.AppendLine($"  Sheets Added: {result.SheetsAdded}");
+            summary.AppendLine($"  Sheets Deleted: {result.SheetsDeleted}");
+            summary.AppendLine($"  Sheets Renamed: {result.SheetsRenamed}");
+            summary.AppendLine($"  Rows Inserted: {result.RowsInserted}");
+            summary.AppendLine($"  Rows Deleted: {result.RowsDeleted}");
+            summary.AppendLine();
+            summary.AppendLine("=== Expected Changes ===");
+            summary.AppendLine("  1. Sheet 'Inventory' renamed to 'Stock Levels'");
+            summary.AppendLine("  2. Sheet 'Employees' deleted");
+            summary.AppendLine("  3. Sheet 'Contractors' added");
+            summary.AppendLine("  4. Row inserted: 'Widget A-Plus' (row 3 in Sales Data)");
+            summary.AppendLine("  5. Row deleted: 'Widget B' (was row 3 in original)");
+            summary.AppendLine("  6. Row inserted: 'Widget E' (row 6 in Sales Data)");
+            summary.AppendLine("  7. Value changed: Sales Data!C5 (2100 -> 2500)");
+            summary.AppendLine("  8. Value changed: Stock Levels!B2 (500 -> 450)");
+            summary.AppendLine("  9. Row inserted: 'Part X-400' in Stock Levels");
+            summary.AppendLine("  10. Formula changed: Grand Total moved and formula updated");
+            summary.AppendLine();
+            summary.AppendLine("=== Detailed Changes ===");
+            foreach (var change in result.Changes)
+            {
+                summary.AppendLine($"  - {change.GetDescription()}");
+            }
+
+            File.WriteAllText(summaryPath, summary.ToString());
+
+            // Output path to console for easy access
+            Console.WriteLine($"Test output saved to: {outputDir}");
+            Console.WriteLine(summary.ToString());
+
+            // Assertions to verify the test ran correctly
+            Assert.True(result.TotalChanges > 0, "Should detect changes");
+            Assert.True(File.Exists(originalPath), "Original.xlsx should exist");
+            Assert.True(File.Exists(modifiedPath), "Modified.xlsx should exist");
+            Assert.True(File.Exists(comparisonPath), "Comparison.xlsx should exist");
+            Assert.True(File.Exists(jsonPath), "ComparisonResult.json should exist");
+
+            // Verify specific expected changes
+            Assert.True(result.SheetsRenamed >= 1, "Should detect sheet rename (Inventory -> Stock Levels)");
+            Assert.True(result.SheetsDeleted >= 1, "Should detect sheet deletion (Employees)");
+            Assert.True(result.SheetsAdded >= 1, "Should detect sheet addition (Contractors)");
+        }
+
+        #endregion
     }
 }
 
