@@ -560,20 +560,22 @@ namespace OpenXmlPowerTools
             return xmlDoc;
         }
 
+        /// <summary>
+        /// Concatenates all strings in the sequence.
+        /// Uses string.Concat which is optimized in modern .NET for better performance.
+        /// </summary>
         public static string StringConcatenate(this IEnumerable<string> source)
         {
-            return source.Aggregate(
-                new StringBuilder(),
-                (sb, s) => sb.Append(s),
-                sb => sb.ToString());
+            return string.Concat(source);
         }
 
+        /// <summary>
+        /// Projects each element to a string and concatenates all results.
+        /// Uses string.Concat which is optimized in modern .NET for better performance.
+        /// </summary>
         public static string StringConcatenate<T>(this IEnumerable<T> source, Func<T, string> projectionFunc)
         {
-            return source.Aggregate(
-                new StringBuilder(),
-                (sb, i) => sb.Append(projectionFunc(i)),
-                sb => sb.ToString());
+            return string.Concat(source.Select(projectionFunc));
         }
 
         public static IEnumerable<TResult> PtZip<TFirst, TSecond, TResult>(

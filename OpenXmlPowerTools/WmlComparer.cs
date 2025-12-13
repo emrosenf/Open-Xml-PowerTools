@@ -6,6 +6,8 @@
 // TODO Take care of this after the conference
 
 using System;
+using System.Buffers;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
@@ -51,7 +53,33 @@ namespace OpenXmlPowerTools
 {
     public class WmlComparerSettings
     {
-        public char[] WordSeparators;
+        private char[] _wordSeparators;
+        private SearchValues<char> _wordSeparatorsSearchValues;
+
+        /// <summary>
+        /// Characters that separate words for comparison purposes.
+        /// Setting this property also updates the optimized SearchValues for O(1) character lookup.
+        /// </summary>
+        public char[] WordSeparators
+        {
+            get => _wordSeparators;
+            set
+            {
+                _wordSeparators = value;
+                _wordSeparatorsSearchValues = value != null ? SearchValues.Create(value) : null;
+            }
+        }
+
+        /// <summary>
+        /// Optimized SearchValues for fast character lookup using SIMD instructions.
+        /// </summary>
+        public SearchValues<char> WordSeparatorsSearchValues => _wordSeparatorsSearchValues;
+
+        /// <summary>
+        /// Fast O(1) check if a character is a word separator using SIMD-optimized SearchValues.
+        /// </summary>
+        public bool IsWordSeparator(char c) => _wordSeparatorsSearchValues?.Contains(c) ?? false;
+
         public string AuthorForRevisions = "Open-Xml-PowerTools";
         public string DateTimeForRevisions = DateTime.Now.ToString("o");
         public double DetailThreshold = 0.15;
@@ -3385,11 +3413,12 @@ namespace OpenXmlPowerTools
             public string PartContentType;
         }
 
-        private static XName[] RevElementsWithNoText = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> RevElementsWithNoText = new XName[] {
             M.oMath,
             M.oMathPara,
             W.drawing,
-        };
+        }.ToFrozenSet();
 
         public static List<WmlComparerRevision> GetRevisions(WmlDocument source, WmlComparerSettings settings)
         {
@@ -3699,14 +3728,15 @@ namespace OpenXmlPowerTools
             return null;
         }
 
-        static XName[] AttributesToTrimWhenCloning = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> AttributesToTrimWhenCloning = new XName[] {
             WP14.anchorId,
             WP14.editId,
             "ObjectID",
             "ShapeID",
             "id",
             "type",
-        };
+        }.ToFrozenSet();
 
         private static XElement CloneBlockLevelContentForHashing(OpenXmlPart mainDocumentPart, XNode node, bool includeRelatedParts, WmlComparerSettings settings)
         {
@@ -5676,8 +5706,8 @@ namespace OpenXmlPowerTools
                                 {
                                     var charValue = dca.ContentElement.Value;
                                     var isWordSplit = ((int)charValue[0] >= 0x4e00 && (int)charValue[0] <= 0x9fff);
-                                    if (! isWordSplit)
-                                        isWordSplit = settings.WordSeparators.Contains(charValue[0]);
+                                    if (!isWordSplit)
+                                        isWordSplit = settings.IsWordSeparator(charValue[0]);
                                     if (isWordSplit)
                                         return false;
                                     return true;
@@ -6616,7 +6646,8 @@ namespace OpenXmlPowerTools
             return null;
         }
 
-        private static XName[] WordBreakElements = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> WordBreakElements = new XName[] {
             W.pPr,
             W.tab,
             W.br,
@@ -6641,7 +6672,7 @@ namespace OpenXmlPowerTools
             M.oMath,
             W.footnoteReference,
             W.endnoteReference,
-        };
+        }.ToFrozenSet();
 
         private class Atgbw
         {
@@ -6695,7 +6726,7 @@ namespace OpenXmlPowerTools
                                 nextIndex++;
                             }
                         }
-                        else if (((int)ch >= 0x4e00 && (int)ch <= 0x9fff) || settings.WordSeparators.Contains(ch))
+                        else if (((int)ch >= 0x4e00 && (int)ch <= 0x9fff) || settings.IsWordSeparator(ch))
                         {
                             nextIndex++;
                             key = nextIndex;
@@ -6840,7 +6871,8 @@ namespace OpenXmlPowerTools
             return retList;
         }
 
-        private static XName[] AllowableRunChildren = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> AllowableRunChildren = new XName[] {
             W.br,
             W.drawing,
             W.cr,
@@ -6863,9 +6895,10 @@ namespace OpenXmlPowerTools
             M.oMath,
             W.fldChar,
             W.instrText,
-        };
+        }.ToFrozenSet();
 
-        private static XName[] ElementsToThrowAway = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> ElementsToThrowAway = new XName[] {
             W.bookmarkStart,
             W.bookmarkEnd,
             W.commentRangeStart,
@@ -6880,9 +6913,10 @@ namespace OpenXmlPowerTools
             W.endnoteRef,
             W.separator,
             W.continuationSeparator,
-        };
+        }.ToFrozenSet();
 
-        private static XName[] ElementsToHaveSha1Hash = new XName[]
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> ElementsToHaveSha1Hash = new XName[]
         {
             W.p,
             W.tbl,
@@ -6891,9 +6925,10 @@ namespace OpenXmlPowerTools
             W.drawing,
             W.pict,
             W.txbxContent,
-        };
+        }.ToFrozenSet();
 
-        private static XName[] InvalidElements = new XName[]
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> InvalidElements = new XName[]
         {
             W.altChunk,
             W.customXml,
@@ -6912,7 +6947,7 @@ namespace OpenXmlPowerTools
             W.moveToRangeStart,
             W.moveToRangeEnd,
             W.subDoc,
-        };
+        }.ToFrozenSet();
 
         private class RecursionInfo
         {
@@ -7098,13 +7133,14 @@ namespace OpenXmlPowerTools
             return comparisonUnitAtomList;
         }
 
-        private static XName[] ComparisonGroupingElements = new[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        private static readonly FrozenSet<XName> ComparisonGroupingElements = new XName[] {
             W.p,
             W.tbl,
             W.tr,
             W.tc,
             W.txbxContent,
-        };
+        }.ToFrozenSet();
 
         private static void CreateComparisonUnitAtomListRecurse(OpenXmlPart part, XElement element, List<ComparisonUnitAtom> comparisonUnitAtomList, WmlComparerSettings settings)
         {
@@ -7296,7 +7332,8 @@ namespace OpenXmlPowerTools
             SHA1Hash = PtUtils.SHA1HashStringForUTF8String(sha1String);
         }
 
-        public static XName[] s_ElementsWithRelationshipIds = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        public static readonly FrozenSet<XName> s_ElementsWithRelationshipIds = new XName[] {
             A.blip,
             A.hlinkClick,
             A.relIds,
@@ -7327,9 +7364,10 @@ namespace OpenXmlPowerTools
             W.src,
             W.subDoc,
             WNE.toolbarData,
-        };
+        }.ToFrozenSet();
 
-        public static XName[] s_RelationshipAttributeNames = new XName[] {
+        // FrozenSet for O(1) lookup instead of O(n) array search
+        public static readonly FrozenSet<XName> s_RelationshipAttributeNames = new XName[] {
             R.embed,
             R.link,
             R.id,
@@ -7339,7 +7377,7 @@ namespace OpenXmlPowerTools
             R.qs,
             R.href,
             R.pict,
-        };
+        }.ToFrozenSet();
 
         public override string ToString(int indent)
         {
@@ -7379,39 +7417,39 @@ namespace OpenXmlPowerTools
         }
         private static int s_NormalizedRPrLogCount = 0;
 
-        // Static HashSets for performance - avoid recreation per atom
-        private static readonly HashSet<XName> s_AllowedFormattingProperties = new HashSet<XName> { 
+        // FrozenSets for O(1) lookup performance - optimized at creation time for reads
+        private static readonly FrozenSet<XName> s_AllowedFormattingProperties = new HashSet<XName> {
             // Text style
             W.b,           // bold
             W.bCs,         // bold complex script
             W.i,           // italic
             W.iCs,         // italic complex script
             W.u,           // underline (with style attribute)
-            
+
             // Font properties
             W.sz,          // font size (half-points)
             W.szCs,        // font size complex script
             W.color,       // font color (hex value)
             W.rFonts,      // font family (multiple attributes)
-            
+
             // Highlighting and effects
             W.highlight,   // text highlight (color name)
             W.strike,      // strikethrough
             W.dstrike,     // double strikethrough
-            
+
             // Capitalization
             W.caps,        // all caps
             W.smallCaps,   // small caps
-        };
+        }.ToFrozenSet();
 
-        private static readonly HashSet<XName> s_PropsWithValues = new HashSet<XName> {
+        private static readonly FrozenSet<XName> s_PropsWithValues = new HashSet<XName> {
             W.u,          // underline style (single, double, etc.)
             W.color,      // color value (hex like "FF0000")
             W.sz,         // size value (half-points like "24")
             W.szCs,       // size value (complex script)
             W.rFonts,     // font family (ascii, hAnsi, cs, eastAsia attributes)
             W.highlight,  // highlight color (yellow, green, etc.)
-        };
+        }.ToFrozenSet();
 
         public ComparisonUnitAtom(XElement contentElement, XElement[] ancestorElements, OpenXmlPart part, WmlComparerSettings settings)
         {
