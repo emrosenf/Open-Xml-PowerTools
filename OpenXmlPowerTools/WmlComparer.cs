@@ -989,6 +989,7 @@ namespace OpenXmlPowerTools
                     FixUpDocPrIds(consolidatedWDoc);
                     FixUpShapeIds(consolidatedWDoc);
                     FixUpGroupIds(consolidatedWDoc);
+                    FixUpRectIds(consolidatedWDoc);
                     FixUpShapeTypeIds(consolidatedWDoc);
                     RemoveCustomMarkFollows(consolidatedWDoc);
                     WmlComparer.IgnorePt14Namespace(consolidatedMainDocPartXDoc.Root);
@@ -1766,6 +1767,8 @@ namespace OpenXmlPowerTools
                     FixUpRevMarkIds(wDocWithRevisions);
                     FixUpDocPrIds(wDocWithRevisions);
                     FixUpShapeIds(wDocWithRevisions);
+                    FixUpGroupIds(wDocWithRevisions);
+                    FixUpRectIds(wDocWithRevisions);
                     FixUpShapeTypeIds(wDocWithRevisions);
                     AddFootnotesEndnotesStyles(wDocWithRevisions);
                     CopyMissingStylesFromOneDocToAnother(wDoc2, wDocWithRevisions);
@@ -4590,6 +4593,27 @@ namespace OpenXmlPowerTools
                 .SelectMany(m => m);
             var nextId = 1;
             foreach (var item in groupIdsToChange)
+            {
+                var thisId = nextId++;
+
+                var idAtt = item.Attribute("id");
+                if (idAtt != null)
+                    idAtt.Value = thisId.ToString();
+            }
+            foreach (var cp in wDoc.ContentParts())
+                cp.PutXDocument();
+        }
+
+        private static void FixUpRectIds(WordprocessingDocument wDoc)
+        {
+            var elementToFind = VML.rect;
+            var rectIdsToChange = wDoc
+                .ContentParts()
+                .Select(cp => cp.GetXDocument())
+                .Select(xd => xd.Descendants().Where(d => d.Name == elementToFind))
+                .SelectMany(m => m);
+            var nextId = 1;
+            foreach (var item in rectIdsToChange)
             {
                 var thisId = nextId++;
 
