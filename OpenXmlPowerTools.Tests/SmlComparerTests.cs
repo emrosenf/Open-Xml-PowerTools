@@ -840,6 +840,635 @@ namespace OxPt
         }
 
         #endregion
+
+        #region Phase 2: Row Alignment Tests
+
+        [Fact]
+        public void SC021_RowInserted_DetectedCorrectly()
+        {
+            // Arrange - Original has 3 rows, new has 4 rows (row inserted in middle)
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["A2"] = "Row2Data",
+                    ["A3"] = "Row3Data"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["A2"] = "InsertedRow",  // New row inserted
+                    ["A3"] = "Row2Data",     // Original row 2 moved to row 3
+                    ["A4"] = "Row3Data"      // Original row 3 moved to row 4
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - With row alignment, should detect the insertion
+            Assert.True(result.RowsInserted >= 1);
+        }
+
+        [Fact]
+        public void SC022_RowDeleted_DetectedCorrectly()
+        {
+            // Arrange - Original has 4 rows, new has 3 rows (middle row deleted)
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["A2"] = "Row2ToDelete",
+                    ["A3"] = "Row3Data",
+                    ["A4"] = "Row4Data"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["A2"] = "Row3Data",  // Original row 3 moved up
+                    ["A3"] = "Row4Data"   // Original row 4 moved up
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - With row alignment, should detect the deletion
+            Assert.True(result.RowsDeleted >= 1);
+        }
+
+        [Fact]
+        public void SC023_RowAlignment_DisabledFallsBackToCellByCell()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["A2"] = "OriginalRow2"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["A2"] = "NewRow",
+                    ["A3"] = "OriginalRow2"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+
+            // Act with row alignment disabled
+            var settings = new SmlComparerSettings { EnableRowAlignment = false };
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Without alignment, it just sees cell changes
+            Assert.Equal(0, result.RowsInserted);
+            Assert.True(result.ValueChanges > 0 || result.CellsAdded > 0);
+        }
+
+        [Fact]
+        public void SC024_MultipleRowChanges_DetectedCorrectly()
+        {
+            // Arrange - Multiple rows inserted and deleted
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Row1",
+                    ["A2"] = "Row2ToDelete",
+                    ["A3"] = "Row3",
+                    ["A4"] = "Row4ToDelete",
+                    ["A5"] = "Row5"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Row1",
+                    ["A2"] = "InsertedRowA",
+                    ["A3"] = "Row3",
+                    ["A4"] = "Row5",
+                    ["A5"] = "InsertedRowB"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Should detect both insertions and deletions
+            Assert.True(result.TotalChanges > 0);
+        }
+
+        #endregion
+
+        #region Phase 2: Sheet Rename Detection Tests
+
+        [Fact]
+        public void SC025_SheetRenamed_DetectedCorrectly()
+        {
+            // Arrange - Sheet with same content but different name
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["OldSheetName"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Data1",
+                    ["A2"] = "Data2",
+                    ["A3"] = "Data3"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["NewSheetName"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Data1",
+                    ["A2"] = "Data2",
+                    ["A3"] = "Data3"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableSheetRenameDetection = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Equal(1, result.SheetsRenamed);
+            var renameChange = result.Changes.First(c => c.ChangeType == SmlChangeType.SheetRenamed);
+            Assert.Equal("OldSheetName", renameChange.OldSheetName);
+            Assert.Equal("NewSheetName", renameChange.SheetName);
+        }
+
+        [Fact]
+        public void SC026_SheetRenameDetection_Disabled()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["OldName"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Data"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["NewName"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Data"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableSheetRenameDetection = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Without rename detection, should see as add + delete
+            Assert.Equal(0, result.SheetsRenamed);
+            Assert.Equal(1, result.SheetsAdded);
+            Assert.Equal(1, result.SheetsDeleted);
+        }
+
+        [Fact]
+        public void SC027_SheetRenamed_BelowSimilarityThreshold_TreatedAsAddDelete()
+        {
+            // Arrange - Sheet with different content (different sheet)
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["OldSheet"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "OldData1",
+                    ["A2"] = "OldData2",
+                    ["A3"] = "OldData3"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["NewSheet"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "CompletelyDifferent1",
+                    ["A2"] = "CompletelyDifferent2",
+                    ["A3"] = "CompletelyDifferent3"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings
+            {
+                EnableSheetRenameDetection = true,
+                SheetRenameSimilarityThreshold = 0.7
+            };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Different content, so should be add + delete, not rename
+            Assert.Equal(0, result.SheetsRenamed);
+            Assert.Equal(1, result.SheetsAdded);
+            Assert.Equal(1, result.SheetsDeleted);
+        }
+
+        [Fact]
+        public void SC028_SheetRenamed_PartialContentMatch()
+        {
+            // Arrange - Sheet with partially matching content
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["OldSheet"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Same1",
+                    ["A2"] = "Same2",
+                    ["A3"] = "Same3",
+                    ["A4"] = "Same4",
+                    ["A5"] = "Old5"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["NewSheet"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Same1",
+                    ["A2"] = "Same2",
+                    ["A3"] = "Same3",
+                    ["A4"] = "Same4",
+                    ["A5"] = "New5"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings
+            {
+                EnableSheetRenameDetection = true,
+                SheetRenameSimilarityThreshold = 0.7  // 80% similar should be > 70% threshold
+            };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Should detect as rename since content is mostly the same
+            Assert.Equal(1, result.SheetsRenamed);
+        }
+
+        #endregion
+
+        #region Phase 2: Settings Tests
+
+        [Fact]
+        public void SC029_RowSignatureSampleSize_Setting()
+        {
+            // Verify the setting can be configured
+            var settings = new SmlComparerSettings
+            {
+                RowSignatureSampleSize = 5
+            };
+            Assert.Equal(5, settings.RowSignatureSampleSize);
+
+            settings.RowSignatureSampleSize = 20;
+            Assert.Equal(20, settings.RowSignatureSampleSize);
+        }
+
+        [Fact]
+        public void SC030_Phase2Statistics_InJson()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Row1",
+                    ["A2"] = "Row2"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Row1",
+                    ["A2"] = "NewRow",
+                    ["A3"] = "Row2"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+            var json = result.ToJson();
+
+            // Assert - JSON should include Phase 2 statistics
+            Assert.Contains("SheetsRenamed", json);
+            Assert.Contains("RowsInserted", json);
+            Assert.Contains("RowsDeleted", json);
+            Assert.Contains("ColumnsInserted", json);
+            Assert.Contains("ColumnsDeleted", json);
+        }
+
+        #endregion
+
+        #region Phase 2: Change Description Tests
+
+        [Fact]
+        public void SC031_RowInserted_GetDescription()
+        {
+            var change = new SmlChange
+            {
+                ChangeType = SmlChangeType.RowInserted,
+                SheetName = "Sheet1",
+                RowIndex = 5
+            };
+
+            var description = change.GetDescription();
+
+            Assert.Contains("Row 5", description);
+            Assert.Contains("inserted", description);
+            Assert.Contains("Sheet1", description);
+        }
+
+        [Fact]
+        public void SC032_RowDeleted_GetDescription()
+        {
+            var change = new SmlChange
+            {
+                ChangeType = SmlChangeType.RowDeleted,
+                SheetName = "Sheet1",
+                RowIndex = 3
+            };
+
+            var description = change.GetDescription();
+
+            Assert.Contains("Row 3", description);
+            Assert.Contains("deleted", description);
+        }
+
+        [Fact]
+        public void SC033_SheetRenamed_GetDescription()
+        {
+            var change = new SmlChange
+            {
+                ChangeType = SmlChangeType.SheetRenamed,
+                SheetName = "NewName",
+                OldSheetName = "OldName"
+            };
+
+            var description = change.GetDescription();
+
+            Assert.Contains("OldName", description);
+            Assert.Contains("NewName", description);
+            Assert.Contains("renamed", description);
+        }
+
+        [Fact]
+        public void SC034_ColumnInserted_GetDescription()
+        {
+            var change = new SmlChange
+            {
+                ChangeType = SmlChangeType.ColumnInserted,
+                SheetName = "Sheet1",
+                ColumnIndex = 3  // Column C
+            };
+
+            var description = change.GetDescription();
+
+            Assert.Contains("Column C", description);
+            Assert.Contains("inserted", description);
+        }
+
+        [Fact]
+        public void SC035_ColumnDeleted_GetDescription()
+        {
+            var change = new SmlChange
+            {
+                ChangeType = SmlChangeType.ColumnDeleted,
+                SheetName = "Sheet1",
+                ColumnIndex = 26  // Column Z
+            };
+
+            var description = change.GetDescription();
+
+            Assert.Contains("Column Z", description);
+            Assert.Contains("deleted", description);
+        }
+
+        #endregion
+
+        #region Phase 2: Edge Cases
+
+        [Fact]
+        public void SC036_AllRowsDeleted_HandledCorrectly()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Row1",
+                    ["A2"] = "Row2",
+                    ["A3"] = "Row3"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>()  // Empty sheet
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Should detect all cells/rows as deleted
+            Assert.True(result.RowsDeleted >= 1 || result.CellsDeleted >= 3);
+        }
+
+        [Fact]
+        public void SC037_AllRowsInserted_HandledCorrectly()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>()  // Empty sheet
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Row1",
+                    ["A2"] = "Row2",
+                    ["A3"] = "Row3"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Should detect all cells/rows as inserted
+            Assert.True(result.RowsInserted >= 1 || result.CellsAdded >= 3);
+        }
+
+        [Fact]
+        public void SC038_WideSpreadsheet_RowSignatureSampling()
+        {
+            // Arrange - Create a wide spreadsheet to test sampling
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>()
+            };
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>()
+            };
+
+            // Add many columns to test sampling (more than RowSignatureSampleSize)
+            for (int i = 0; i < 50; i++)
+            {
+                var colLetter = GetColumnLetter(i + 1);
+                data1["Sheet1"][$"{colLetter}1"] = $"Val{i}";
+                data2["Sheet1"][$"{colLetter}1"] = $"Val{i}";
+            }
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings
+            {
+                EnableRowAlignment = true,
+                RowSignatureSampleSize = 10  // Sample only 10 of the 50 columns
+            };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Should work without errors
+            Assert.Equal(0, result.TotalChanges);
+        }
+
+        private static string GetColumnLetter(int columnNumber)
+        {
+            var result = "";
+            while (columnNumber > 0)
+            {
+                columnNumber--;
+                result = (char)('A' + columnNumber % 26) + result;
+                columnNumber /= 26;
+            }
+            return result;
+        }
+
+        [Fact]
+        public void SC039_MultipleSheetRenames_DetectedCorrectly()
+        {
+            // Arrange - Multiple sheets renamed
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["OldSheet1"] = new Dictionary<string, object> { ["A1"] = "Data1" },
+                ["OldSheet2"] = new Dictionary<string, object> { ["A1"] = "Data2" },
+                ["Unchanged"] = new Dictionary<string, object> { ["A1"] = "Same" }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["NewSheet1"] = new Dictionary<string, object> { ["A1"] = "Data1" },
+                ["NewSheet2"] = new Dictionary<string, object> { ["A1"] = "Data2" },
+                ["Unchanged"] = new Dictionary<string, object> { ["A1"] = "Same" }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableSheetRenameDetection = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Equal(2, result.SheetsRenamed);
+        }
+
+        [Fact]
+        public void SC040_CombinedRowAndCellChanges()
+        {
+            // Arrange - Row insertion combined with cell value changes
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["B1"] = "OldValue",
+                    ["A2"] = "Row2"
+                }
+            };
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["B1"] = "NewValue",  // Value changed
+                    ["A2"] = "InsertedRow",  // New row
+                    ["A3"] = "Row2"  // Original row 2 moved
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+            var doc2 = CreateTestWorkbook(data2);
+            var settings = new SmlComparerSettings { EnableRowAlignment = true };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - Should detect both types of changes
+            Assert.True(result.TotalChanges >= 2);
+        }
+
+        #endregion
     }
 }
 

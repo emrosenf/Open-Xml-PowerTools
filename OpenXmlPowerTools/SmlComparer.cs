@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 
@@ -57,6 +58,29 @@ namespace OpenXmlPowerTools
 
         /// <summary>Fill color for format-only changes (default: lavender).</summary>
         public string ModifiedFormatColor = "E6E6FA";
+
+        /// <summary>Fill color for inserted rows (default: light cyan).</summary>
+        public string InsertedRowColor = "E0FFFF";
+
+        /// <summary>Fill color for deleted rows in summary (default: misty rose).</summary>
+        public string DeletedRowColor = "FFE4E1";
+
+        // Phase 2: Row/Column Alignment Settings
+
+        /// <summary>Enable row alignment using LCS algorithm to detect inserted/deleted rows.</summary>
+        public bool EnableRowAlignment = true;
+
+        /// <summary>Enable column alignment using LCS algorithm to detect inserted/deleted columns.</summary>
+        public bool EnableColumnAlignment = false;  // Off by default, can be expensive
+
+        /// <summary>Enable sheet rename detection based on content similarity.</summary>
+        public bool EnableSheetRenameDetection = true;
+
+        /// <summary>Minimum similarity threshold (0.0-1.0) to consider a sheet renamed vs added/deleted.</summary>
+        public double SheetRenameSimilarityThreshold = 0.7;
+
+        /// <summary>Number of cells to sample per row for row signature hashing.</summary>
+        public int RowSignatureSampleSize = 10;
     }
 
     /// <summary>
@@ -67,6 +91,13 @@ namespace OpenXmlPowerTools
         // Workbook structure
         SheetAdded,
         SheetDeleted,
+        SheetRenamed,       // Phase 2: detected via content similarity
+
+        // Row/column structure (Phase 2)
+        RowInserted,
+        RowDeleted,
+        ColumnInserted,
+        ColumnDeleted,
 
         // Cell content
         CellAdded,
@@ -85,6 +116,13 @@ namespace OpenXmlPowerTools
         public string SheetName { get; set; }
         public string CellAddress { get; set; }
 
+        // Phase 2: Row/column indices for structural changes
+        public int? RowIndex { get; set; }
+        public int? ColumnIndex { get; set; }
+
+        // Phase 2: For sheet rename detection
+        public string OldSheetName { get; set; }
+
         public string OldValue { get; set; }
         public string NewValue { get; set; }
         public string OldFormula { get; set; }
@@ -101,6 +139,11 @@ namespace OpenXmlPowerTools
             {
                 SmlChangeType.SheetAdded => $"Sheet '{SheetName}' was added",
                 SmlChangeType.SheetDeleted => $"Sheet '{SheetName}' was deleted",
+                SmlChangeType.SheetRenamed => $"Sheet '{OldSheetName}' was renamed to '{SheetName}'",
+                SmlChangeType.RowInserted => $"Row {RowIndex} was inserted in sheet '{SheetName}'",
+                SmlChangeType.RowDeleted => $"Row {RowIndex} was deleted from sheet '{SheetName}'",
+                SmlChangeType.ColumnInserted => $"Column {GetColumnLetter(ColumnIndex ?? 0)} was inserted in sheet '{SheetName}'",
+                SmlChangeType.ColumnDeleted => $"Column {GetColumnLetter(ColumnIndex ?? 0)} was deleted from sheet '{SheetName}'",
                 SmlChangeType.CellAdded => $"Cell {SheetName}!{CellAddress} was added with value '{NewValue}'",
                 SmlChangeType.CellDeleted => $"Cell {SheetName}!{CellAddress} was deleted (had value '{OldValue}')",
                 SmlChangeType.ValueChanged => $"Cell {SheetName}!{CellAddress} value changed from '{OldValue}' to '{NewValue}'",
@@ -108,6 +151,18 @@ namespace OpenXmlPowerTools
                 SmlChangeType.FormatChanged => $"Cell {SheetName}!{CellAddress} formatting changed",
                 _ => $"Unknown change at {SheetName}!{CellAddress}"
             };
+        }
+
+        private static string GetColumnLetter(int columnNumber)
+        {
+            var result = "";
+            while (columnNumber > 0)
+            {
+                columnNumber--;
+                result = (char)('A' + columnNumber % 26) + result;
+                columnNumber /= 26;
+            }
+            return result;
         }
     }
 
@@ -128,7 +183,15 @@ namespace OpenXmlPowerTools
         public int SheetsAdded => Changes.Count(c => c.ChangeType == SmlChangeType.SheetAdded);
         public int SheetsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.SheetDeleted);
 
-        public int StructuralChanges => CellsAdded + CellsDeleted + SheetsAdded + SheetsDeleted;
+        // Phase 2 statistics
+        public int SheetsRenamed => Changes.Count(c => c.ChangeType == SmlChangeType.SheetRenamed);
+        public int RowsInserted => Changes.Count(c => c.ChangeType == SmlChangeType.RowInserted);
+        public int RowsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.RowDeleted);
+        public int ColumnsInserted => Changes.Count(c => c.ChangeType == SmlChangeType.ColumnInserted);
+        public int ColumnsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.ColumnDeleted);
+
+        public int StructuralChanges => CellsAdded + CellsDeleted + SheetsAdded + SheetsDeleted +
+            SheetsRenamed + RowsInserted + RowsDeleted + ColumnsInserted + ColumnsDeleted;
 
         /// <summary>
         /// Get all changes for a specific sheet.
@@ -151,51 +214,41 @@ namespace OpenXmlPowerTools
         /// </summary>
         public string ToJson()
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("{");
-            sb.AppendLine("  \"Summary\": {");
-            sb.AppendLine($"    \"TotalChanges\": {TotalChanges},");
-            sb.AppendLine($"    \"ValueChanges\": {ValueChanges},");
-            sb.AppendLine($"    \"FormulaChanges\": {FormulaChanges},");
-            sb.AppendLine($"    \"FormatChanges\": {FormatChanges},");
-            sb.AppendLine($"    \"CellsAdded\": {CellsAdded},");
-            sb.AppendLine($"    \"CellsDeleted\": {CellsDeleted},");
-            sb.AppendLine($"    \"SheetsAdded\": {SheetsAdded},");
-            sb.AppendLine($"    \"SheetsDeleted\": {SheetsDeleted}");
-            sb.AppendLine("  },");
-            sb.AppendLine("  \"Changes\": [");
-
-            for (int i = 0; i < Changes.Count; i++)
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            return JsonSerializer.Serialize(new
             {
-                var c = Changes[i];
-                sb.AppendLine("    {");
-                sb.AppendLine($"      \"ChangeType\": \"{c.ChangeType}\",");
-                sb.AppendLine($"      \"SheetName\": {JsonEscape(c.SheetName)},");
-                sb.AppendLine($"      \"CellAddress\": {JsonEscape(c.CellAddress)},");
-                sb.AppendLine($"      \"OldValue\": {JsonEscape(c.OldValue)},");
-                sb.AppendLine($"      \"NewValue\": {JsonEscape(c.NewValue)},");
-                sb.AppendLine($"      \"OldFormula\": {JsonEscape(c.OldFormula)},");
-                sb.AppendLine($"      \"NewFormula\": {JsonEscape(c.NewFormula)},");
-                sb.AppendLine($"      \"Description\": {JsonEscape(c.GetDescription())}");
-                sb.Append("    }");
-                if (i < Changes.Count - 1) sb.Append(",");
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("  ]");
-            sb.AppendLine("}");
-            return sb.ToString();
-        }
-
-        private static string JsonEscape(string value)
-        {
-            if (value == null) return "null";
-            return "\"" + value
-                .Replace("\\", "\\\\")
-                .Replace("\"", "\\\"")
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t") + "\"";
+                Summary = new
+                {
+                    TotalChanges,
+                    ValueChanges,
+                    FormulaChanges,
+                    FormatChanges,
+                    CellsAdded,
+                    CellsDeleted,
+                    SheetsAdded,
+                    SheetsDeleted,
+                    SheetsRenamed,
+                    RowsInserted,
+                    RowsDeleted,
+                    ColumnsInserted,
+                    ColumnsDeleted,
+                    StructuralChanges
+                },
+                Changes = Changes.Select(c => new
+                {
+                    c.ChangeType,
+                    c.SheetName,
+                    c.CellAddress,
+                    c.RowIndex,
+                    c.ColumnIndex,
+                    c.OldSheetName,
+                    c.OldValue,
+                    c.NewValue,
+                    c.OldFormula,
+                    c.NewFormula,
+                    Description = c.GetDescription()
+                })
+            }, options);
         }
     }
 
@@ -270,25 +323,22 @@ namespace OpenXmlPowerTools
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 31 + (NumberFormatCode?.GetHashCode() ?? 0);
-                hash = hash * 31 + Bold.GetHashCode();
-                hash = hash * 31 + Italic.GetHashCode();
-                hash = hash * 31 + Underline.GetHashCode();
-                hash = hash * 31 + Strikethrough.GetHashCode();
-                hash = hash * 31 + (FontName?.GetHashCode() ?? 0);
-                hash = hash * 31 + (FontSize?.GetHashCode() ?? 0);
-                hash = hash * 31 + (FontColor?.GetHashCode() ?? 0);
-                hash = hash * 31 + (FillPattern?.GetHashCode() ?? 0);
-                hash = hash * 31 + (FillForegroundColor?.GetHashCode() ?? 0);
-                hash = hash * 31 + (FillBackgroundColor?.GetHashCode() ?? 0);
-                hash = hash * 31 + (HorizontalAlignment?.GetHashCode() ?? 0);
-                hash = hash * 31 + (VerticalAlignment?.GetHashCode() ?? 0);
-                hash = hash * 31 + WrapText.GetHashCode();
-                return hash;
-            }
+            var hash = new HashCode();
+            hash.Add(NumberFormatCode);
+            hash.Add(Bold);
+            hash.Add(Italic);
+            hash.Add(Underline);
+            hash.Add(Strikethrough);
+            hash.Add(FontName);
+            hash.Add(FontSize);
+            hash.Add(FontColor);
+            hash.Add(FillPattern);
+            hash.Add(FillForegroundColor);
+            hash.Add(FillBackgroundColor);
+            hash.Add(HorizontalAlignment);
+            hash.Add(VerticalAlignment);
+            hash.Add(WrapText);
+            return hash.ToHashCode();
         }
 
         /// <summary>
@@ -432,6 +482,43 @@ namespace OpenXmlPowerTools
         public string Name { get; set; }
         public string RelationshipId { get; set; }
         public Dictionary<string, CellSignature> Cells { get; } = new Dictionary<string, CellSignature>();
+
+        // Phase 2: Row-level data for alignment
+        public SortedSet<int> PopulatedRows { get; } = new SortedSet<int>();
+        public SortedSet<int> PopulatedColumns { get; } = new SortedSet<int>();
+        public Dictionary<int, string> RowSignatures { get; } = new Dictionary<int, string>();
+        public Dictionary<int, string> ColumnSignatures { get; } = new Dictionary<int, string>();
+
+        /// <summary>
+        /// Get all cells in a specific row.
+        /// </summary>
+        public IEnumerable<CellSignature> GetCellsInRow(int row)
+        {
+            return Cells.Values.Where(c => c.Row == row).OrderBy(c => c.Column);
+        }
+
+        /// <summary>
+        /// Get all cells in a specific column.
+        /// </summary>
+        public IEnumerable<CellSignature> GetCellsInColumn(int col)
+        {
+            return Cells.Values.Where(c => c.Column == col).OrderBy(c => c.Row);
+        }
+
+        /// <summary>
+        /// Compute a content hash representing this sheet's overall content (for rename detection).
+        /// </summary>
+        public string ComputeContentHash()
+        {
+            var contentBuilder = new StringBuilder();
+            foreach (var cell in Cells.Values.OrderBy(c => c.Row).ThenBy(c => c.Column))
+            {
+                contentBuilder.Append($"{cell.Address}:{cell.ResolvedValue}|");
+            }
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(contentBuilder.ToString()));
+            return Convert.ToBase64String(bytes);
+        }
     }
 
     /// <summary>
@@ -533,10 +620,102 @@ namespace OpenXmlPowerTools
 
                     var cellSig = CanonicalizeCell(cell, cellRef, sharedStrings, styleInfo, settings);
                     signature.Cells[cellRef] = cellSig;
+
+                    // Phase 2: Track populated rows and columns
+                    signature.PopulatedRows.Add(cellSig.Row);
+                    signature.PopulatedColumns.Add(cellSig.Column);
                 }
             }
 
+            // Phase 2: Compute row signatures for alignment
+            if (settings.EnableRowAlignment)
+            {
+                ComputeRowSignatures(signature, settings);
+            }
+
+            // Phase 2: Compute column signatures for alignment
+            if (settings.EnableColumnAlignment)
+            {
+                ComputeColumnSignatures(signature, settings);
+            }
+
             return signature;
+        }
+
+        /// <summary>
+        /// Compute hash signatures for each row to enable LCS-based alignment.
+        /// </summary>
+        private static void ComputeRowSignatures(WorksheetSignature signature, SmlComparerSettings settings)
+        {
+            foreach (var rowIndex in signature.PopulatedRows)
+            {
+                var cellsInRow = signature.GetCellsInRow(rowIndex).ToList();
+                if (cellsInRow.Count == 0) continue;
+
+                // Sample cells for signature (to handle wide sheets efficiently)
+                var sampled = cellsInRow.Count <= settings.RowSignatureSampleSize
+                    ? cellsInRow
+                    : SampleCells(cellsInRow, settings.RowSignatureSampleSize);
+
+                var rowContent = string.Join("|", sampled.Select(c => c.ResolvedValue ?? ""));
+                signature.RowSignatures[rowIndex] = ComputeQuickHash(rowContent);
+            }
+        }
+
+        /// <summary>
+        /// Compute hash signatures for each column to enable LCS-based alignment.
+        /// </summary>
+        private static void ComputeColumnSignatures(WorksheetSignature signature, SmlComparerSettings settings)
+        {
+            foreach (var colIndex in signature.PopulatedColumns)
+            {
+                var cellsInCol = signature.GetCellsInColumn(colIndex).ToList();
+                if (cellsInCol.Count == 0) continue;
+
+                // Sample cells for signature
+                var sampled = cellsInCol.Count <= settings.RowSignatureSampleSize
+                    ? cellsInCol
+                    : SampleCells(cellsInCol, settings.RowSignatureSampleSize);
+
+                var colContent = string.Join("|", sampled.Select(c => c.ResolvedValue ?? ""));
+                signature.ColumnSignatures[colIndex] = ComputeQuickHash(colContent);
+            }
+        }
+
+        /// <summary>
+        /// Sample cells evenly from a list for signature computation.
+        /// </summary>
+        private static List<CellSignature> SampleCells(List<CellSignature> cells, int sampleSize)
+        {
+            if (cells.Count <= sampleSize) return cells;
+
+            var result = new List<CellSignature>(sampleSize);
+            var step = (double)cells.Count / sampleSize;
+
+            for (int i = 0; i < sampleSize; i++)
+            {
+                var index = (int)(i * step);
+                result.Add(cells[index]);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Compute a quick hash for row/column signatures.
+        /// </summary>
+        private static string ComputeQuickHash(string content)
+        {
+            // Use a simple hash for performance; SHA256 is overkill for row signatures
+            unchecked
+            {
+                int hash = 17;
+                foreach (char c in content)
+                {
+                    hash = hash * 31 + c;
+                }
+                return hash.ToString("X8");
+            }
         }
 
         private static CellSignature CanonicalizeCell(
@@ -1019,45 +1198,450 @@ namespace OpenXmlPowerTools
         {
             var result = new SmlComparisonResult();
 
+            // Build sheet matching (handles renames)
+            var sheetMatches = MatchSheets(sig1, sig2, settings);
+
             if (settings.CompareSheetStructure)
             {
-                // Sheet-level diff
-                var sheets1 = sig1.Sheets.Keys.ToHashSet();
-                var sheets2 = sig2.Sheets.Keys.ToHashSet();
-
-                foreach (var added in sheets2.Except(sheets1))
+                // Report sheet-level changes
+                foreach (var match in sheetMatches)
                 {
-                    result.Changes.Add(new SmlChange
+                    if (match.MatchType == SheetMatchType.Added)
                     {
-                        ChangeType = SmlChangeType.SheetAdded,
-                        SheetName = added
-                    });
-                }
-
-                foreach (var deleted in sheets1.Except(sheets2))
-                {
-                    result.Changes.Add(new SmlChange
+                        result.Changes.Add(new SmlChange
+                        {
+                            ChangeType = SmlChangeType.SheetAdded,
+                            SheetName = match.NewName
+                        });
+                    }
+                    else if (match.MatchType == SheetMatchType.Deleted)
                     {
-                        ChangeType = SmlChangeType.SheetDeleted,
-                        SheetName = deleted
-                    });
+                        result.Changes.Add(new SmlChange
+                        {
+                            ChangeType = SmlChangeType.SheetDeleted,
+                            SheetName = match.OldName
+                        });
+                    }
+                    else if (match.MatchType == SheetMatchType.Renamed)
+                    {
+                        result.Changes.Add(new SmlChange
+                        {
+                            ChangeType = SmlChangeType.SheetRenamed,
+                            SheetName = match.NewName,
+                            OldSheetName = match.OldName
+                        });
+                    }
                 }
             }
 
-            // For matched sheets, compare cells
-            var commonSheets = sig1.Sheets.Keys.Intersect(sig2.Sheets.Keys);
-            foreach (var sheetName in commonSheets)
+            // Compare matched sheets (including renamed ones)
+            foreach (var match in sheetMatches.Where(m => m.MatchType == SheetMatchType.Matched || m.MatchType == SheetMatchType.Renamed))
             {
-                var ws1 = sig1.Sheets[sheetName];
-                var ws2 = sig2.Sheets[sheetName];
+                var ws1 = sig1.Sheets[match.OldName];
+                var ws2 = sig2.Sheets[match.NewName];
 
-                CompareWorksheets(ws1, ws2, sheetName, settings, result);
+                if (settings.EnableRowAlignment)
+                {
+                    CompareWorksheetsWithAlignment(ws1, ws2, match.NewName, settings, result);
+                }
+                else
+                {
+                    CompareWorksheetsCellByCell(ws1, ws2, match.NewName, settings, result);
+                }
             }
 
             return result;
         }
 
-        private static void CompareWorksheets(
+        #region Sheet Matching
+
+        private enum SheetMatchType { Matched, Added, Deleted, Renamed }
+
+        private class SheetMatch
+        {
+            public SheetMatchType MatchType { get; set; }
+            public string OldName { get; set; }
+            public string NewName { get; set; }
+            public double Similarity { get; set; }
+        }
+
+        private static List<SheetMatch> MatchSheets(
+            WorkbookSignature sig1,
+            WorkbookSignature sig2,
+            SmlComparerSettings settings)
+        {
+            var matches = new List<SheetMatch>();
+            var sheets1 = sig1.Sheets.Keys.ToHashSet();
+            var sheets2 = sig2.Sheets.Keys.ToHashSet();
+
+            // Exact name matches
+            var commonSheets = sheets1.Intersect(sheets2).ToList();
+            foreach (var name in commonSheets)
+            {
+                matches.Add(new SheetMatch
+                {
+                    MatchType = SheetMatchType.Matched,
+                    OldName = name,
+                    NewName = name,
+                    Similarity = 1.0
+                });
+            }
+
+            var unmatched1 = sheets1.Except(commonSheets).ToList();
+            var unmatched2 = sheets2.Except(commonSheets).ToList();
+
+            // Try to detect renames based on content similarity
+            if (settings.EnableSheetRenameDetection && unmatched1.Count > 0 && unmatched2.Count > 0)
+            {
+                var renamed = DetectRenamedSheets(sig1, sig2, unmatched1, unmatched2, settings);
+                matches.AddRange(renamed);
+
+                // Remove matched sheets from unmatched lists
+                foreach (var r in renamed)
+                {
+                    unmatched1.Remove(r.OldName);
+                    unmatched2.Remove(r.NewName);
+                }
+            }
+
+            // Remaining unmatched sheets are added/deleted
+            foreach (var deleted in unmatched1)
+            {
+                matches.Add(new SheetMatch
+                {
+                    MatchType = SheetMatchType.Deleted,
+                    OldName = deleted
+                });
+            }
+
+            foreach (var added in unmatched2)
+            {
+                matches.Add(new SheetMatch
+                {
+                    MatchType = SheetMatchType.Added,
+                    NewName = added
+                });
+            }
+
+            return matches;
+        }
+
+        private static List<SheetMatch> DetectRenamedSheets(
+            WorkbookSignature sig1,
+            WorkbookSignature sig2,
+            List<string> unmatched1,
+            List<string> unmatched2,
+            SmlComparerSettings settings)
+        {
+            var renames = new List<SheetMatch>();
+            var used1 = new HashSet<string>();
+            var used2 = new HashSet<string>();
+
+            // Compute content hashes for unmatched sheets
+            var hashes1 = unmatched1.ToDictionary(n => n, n => sig1.Sheets[n].ComputeContentHash());
+            var hashes2 = unmatched2.ToDictionary(n => n, n => sig2.Sheets[n].ComputeContentHash());
+
+            // First pass: exact content match (definite rename)
+            foreach (var name1 in unmatched1)
+            {
+                var hash1 = hashes1[name1];
+                var exactMatch = unmatched2.FirstOrDefault(n2 => !used2.Contains(n2) && hashes2[n2] == hash1);
+                if (exactMatch != null)
+                {
+                    renames.Add(new SheetMatch
+                    {
+                        MatchType = SheetMatchType.Renamed,
+                        OldName = name1,
+                        NewName = exactMatch,
+                        Similarity = 1.0
+                    });
+                    used1.Add(name1);
+                    used2.Add(exactMatch);
+                }
+            }
+
+            // Second pass: similarity-based matching
+            foreach (var name1 in unmatched1.Where(n => !used1.Contains(n)))
+            {
+                var ws1 = sig1.Sheets[name1];
+                double bestSimilarity = 0;
+                string bestMatch = null;
+
+                foreach (var name2 in unmatched2.Where(n => !used2.Contains(n)))
+                {
+                    var ws2 = sig2.Sheets[name2];
+                    var similarity = ComputeSheetSimilarity(ws1, ws2);
+
+                    if (similarity > bestSimilarity && similarity >= settings.SheetRenameSimilarityThreshold)
+                    {
+                        bestSimilarity = similarity;
+                        bestMatch = name2;
+                    }
+                }
+
+                if (bestMatch != null)
+                {
+                    renames.Add(new SheetMatch
+                    {
+                        MatchType = SheetMatchType.Renamed,
+                        OldName = name1,
+                        NewName = bestMatch,
+                        Similarity = bestSimilarity
+                    });
+                    used1.Add(name1);
+                    used2.Add(bestMatch);
+                }
+            }
+
+            return renames;
+        }
+
+        private static double ComputeSheetSimilarity(WorksheetSignature ws1, WorksheetSignature ws2)
+        {
+            // Jaccard similarity on cell addresses with matching values
+            var cells1 = ws1.Cells;
+            var cells2 = ws2.Cells;
+
+            if (cells1.Count == 0 && cells2.Count == 0) return 1.0;
+            if (cells1.Count == 0 || cells2.Count == 0) return 0.0;
+
+            var allAddresses = cells1.Keys.Union(cells2.Keys);
+            var matchingCount = 0;
+
+            foreach (var addr in allAddresses)
+            {
+                if (cells1.TryGetValue(addr, out var c1) && cells2.TryGetValue(addr, out var c2))
+                {
+                    if (c1.ResolvedValue == c2.ResolvedValue)
+                        matchingCount++;
+                }
+            }
+
+            return (double)matchingCount / allAddresses.Count();
+        }
+
+        #endregion
+
+        #region Row Alignment
+
+        private static void CompareWorksheetsWithAlignment(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            string sheetName,
+            SmlComparerSettings settings,
+            SmlComparisonResult result)
+        {
+            // Get row alignment using LCS
+            var rows1 = ws1.PopulatedRows.ToList();
+            var rows2 = ws2.PopulatedRows.ToList();
+
+            var rowAlignment = ComputeRowAlignment(ws1, ws2, rows1, rows2);
+
+            // Report inserted/deleted rows
+            foreach (var (oldRow, newRow) in rowAlignment)
+            {
+                if (oldRow == null && newRow != null)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.RowInserted,
+                        SheetName = sheetName,
+                        RowIndex = newRow
+                    });
+                }
+                else if (oldRow != null && newRow == null)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.RowDeleted,
+                        SheetName = sheetName,
+                        RowIndex = oldRow
+                    });
+                }
+                else if (oldRow != null && newRow != null)
+                {
+                    // Aligned rows - compare cells within the row
+                    CompareAlignedRows(ws1, ws2, oldRow.Value, newRow.Value, sheetName, settings, result);
+                }
+            }
+        }
+
+        private static List<(int? OldRow, int? NewRow)> ComputeRowAlignment(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            List<int> rows1,
+            List<int> rows2)
+        {
+            // Get row signatures
+            var sigs1 = rows1.Select(r => ws1.RowSignatures.GetValueOrDefault(r, "")).ToList();
+            var sigs2 = rows2.Select(r => ws2.RowSignatures.GetValueOrDefault(r, "")).ToList();
+
+            // Compute LCS
+            var lcs = ComputeLCS(sigs1, sigs2);
+
+            // Build alignment from LCS
+            var alignment = new List<(int? OldRow, int? NewRow)>();
+
+            int i = 0, j = 0, k = 0;
+            while (i < rows1.Count || j < rows2.Count)
+            {
+                if (k < lcs.Count && i < rows1.Count && sigs1[i] == lcs[k])
+                {
+                    // Find matching position in rows2
+                    while (j < rows2.Count && sigs2[j] != lcs[k])
+                    {
+                        // Row inserted in newer
+                        alignment.Add((null, rows2[j]));
+                        j++;
+                    }
+
+                    if (j < rows2.Count)
+                    {
+                        // Matched row
+                        alignment.Add((rows1[i], rows2[j]));
+                        i++;
+                        j++;
+                        k++;
+                    }
+                }
+                else if (i < rows1.Count)
+                {
+                    // Row deleted from older
+                    alignment.Add((rows1[i], null));
+                    i++;
+                }
+                else if (j < rows2.Count)
+                {
+                    // Row inserted in newer
+                    alignment.Add((null, rows2[j]));
+                    j++;
+                }
+            }
+
+            return alignment;
+        }
+
+        private static List<string> ComputeLCS(List<string> seq1, List<string> seq2)
+        {
+            int m = seq1.Count;
+            int n = seq2.Count;
+
+            // DP table
+            var dp = new int[m + 1, n + 1];
+
+            for (int i = 1; i <= m; i++)
+            {
+                for (int j = 1; j <= n; j++)
+                {
+                    if (seq1[i - 1] == seq2[j - 1])
+                    {
+                        dp[i, j] = dp[i - 1, j - 1] + 1;
+                    }
+                    else
+                    {
+                        dp[i, j] = Math.Max(dp[i - 1, j], dp[i, j - 1]);
+                    }
+                }
+            }
+
+            // Backtrack to find LCS
+            var lcs = new List<string>();
+            int ii = m, jj = n;
+            while (ii > 0 && jj > 0)
+            {
+                if (seq1[ii - 1] == seq2[jj - 1])
+                {
+                    lcs.Add(seq1[ii - 1]);
+                    ii--;
+                    jj--;
+                }
+                else if (dp[ii - 1, jj] > dp[ii, jj - 1])
+                {
+                    ii--;
+                }
+                else
+                {
+                    jj--;
+                }
+            }
+
+            lcs.Reverse();
+            return lcs;
+        }
+
+        private static void CompareAlignedRows(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            int row1,
+            int row2,
+            string sheetName,
+            SmlComparerSettings settings,
+            SmlComparisonResult result)
+        {
+            var cells1 = ws1.GetCellsInRow(row1).ToDictionary(c => c.Column);
+            var cells2 = ws2.GetCellsInRow(row2).ToDictionary(c => c.Column);
+
+            var allColumns = cells1.Keys.Union(cells2.Keys);
+
+            foreach (var col in allColumns)
+            {
+                var has1 = cells1.TryGetValue(col, out var cell1);
+                var has2 = cells2.TryGetValue(col, out var cell2);
+
+                // Use the new address from the new row
+                var newAddr = has2 ? cell2.Address : GetCellAddress(col, row2);
+                var oldAddr = has1 ? cell1.Address : GetCellAddress(col, row1);
+
+                if (!has1 && has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.CellAdded,
+                        SheetName = sheetName,
+                        CellAddress = newAddr,
+                        NewValue = cell2.ResolvedValue,
+                        NewFormula = cell2.Formula,
+                        NewFormat = cell2.Format
+                    });
+                }
+                else if (has1 && !has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.CellDeleted,
+                        SheetName = sheetName,
+                        CellAddress = oldAddr,
+                        OldValue = cell1.ResolvedValue,
+                        OldFormula = cell1.Formula,
+                        OldFormat = cell1.Format
+                    });
+                }
+                else if (has1 && has2)
+                {
+                    // Compare cells - use new address for reporting
+                    CompareCells(cell1, cell2, sheetName, settings, result, newAddr);
+                }
+            }
+        }
+
+        private static string GetCellAddress(int col, int row)
+        {
+            var colLetter = "";
+            var c = col;
+            while (c > 0)
+            {
+                c--;
+                colLetter = (char)('A' + c % 26) + colLetter;
+                c /= 26;
+            }
+            return $"{colLetter}{row}";
+        }
+
+        #endregion
+
+        #region Cell-by-Cell Comparison (Phase 1 fallback)
+
+        private static void CompareWorksheetsCellByCell(
             WorksheetSignature ws1,
             WorksheetSignature ws2,
             string sheetName,
@@ -1074,7 +1658,6 @@ namespace OpenXmlPowerTools
 
                 if (!has1 && has2)
                 {
-                    // Cell added
                     result.Changes.Add(new SmlChange
                     {
                         ChangeType = SmlChangeType.CellAdded,
@@ -1087,7 +1670,6 @@ namespace OpenXmlPowerTools
                 }
                 else if (has1 && !has2)
                 {
-                    // Cell deleted
                     result.Changes.Add(new SmlChange
                     {
                         ChangeType = SmlChangeType.CellDeleted,
@@ -1100,11 +1682,12 @@ namespace OpenXmlPowerTools
                 }
                 else if (has1 && has2)
                 {
-                    // Compare cells
                     CompareCells(cell1, cell2, sheetName, settings, result);
                 }
             }
         }
+
+        #endregion
 
         private static void CompareCells(
             CellSignature cell1,
@@ -1113,6 +1696,20 @@ namespace OpenXmlPowerTools
             SmlComparerSettings settings,
             SmlComparisonResult result)
         {
+            CompareCells(cell1, cell2, sheetName, settings, result, null);
+        }
+
+        private static void CompareCells(
+            CellSignature cell1,
+            CellSignature cell2,
+            string sheetName,
+            SmlComparerSettings settings,
+            SmlComparisonResult result,
+            string addressOverride)
+        {
+            // Use the override address if provided, otherwise use the original cell address
+            var reportAddress = addressOverride ?? cell1.Address;
+
             // Quick check via content hash (value + formula)
             if (cell1.ContentHash == cell2.ContentHash &&
                 (!settings.CompareFormatting || Equals(cell1.Format, cell2.Format)))
@@ -1148,7 +1745,7 @@ namespace OpenXmlPowerTools
                     {
                         ChangeType = SmlChangeType.ValueChanged,
                         SheetName = sheetName,
-                        CellAddress = cell1.Address,
+                        CellAddress = reportAddress,
                         OldValue = cell1.ResolvedValue,
                         NewValue = cell2.ResolvedValue,
                         OldFormula = cell1.Formula,
@@ -1170,7 +1767,7 @@ namespace OpenXmlPowerTools
                     {
                         ChangeType = SmlChangeType.FormulaChanged,
                         SheetName = sheetName,
-                        CellAddress = cell1.Address,
+                        CellAddress = reportAddress,
                         OldFormula = cell1.Formula,
                         NewFormula = cell2.Formula,
                         OldValue = cell1.ResolvedValue,
@@ -1187,7 +1784,7 @@ namespace OpenXmlPowerTools
                 {
                     ChangeType = SmlChangeType.FormatChanged,
                     SheetName = sheetName,
-                    CellAddress = cell1.Address,
+                    CellAddress = reportAddress,
                     OldFormat = cell1.Format,
                     NewFormat = cell2.Format,
                     OldValue = cell1.ResolvedValue,
