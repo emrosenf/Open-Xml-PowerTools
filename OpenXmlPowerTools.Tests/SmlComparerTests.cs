@@ -14,8 +14,8 @@ using OpenXmlPowerTools;
 using Xunit;
 
 // Aliases to resolve ambiguous references
-using SpreadsheetRow = DocumentFormat.OpenXml.Spreadsheet.Row;
 using SpreadsheetCell = DocumentFormat.OpenXml.Spreadsheet.Cell;
+using SpreadsheetRow = DocumentFormat.OpenXml.Spreadsheet.Row;
 
 #if !ELIDE_XUNIT_TESTS
 
