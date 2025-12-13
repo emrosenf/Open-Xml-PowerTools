@@ -13,6 +13,10 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using OpenXmlPowerTools;
 using Xunit;
 
+// Aliases to resolve ambiguous references
+using SpreadsheetRow = DocumentFormat.OpenXml.Spreadsheet.Row;
+using SpreadsheetCell = DocumentFormat.OpenXml.Spreadsheet.Cell;
+
 #if !ELIDE_XUNIT_TESTS
 
 namespace OxPt
@@ -52,16 +56,16 @@ namespace OxPt
                         var (col, row) = ParseCellRef(cellRef);
 
                         // Find or create row
-                        var rowElement = sheetDataElement.Elements<Row>()
+                        var rowElement = sheetDataElement.Elements<SpreadsheetRow>()
                             .FirstOrDefault(r => r.RowIndex == (uint)row);
                         if (rowElement == null)
                         {
-                            rowElement = new Row { RowIndex = (uint)row };
+                            rowElement = new SpreadsheetRow { RowIndex = (uint)row };
                             sheetDataElement.Append(rowElement);
                         }
 
                         // Create cell
-                        var cellElement = new Cell { CellReference = cellRef };
+                        var cellElement = new SpreadsheetCell { CellReference = cellRef };
 
                         if (cell.Value is string strValue)
                         {
@@ -143,7 +147,7 @@ namespace OxPt
             sst.Append(new SharedStringItem(new Text(text)));
             sst.Count = (uint)sst.Elements<SharedStringItem>().Count();
             sst.UniqueCount = sst.Count;
-            return (int)sst.Count - 1;
+            return (int)(uint)sst.Count - 1;
         }
 
         private static (int col, int row) ParseCellRef(string cellRef)
