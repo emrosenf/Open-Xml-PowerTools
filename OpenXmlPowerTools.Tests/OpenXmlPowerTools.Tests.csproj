@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <IsPackable>false</IsPackable>
+    <!-- Suppress analyzer warnings for legacy code patterns -->
+    <NoWarn>$(NoWarn);CA1416;CA2200;CA2022;xUnit2020</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
