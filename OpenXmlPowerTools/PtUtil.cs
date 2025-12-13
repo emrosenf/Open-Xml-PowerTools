@@ -18,30 +18,34 @@ namespace OpenXmlPowerTools
 {
     public static class PtUtils
     {
+        /// <summary>
+        /// Computes SHA1 hash of a UTF-8 encoded string.
+        /// Uses modern .NET static HashData method for better performance (no instance allocation).
+        /// </summary>
         public static string SHA1HashStringForUTF8String(string s)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(s);
-            var sha1 = SHA1.Create();
-            byte[] hashBytes = sha1.ComputeHash(bytes);
-            return HexStringFromBytes(hashBytes);
+            byte[] hashBytes = SHA1.HashData(bytes);
+            return Convert.ToHexString(hashBytes).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Computes SHA1 hash of a byte array.
+        /// Uses modern .NET static HashData method for better performance (no instance allocation).
+        /// </summary>
         public static string SHA1HashStringForByteArray(byte[] bytes)
         {
-            var sha1 = SHA1.Create();
-            byte[] hashBytes = sha1.ComputeHash(bytes);
-            return HexStringFromBytes(hashBytes);
+            byte[] hashBytes = SHA1.HashData(bytes);
+            return Convert.ToHexString(hashBytes).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Converts byte array to lowercase hex string.
+        /// Uses Convert.ToHexString for zero-allocation conversion in .NET 5+.
+        /// </summary>
         public static string HexStringFromBytes(byte[] bytes)
         {
-            var sb = new StringBuilder();
-            foreach (byte b in bytes)
-            {
-                var hex = b.ToString("x2");
-                sb.Append(hex);
-            }
-            return sb.ToString();
+            return Convert.ToHexString(bytes).ToLowerInvariant();
         }
 
         public static string NormalizeDirName(string dirName)

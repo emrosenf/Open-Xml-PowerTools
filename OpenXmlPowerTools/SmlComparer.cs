@@ -507,6 +507,7 @@ namespace OpenXmlPowerTools
 
         /// <summary>
         /// Compute a content hash representing this sheet's overall content (for rename detection).
+        /// Uses SHA256.HashData for better performance (no instance allocation).
         /// </summary>
         public string ComputeContentHash()
         {
@@ -515,8 +516,7 @@ namespace OpenXmlPowerTools
             {
                 contentBuilder.Append($"{cell.Address}:{cell.ResolvedValue}|");
             }
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(contentBuilder.ToString()));
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(contentBuilder.ToString()));
             return Convert.ToBase64String(bytes);
         }
     }
@@ -534,11 +534,14 @@ namespace OpenXmlPowerTools
         public string ContentHash { get; set; }
         public CellFormatSignature Format { get; set; }
 
+        /// <summary>
+        /// Computes a content hash for cell comparison.
+        /// Uses SHA256.HashData for better performance (no instance allocation).
+        /// </summary>
         public static string ComputeHash(string value, string formula)
         {
             var content = $"{value ?? ""}|{formula ?? ""}";
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(content));
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
             return Convert.ToBase64String(bytes);
         }
     }
