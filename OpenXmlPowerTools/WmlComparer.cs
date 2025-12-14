@@ -358,7 +358,19 @@ namespace OpenXmlPowerTools
 
         private static WmlDocument PreProcessMarkup(WmlDocument source, int startingIdForFootnotesEndnotes)
         {
-            // open and close to get rid of MC content
+            // First, flatten mc:AlternateContent to keep only VML (mc:Fallback) content
+            // This MUST be done BEFORE SDK MC processing, which would otherwise select mc:Choice (DrawingML)
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(source.DocumentByteArray, 0, source.DocumentByteArray.Length);
+                using (WordprocessingDocument wDoc = WordprocessingDocument.Open(ms, true))
+                {
+                    FlattenAlternateContent(wDoc);
+                }
+                source = new WmlDocument(source.FileName, ms.ToArray());
+            }
+
+            // open and close to get rid of remaining MC content
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(source.DocumentByteArray, 0, source.DocumentByteArray.Length);
@@ -409,6 +421,8 @@ namespace OpenXmlPowerTools
                         RemoveHyperlinks = true,
                     };
                     MarkupSimplifier.SimplifyMarkup(wDoc, msSettings);
+                    FlattenAlternateContent(wDoc);
+                    MergeDuplicateTextBoxes(wDoc);
                     ChangeFootnoteEndnoteReferencesToUniqueRange(wDoc, startingIdForFootnotesEndnotes);
                     AddUnidsToMarkupInContentParts(wDoc);
                     AddFootnotesEndnotesParts(wDoc);
@@ -430,6 +444,370 @@ namespace OpenXmlPowerTools
                 cxd.Descendants(C.externalData).Remove();
                 chart.PutXDocument();
             }
+        }
+
+        // Flatten mc:AlternateContent elements by keeping only the mc:Fallback (VML) content.
+        // Word documents with textboxes often have both DrawingML (mc:Choice) and VML (mc:Fallback)
+        // versions of the same content. WmlComparer's comparison logic works with VML textboxes,
+        // so we need to ensure only VML content is present to avoid duplicate atoms.
+        private static void FlattenAlternateContent(WordprocessingDocument wDoc)
+        {
+            var partsToProcess = new List<OpenXmlPart>();
+            partsToProcess.Add(wDoc.MainDocumentPart);
+            if (wDoc.MainDocumentPart.FootnotesPart != null)
+                partsToProcess.Add(wDoc.MainDocumentPart.FootnotesPart);
+            if (wDoc.MainDocumentPart.EndnotesPart != null)
+                partsToProcess.Add(wDoc.MainDocumentPart.EndnotesPart);
+
+            foreach (var part in partsToProcess)
+            {
+                var xDoc = part.GetXDocument();
+                var alternateContents = xDoc.Descendants(MC.AlternateContent).ToList();
+                if (alternateContents.Count == 0)
+                    continue;
+
+                foreach (var ac in alternateContents)
+                {
+                    // Prefer mc:Fallback (VML) content for textbox comparison.
+                    // Word documents with textboxes often have both DrawingML (mc:Choice) and VML (mc:Fallback)
+                    // versions of the same content. WmlComparer historically works with VML textboxes, so keep
+                    // only the VML representation when available.
+                    var fallback = ac.Element(MC.Fallback);
+                    if (fallback != null)
+                    {
+                        ac.ReplaceWith(fallback.Elements());
+                        continue;
+                    }
+
+                    // If no Fallback, use Choice content
+                    var choice = ac.Element(MC.Choice);
+                    if (choice != null)
+                        ac.ReplaceWith(choice.Elements());
+                    else
+                        ac.Remove();
+                }
+                part.PutXDocument();
+            }
+        }
+
+        // Some documents end up with duplicate VML text boxes (same spid) due to revision markup
+        // expansion of mc:AlternateContent. Merge their txbxContent into a single instance to keep
+        // comparison stable and to ensure reject/accept round-trips restore the original layout.
+        private static void MergeDuplicateTextBoxes(WordprocessingDocument wDoc)
+        {
+            var partsToProcess = new List<OpenXmlPart> { wDoc.MainDocumentPart };
+            if (wDoc.MainDocumentPart.FootnotesPart != null)
+                partsToProcess.Add(wDoc.MainDocumentPart.FootnotesPart);
+            if (wDoc.MainDocumentPart.EndnotesPart != null)
+                partsToProcess.Add(wDoc.MainDocumentPart.EndnotesPart);
+
+            foreach (var part in partsToProcess)
+            {
+                var xDoc = part.GetXDocument();
+
+                var picts = xDoc
+                    .Descendants(W.pict)
+                    .Select(p => new
+                    {
+                        Pict = p,
+                        Shape = p.Descendants(VML.shape).FirstOrDefault(),
+                        Txbx = p.Descendants(W.txbxContent).FirstOrDefault(),
+                    })
+                    .Where(x => x.Shape != null && x.Txbx != null)
+                    .ToList();
+
+                var groups = picts
+                    .GroupBy(x => (string)x.Shape.Attribute(O.spid))
+                    .Where(g => g.Key != null && g.Count() > 1)
+                    .ToList();
+
+                if (!groups.Any())
+                    continue;
+
+                foreach (var group in groups)
+                {
+                    var keeper = group.First();
+                    foreach (var dup in group.Skip(1))
+                    {
+                        MergeTextBoxContent(keeper.Txbx, dup.Txbx);
+                        dup.Pict.Remove();
+                    }
+                }
+
+                part.PutXDocument();
+            }
+        }
+
+        private static void MergeTextBoxContent(XElement keeperTxbx, XElement dupTxbx)
+        {
+            if (keeperTxbx == null || dupTxbx == null)
+                return;
+
+            // Simple textboxes: preserve existing behavior.
+            var keeperHasTable = keeperTxbx.Elements(W.tbl).Any();
+            var dupHasTable = dupTxbx.Elements(W.tbl).Any();
+
+            if (!keeperHasTable && !dupHasTable)
+            {
+                var keeperParas = keeperTxbx.Elements(W.p).ToList();
+                var dupParas = dupTxbx.Elements(W.p).ToList();
+
+                if (keeperParas.Count == 1 && dupParas.Count == 1)
+                {
+                    keeperParas[0].Add(dupParas[0].Elements());
+                }
+                else
+                {
+                    keeperTxbx.Add(dupParas);
+                }
+
+                var other = dupTxbx.Elements().Where(e => e.Name != W.p).ToList();
+                if (other.Count > 0)
+                    keeperTxbx.Add(other);
+
+                return;
+            }
+
+            // Table-in-textbox: merge table fragments (same logical table) and dedupe empty trailing paragraphs.
+            foreach (var dupChild in dupTxbx.Elements().ToList())
+            {
+                if (dupChild.Name == W.tbl)
+                {
+                    MergeOrAddTable(keeperTxbx, dupChild);
+                    continue;
+                }
+
+                if (dupChild.Name == W.p)
+                {
+                    MergeOrAddParagraphInTableTextBox(keeperTxbx, dupChild);
+                    continue;
+                }
+
+                keeperTxbx.Add(dupChild);
+            }
+        }
+
+        private static void MergeOrAddParagraphInTableTextBox(XElement keeperTxbx, XElement dupPara)
+        {
+            if (dupPara == null || dupPara.Name != W.p)
+                return;
+
+            // Prefer merging by existing pt:Unid if present.
+            var dupUnid = (string)dupPara.Attribute(PtOpenXml.Unid);
+            if (dupUnid != null)
+            {
+                var existing = keeperTxbx.Elements(W.p).FirstOrDefault(p => (string)p.Attribute(PtOpenXml.Unid) == dupUnid);
+                if (existing != null)
+                {
+                    MergeParagraph(existing, dupPara);
+                    return;
+                }
+            }
+
+            // Avoid accumulating multiple empty trailing paragraphs from duplicated shapes.
+            if (IsEmptyParagraph(dupPara) && keeperTxbx.Elements(W.p).Any(IsEmptyParagraph))
+                return;
+
+            keeperTxbx.Add(dupPara);
+        }
+
+        private static void MergeOrAddTable(XElement keeperTxbx, XElement dupTable)
+        {
+            if (dupTable == null || dupTable.Name != W.tbl)
+                return;
+
+            var dupUnid = (string)dupTable.Attribute(PtOpenXml.Unid);
+            XElement keeperTable = null;
+            if (dupUnid != null)
+            {
+                keeperTable = keeperTxbx.Elements(W.tbl).FirstOrDefault(t => (string)t.Attribute(PtOpenXml.Unid) == dupUnid);
+            }
+
+            if (keeperTable == null)
+            {
+                var existingTables = keeperTxbx.Elements(W.tbl).ToList();
+                if (existingTables.Count == 1)
+                    keeperTable = existingTables[0];
+            }
+
+            if (keeperTable == null)
+            {
+                keeperTxbx.Add(dupTable);
+                return;
+            }
+
+            MergeTable(keeperTable, dupTable);
+        }
+
+        private static void MergeTable(XElement keeperTable, XElement dupTable)
+        {
+            var keeperRows = keeperTable.Elements(W.tr).ToList();
+            var dupRows = dupTable.Elements(W.tr).ToList();
+
+            for (int rowIndex = 0; rowIndex < dupRows.Count; rowIndex++)
+            {
+                var dupRow = dupRows[rowIndex];
+                var dupRowUnid = (string)dupRow.Attribute(PtOpenXml.Unid);
+
+                XElement keeperRow = null;
+                if (dupRowUnid != null)
+                {
+                    keeperRow = keeperRows.FirstOrDefault(r => (string)r.Attribute(PtOpenXml.Unid) == dupRowUnid);
+                    if (keeperRow == null)
+                    {
+                        // When Unids are present, never fall back to index-based merging as it can
+                        // collapse distinct rows from table fragments into the wrong row.
+                        keeperTable.Add(dupRow);
+                        keeperRows.Add(dupRow);
+                        continue;
+                    }
+                }
+                else if (rowIndex < keeperRows.Count)
+                {
+                    keeperRow = keeperRows[rowIndex];
+                }
+
+                if (keeperRow == null)
+                {
+                    keeperTable.Add(dupRow);
+                    keeperRows.Add(dupRow);
+                    continue;
+                }
+
+                MergeTableRow(keeperRow, dupRow);
+            }
+        }
+
+        private static void MergeTableRow(XElement keeperRow, XElement dupRow)
+        {
+            var keeperCells = keeperRow.Elements(W.tc).ToList();
+            var dupCells = dupRow.Elements(W.tc).ToList();
+
+            for (int cellIndex = 0; cellIndex < dupCells.Count; cellIndex++)
+            {
+                var dupCell = dupCells[cellIndex];
+                var dupCellUnid = (string)dupCell.Attribute(PtOpenXml.Unid);
+
+                XElement keeperCell = null;
+                if (dupCellUnid != null)
+                {
+                    keeperCell = keeperCells.FirstOrDefault(c => (string)c.Attribute(PtOpenXml.Unid) == dupCellUnid);
+                    if (keeperCell == null)
+                    {
+                        // When Unids are present, treat as a missing cell and insert it, rather than
+                        // merging into an arbitrary index (table fragments may omit leading cells).
+                        keeperRow.Add(dupCell);
+                        keeperCells = keeperRow.Elements(W.tc).ToList();
+                        continue;
+                    }
+                }
+                else if (cellIndex < keeperCells.Count)
+                {
+                    keeperCell = keeperCells[cellIndex];
+                }
+
+                if (keeperCell == null)
+                {
+                    if (cellIndex == 0 && keeperCells.Count > 0)
+                        keeperCells[0].AddBeforeSelf(dupCell);
+                    else if (cellIndex - 1 >= 0 && cellIndex - 1 < keeperCells.Count)
+                        keeperCells[cellIndex - 1].AddAfterSelf(dupCell);
+                    else
+                        keeperRow.Add(dupCell);
+
+                    keeperCells = keeperRow.Elements(W.tc).ToList();
+                    continue;
+                }
+
+                MergeTableCell(keeperCell, dupCell);
+            }
+        }
+
+        private static void MergeTableCell(XElement keeperCell, XElement dupCell)
+        {
+            var keeperTcPr = keeperCell.Element(W.tcPr);
+            var dupTcPr = dupCell.Element(W.tcPr);
+            if (keeperTcPr == null && dupTcPr != null)
+            {
+                keeperCell.AddFirst(new XElement(dupTcPr));
+            }
+
+            var keeperContent = keeperCell.Elements().Where(e => e.Name != W.tcPr).ToList();
+            var dupContent = dupCell.Elements().Where(e => e.Name != W.tcPr).ToList();
+
+            var dupParas = dupContent.Where(e => e.Name == W.p).ToList();
+
+            foreach (var dupChild in dupContent)
+            {
+                if (dupChild.Name == W.p)
+                {
+                    MergeOrAddCellParagraph(keeperCell, dupCell, dupChild, keeperContent, dupParas);
+                    continue;
+                }
+
+                // Nested tables or other elements - append if missing.
+                keeperCell.Add(dupChild);
+            }
+        }
+
+        private static void MergeOrAddCellParagraph(
+            XElement keeperCell,
+            XElement dupCell,
+            XElement dupPara,
+            List<XElement> keeperCellContent,
+            List<XElement> dupCellParas)
+        {
+            var dupUnid = (string)dupPara.Attribute(PtOpenXml.Unid);
+            if (dupUnid != null)
+            {
+                var existing = keeperCell.Elements(W.p).FirstOrDefault(p => (string)p.Attribute(PtOpenXml.Unid) == dupUnid);
+                if (existing != null)
+                {
+                    MergeParagraph(existing, dupPara);
+                    return;
+                }
+            }
+
+            // If both cells contain only a single paragraph (besides tcPr), merge to keep text order stable.
+            var keeperParas = keeperCellContent.Where(e => e.Name == W.p).ToList();
+            var keeperHasOther = keeperCellContent.Any(e => e.Name != W.p);
+            var dupHasOther = dupCell.Elements().Where(e => e.Name != W.tcPr).Any(e => e.Name != W.p);
+            if (!keeperHasOther && !dupHasOther && keeperParas.Count == 1 && dupCellParas.Count == 1)
+            {
+                MergeParagraph(keeperParas[0], dupPara);
+                return;
+            }
+
+            if (IsEmptyParagraph(dupPara) && keeperCell.Elements(W.p).Any(IsEmptyParagraph))
+                return;
+
+            keeperCell.Add(dupPara);
+        }
+
+        private static void MergeParagraph(XElement keeperPara, XElement dupPara)
+        {
+            var keeperPPr = keeperPara.Element(W.pPr);
+            var dupPPr = dupPara.Element(W.pPr);
+            if (keeperPPr == null && dupPPr != null)
+                keeperPara.AddFirst(new XElement(dupPPr));
+
+            var nodesToMove = dupPara.Nodes().Where(n => !(n is XElement e && e.Name == W.pPr)).ToList();
+            keeperPara.Add(nodesToMove);
+        }
+
+        private static bool IsEmptyParagraph(XElement p)
+        {
+            if (p == null || p.Name != W.p)
+                return false;
+
+            if (p.Descendants(W.t).Any())
+                return false;
+            if (p.Descendants(W.drawing).Any() || p.Descendants(W.pict).Any())
+                return false;
+            if (p.Descendants(W.tbl).Any())
+                return false;
+
+            return true;
         }
 
         // somehow, sometimes a footnote or endnote contains absolutely nothing - no paragraph - nothing.
@@ -2377,11 +2755,23 @@ namespace OpenXmlPowerTools
 
         private static void CoalesceAdjacentRunsWithIdenticalFormatting(XDocument xDoc)
         {
+            // Process main document paragraphs (excluding those in txbxContent)
             var paras = xDoc.Root.DescendantsTrimmed(W.txbxContent).Where(d => d.Name == W.p);
             foreach (var para in paras)
             {
                 var newPara = WordprocessingMLUtil.CoalesceAdjacentRunsWithIdenticalFormatting(para);
                 para.ReplaceNodes(newPara.Nodes());
+            }
+
+            // Process txbxContent paragraphs recursively
+            // This is critical for proper round-trip when rejecting revisions in textbox content
+            foreach (var txbx in xDoc.Root.Descendants(W.txbxContent))
+            {
+                foreach (var txbxPara in txbx.DescendantsTrimmed(W.txbxContent).Where(d => d.Name == W.p))
+                {
+                    var newPara = WordprocessingMLUtil.CoalesceAdjacentRunsWithIdenticalFormatting(txbxPara);
+                    txbxPara.ReplaceNodes(newPara.Nodes());
+                }
             }
         }
 
@@ -3006,16 +3396,28 @@ namespace OpenXmlPowerTools
             // one additional modification to make to this loop - where we find a pPr in a text box, we want to do this as well, regardless of whether the status is equal, inserted, or deleted.
             // reason being that this module does not support insertion / deletion of text boxes themselves.  If a text box is in the before or after document, it will be in the document that
             // contains deltas.  It may have inserted or deleted text, but regardless, it will be in the result document.
+
+            // EXTENDED: Also normalize ALL atoms inside textboxes (not just pPr), so that the
+            // ancestor XElements have consistent unids. This is critical for proper reconstruction
+            // because AssembleAncestorUnidsInOrderToRebuildXmlTreeProperly reads unids from XElements.
             foreach (var cua in comparisonUnitAtomList)
             {
                 var doSet = false;
+                var isInTextBox = cua.AncestorElements.Any(ae => ae.Name == W.txbxContent);
+
                 if (cua.ContentElement.Name == W.pPr)
                 {
-                    if (cua.AncestorElements.Any(ae => ae.Name == W.txbxContent))
+                    if (isInTextBox)
                         doSet = true;
                     if (cua.CorrelationStatus == CorrelationStatus.Equal)
                         doSet = true;
                 }
+                // For all atoms inside textboxes with Equal status, normalize their XElement unids
+                else if (isInTextBox && cua.CorrelationStatus == CorrelationStatus.Equal)
+                {
+                    doSet = true;
+                }
+
                 if (doSet)
                 {
                     var cuaBefore = cua.ComparisonUnitAtomBefore;
@@ -3206,6 +3608,14 @@ namespace OpenXmlPowerTools
                     .ToArray();
                 cua.AncestorUnids = thisAncestorUnids;
             }
+
+            // Additional normalization pass for txbxContent atoms.
+            // For atoms inside txbxContent, we need to ensure ALL atoms (not just pPr) use consistent
+            // AncestorUnids. This is critical because Equal atoms may have their unids updated from
+            // ComparisonUnitAtomBefore, but Inserted atoms don't have a "before" atom.
+            // We fix this by finding a reference atom with normalized unids and applying those unids
+            // to all atoms in the same txbxContent.
+            NormalizeTxbxContentAncestorUnids(comparisonUnitAtomList);
 
             if (s_False)
             {
@@ -3876,6 +4286,19 @@ namespace OpenXmlPowerTools
                     var clonedGridSpan = new XElement(W.gridSpan,
                         new XAttribute("val", (string)element.Attribute(W.val)));
                     return clonedGridSpan;
+                }
+
+                // When hashing text boxes, strip VML/Drawing container noise and keep only the textbox content.
+                // For non-textbox drawings/picts, fall through to the normal hashing logic so images/shapes still
+                // affect the hash.
+                if (element.Name == W.pict || element.Name == W.drawing)
+                {
+                    var txbxContents = element.Descendants(W.txbxContent).ToList();
+                    if (txbxContents.Count > 0)
+                    {
+                        return new XElement(element.Name,
+                            txbxContents.Select(t => CloneBlockLevelContentForHashingInternal(mainDocumentPart, t, includeRelatedParts, settings)));
+                    }
                 }
 
                 if (element.Name == W.txbxContent)
@@ -4760,14 +5183,10 @@ namespace OpenXmlPowerTools
                     var groupedChildren = g
                         .GroupAdjacent(gc =>
                         {
-                            // Build key efficiently - avoid multiple string concatenations
-                            var ancestorUnid = level < (gc.AncestorElements.Length - 1) ? gc.AncestorUnids[level + 1] : "";
-
-                            var statusForGrouping = gc.CorrelationStatus;
-
-                            // Check for txbxContent ancestor without allocating with Skip()
+                            // Check for txbxContent ancestor - it's a CONTAINER, so it's at a level BEFORE
+                            // the content inside it (lower index in AncestorElements array)
                             bool inTxbxContent = false;
-                            for (int i = level; i < gc.AncestorElements.Length; i++)
+                            for (int i = 0; i < level && i < gc.AncestorElements.Length; i++)
                             {
                                 if (gc.AncestorElements[i].Name == W.txbxContent)
                                 {
@@ -4775,7 +5194,29 @@ namespace OpenXmlPowerTools
                                     break;
                                 }
                             }
+
+                            // Build key efficiently - avoid multiple string concatenations
+                            var ancestorUnid = level < (gc.AncestorElements.Length - 1) ? gc.AncestorUnids[level + 1] : "";
+
+                            // For txbxContent, use a fixed marker for ancestorUnid so all atoms at the same
+                            // level get grouped together regardless of whether they're from source1 or source2.
+                            // This prevents Equal atoms from being split into separate groups when Inserted
+                            // atoms with different unids appear between them.
+                            // The marker is non-empty to still trigger recursion for proper structure building.
+                            if (inTxbxContent && ancestorUnid != "")
+                            {
+                                ancestorUnid = "TXBX";
+                            }
+
+                            var statusForGrouping = gc.CorrelationStatus;
                             var statusStr = inTxbxContent ? "Equal" : statusForGrouping.ToString();
+
+                            // For txbxContent, skip the formatting signature logic so all atoms
+                            // get grouped together regardless of their original status
+                            if (inTxbxContent)
+                            {
+                                return $"{ancestorUnid}|{statusStr}";
+                            }
 
                             // Add formatting signature to key to prevent merging atoms with different formatting
                             // This ensures that atoms with FormatChanged status that have different before/after
@@ -7039,6 +7480,261 @@ namespace OpenXmlPowerTools
             W.moveToRangeEnd,
             W.subDoc,
         }.ToFrozenSet();
+
+        /// <summary>
+        /// Normalizes AncestorUnids for all atoms inside txbxContent to ensure consistent grouping.
+        /// This is critical because Equal atoms have their ancestor element unids updated from the "before"
+        /// document, but Inserted atoms don't have a "before" atom. We find a reference atom (typically
+        /// an Equal pPr atom that has been normalized) and apply those unids to all atoms in the same
+        /// txbxContent.
+        ///
+        /// Note: Equal atoms (from source1) and Inserted atoms (from source2) have different XElement
+        /// instances in their AncestorElements arrays. We identify "logical" groups by finding contiguous
+        /// sequences of atoms that all have a txbxContent ancestor at the same depth.
+        /// </summary>
+        private static void NormalizeTxbxContentAncestorUnids(List<ComparisonUnitAtom> comparisonUnitAtomList)
+        {
+            // Find contiguous groups of atoms that are all inside txbxContent
+            var groups = new List<List<ComparisonUnitAtom>>();
+            List<ComparisonUnitAtom> currentGroup = null;
+            int currentTxbxDepth = -1;
+
+            foreach (var cua in comparisonUnitAtomList)
+            {
+                // Find txbxContent depth for this atom
+                int txbxDepth = -1;
+                for (int i = 0; i < cua.AncestorElements.Length; i++)
+                {
+                    if (cua.AncestorElements[i].Name == W.txbxContent)
+                    {
+                        txbxDepth = i;
+                        break;
+                    }
+                }
+
+                if (txbxDepth >= 0)
+                {
+                    // This atom is inside txbxContent
+                    if (currentGroup == null || txbxDepth != currentTxbxDepth)
+                    {
+                        // Start a new group
+                        currentGroup = new List<ComparisonUnitAtom>();
+                        groups.Add(currentGroup);
+                        currentTxbxDepth = txbxDepth;
+                    }
+                    currentGroup.Add(cua);
+                }
+                else
+                {
+                    // Not in txbxContent, end current group
+                    currentGroup = null;
+                    currentTxbxDepth = -1;
+                }
+            }
+
+            // For each group, normalize all atoms to use consistent unids
+            foreach (var group in groups)
+            {
+                if (group.Count == 0)
+                    continue;
+
+                // Find the txbxContent index from any atom in the group
+                // (all atoms in the group should have the same depth since we grouped by depth)
+                int txbxContentIndex = -1;
+                for (int i = 0; i < group[0].AncestorElements.Length; i++)
+                {
+                    if (group[0].AncestorElements[i].Name == W.txbxContent)
+                    {
+                        txbxContentIndex = i;
+                        break;
+                    }
+                }
+
+                if (txbxContentIndex < 0)
+                    continue;
+
+                // Find a reference atom for OUTER levels (up to and including txbxContent)
+                // Prefer an Equal atom which has source1's normalized unids
+                var outerRefAtom = group.FirstOrDefault(cua =>
+                    cua.CorrelationStatus == CorrelationStatus.Equal &&
+                    cua.AncestorUnids != null);
+
+                if (outerRefAtom == null)
+                {
+                    outerRefAtom = group.FirstOrDefault(cua =>
+                        cua.CorrelationStatus == CorrelationStatus.Deleted &&
+                        cua.AncestorUnids != null);
+                }
+
+                if (outerRefAtom == null)
+                {
+                    outerRefAtom = group.FirstOrDefault(cua => cua.AncestorUnids != null);
+                }
+
+                if (outerRefAtom == null)
+                    continue;
+
+                // Subdivide the group into paragraph sub-groups
+                // Each pPr atom marks the start of a new paragraph
+                var paragraphSubGroups = new List<List<ComparisonUnitAtom>>();
+                List<ComparisonUnitAtom> currentParagraph = null;
+
+                foreach (var cua in group)
+                {
+                    // Check if this atom is a pPr (paragraph properties) - marks start of new paragraph
+                    if (cua.ContentElement.Name == W.pPr)
+                    {
+                        currentParagraph = new List<ComparisonUnitAtom>();
+                        paragraphSubGroups.Add(currentParagraph);
+                    }
+                    else if (currentParagraph == null)
+                    {
+                        // Atom before first pPr - create a paragraph for it
+                        currentParagraph = new List<ComparisonUnitAtom>();
+                        paragraphSubGroups.Add(currentParagraph);
+                    }
+                    currentParagraph.Add(cua);
+                }
+
+                // For each paragraph sub-group, normalize unids
+                foreach (var paraGroup in paragraphSubGroups)
+                {
+                    if (paraGroup.Count == 0)
+                        continue;
+
+                    // Check if this paragraph has mixed correlation statuses (both Equal and Inserted/Deleted)
+                    // If mixed, we need to normalize run-level unids too, otherwise Equal and Inserted atoms
+                    // will be grouped separately during reconstruction
+                    bool hasEqual = paraGroup.Any(cua => cua.CorrelationStatus == CorrelationStatus.Equal);
+                    bool hasInsertedOrDeleted = paraGroup.Any(cua =>
+                        cua.CorrelationStatus == CorrelationStatus.Inserted ||
+                        cua.CorrelationStatus == CorrelationStatus.Deleted);
+                    bool isMixedParagraph = hasEqual && hasInsertedOrDeleted;
+
+                    // Find a reference atom for paragraph level
+                    // Prefer an Equal atom which has source1's normalized unids
+                    var paraRefAtom = paraGroup.FirstOrDefault(cua =>
+                        cua.CorrelationStatus == CorrelationStatus.Equal &&
+                        cua.AncestorUnids != null);
+
+                    if (paraRefAtom == null)
+                    {
+                        paraRefAtom = paraGroup.FirstOrDefault(cua =>
+                            cua.CorrelationStatus == CorrelationStatus.Deleted &&
+                            cua.AncestorUnids != null);
+                    }
+
+                    if (paraRefAtom == null)
+                    {
+                        paraRefAtom = paraGroup.FirstOrDefault(cua => cua.AncestorUnids != null);
+                    }
+
+                    // For run level, we need an atom that has run-level ancestors (not just pPr)
+                    // pPr atoms only go up to paragraph level, they don't have run-level unids
+                    int runLevelIdx = txbxContentIndex + 2;
+                    var runRefAtom = paraGroup.FirstOrDefault(cua =>
+                        cua.CorrelationStatus == CorrelationStatus.Equal &&
+                        cua.AncestorUnids != null &&
+                        cua.AncestorUnids.Length > runLevelIdx);
+
+                    if (runRefAtom == null)
+                    {
+                        runRefAtom = paraGroup.FirstOrDefault(cua =>
+                            cua.CorrelationStatus == CorrelationStatus.Deleted &&
+                            cua.AncestorUnids != null &&
+                            cua.AncestorUnids.Length > runLevelIdx);
+                    }
+
+                    if (runRefAtom == null)
+                    {
+                        runRefAtom = paraGroup.FirstOrDefault(cua =>
+                            cua.AncestorUnids != null &&
+                            cua.AncestorUnids.Length > runLevelIdx);
+                    }
+
+                    foreach (var cua in paraGroup)
+                    {
+                        // Find txbxContent index for this atom
+                        int thisAtomTxbxIndex = -1;
+                        for (int i = 0; i < cua.AncestorElements.Length; i++)
+                        {
+                            if (cua.AncestorElements[i].Name == W.txbxContent)
+                            {
+                                thisAtomTxbxIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (thisAtomTxbxIndex < 0 || thisAtomTxbxIndex != txbxContentIndex)
+                            continue;
+
+                        // Normalize outer levels and paragraph level:
+                        // - Outer levels (0 to txbxContentIndex) use the group's outer reference atom
+                        // - Paragraph level (txbxContentIndex + 1) uses this paragraph's inner reference atom
+                        // - Run level (txbxContentIndex + 2) is ONLY normalized for mixed paragraphs
+                        //   (paragraphs with both Equal and Inserted/Deleted atoms) to keep them together
+                        int paragraphLevelIndex = txbxContentIndex + 1;
+                        int runLevelIndex = txbxContentIndex + 2;
+                        int maxLevelToNormalize;
+
+                        if (isMixedParagraph)
+                        {
+                            // Mixed paragraph - also normalize run level
+                            maxLevelToNormalize = Math.Min(runLevelIndex + 1, cua.AncestorUnids?.Length ?? 0);
+                        }
+                        else
+                        {
+                            // Pure paragraph (only Equal or only Inserted/Deleted) - keep runs separate
+                            maxLevelToNormalize = Math.Min(paragraphLevelIndex + 1, cua.AncestorUnids?.Length ?? 0);
+                        }
+
+                        for (int i = 0; i < maxLevelToNormalize; i++)
+                        {
+                            string refUnid = null;
+
+                            if (i <= txbxContentIndex)
+                            {
+                                // Outer level - use the group's outer reference atom
+                                if (outerRefAtom.AncestorUnids != null && i < outerRefAtom.AncestorUnids.Length)
+                                {
+                                    refUnid = outerRefAtom.AncestorUnids[i];
+                                }
+                            }
+                            else if (i == paragraphLevelIndex && paraRefAtom != null)
+                            {
+                                // Paragraph level - use the paragraph reference atom
+                                if (paraRefAtom.AncestorUnids != null && i < paraRefAtom.AncestorUnids.Length)
+                                {
+                                    refUnid = paraRefAtom.AncestorUnids[i];
+                                }
+                            }
+                            else if (i == runLevelIndex && runRefAtom != null && isMixedParagraph)
+                            {
+                                // Run level - only for mixed paragraphs, use the run reference atom's run unid
+                                if (runRefAtom.AncestorUnids != null && i < runRefAtom.AncestorUnids.Length)
+                                {
+                                    refUnid = runRefAtom.AncestorUnids[i];
+                                }
+                            }
+
+                            if (refUnid != null)
+                            {
+                                var unidAttr = cua.AncestorElements[i].Attribute(PtOpenXml.Unid);
+                                if (unidAttr != null)
+                                {
+                                    unidAttr.Value = refUnid;
+                                }
+
+                                if (cua.AncestorUnids != null && i < cua.AncestorUnids.Length)
+                                {
+                                    cua.AncestorUnids[i] = refUnid;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // VML content elements that contain recursive content (should NOT be preserved as properties)
         private static readonly HashSet<XName> VmlContentElements = new HashSet<XName>

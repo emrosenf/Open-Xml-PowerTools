@@ -2248,9 +2248,12 @@ namespace OpenXmlPowerTools
                 if (_knownFamilies == null)
                 {
                     _knownFamilies = new HashSet<string>();
-                    var families = FontFamily.Families;
-                    foreach (var fam in families)
-                        _knownFamilies.Add(fam.Name);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        var families = FontFamily.Families;
+                        foreach (var fam in families)
+                            _knownFamilies.Add(fam.Name);
+                    }
                 }
                 return _knownFamilies;
             }
@@ -2258,6 +2261,11 @@ namespace OpenXmlPowerTools
 
         private static int CalcWidthOfRunInTwips(XElement r)
         {
+            // System.Drawing is Windows-only in modern .NET; on non-Windows platforms we skip the
+            // width calculation used for tab layout.
+            if (!OperatingSystem.IsWindows())
+                return 0;
+
             var fontName = (string)r.Attribute(PtOpenXml.pt + "FontName") ??
                            (string)r.Ancestors(W.p).First().Attribute(PtOpenXml.pt + "FontName");
             if (fontName == null)
@@ -3006,6 +3014,9 @@ namespace OpenXmlPowerTools
             {
                 return null;
             }
+            // Image extraction in the built-in tests uses System.Drawing.Bitmap; skip on non-Windows.
+            if (!OperatingSystem.IsWindows())
+                return null;
             if (element.Name == W.drawing)
             {
                 return ProcessDrawing(wordDoc, element, imageHandler);
