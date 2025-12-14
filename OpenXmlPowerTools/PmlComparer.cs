@@ -474,6 +474,7 @@ namespace OpenXmlPowerTools
         public int Index { get; set; }
         public string RelationshipId { get; set; }
         public string LayoutRelationshipId { get; set; }
+        public string LayoutHash { get; set; }
         public List<ShapeSignature> Shapes { get; } = new List<ShapeSignature>();
         public string NotesText { get; set; }
         public string TitleText { get; set; }
@@ -658,6 +659,13 @@ namespace OpenXmlPowerTools
             if (slidePart.SlideLayoutPart != null)
             {
                 signature.LayoutRelationshipId = slidePart.GetIdOfPart(slidePart.SlideLayoutPart);
+                // Compute layout hash based on actual content, not relationship ID
+                var layoutXDoc = slidePart.SlideLayoutPart.GetXDocument();
+                var layoutRoot = layoutXDoc.Root;
+                var layoutType = (string)layoutRoot?.Attribute("type") ?? "";
+                var layoutCsld = layoutRoot?.Element(P.cSld);
+                var layoutHashContent = layoutType + "|" + (layoutCsld?.ToString(SaveOptions.DisableFormatting) ?? "");
+                signature.LayoutHash = PmlHasher.ComputeHash(layoutHashContent);
             }
 
             // Get common slide data
@@ -1828,8 +1836,8 @@ namespace OpenXmlPowerTools
             PmlComparerSettings settings,
             PmlComparisonResult result)
         {
-            // Compare layout
-            if (slide1.LayoutRelationshipId != slide2.LayoutRelationshipId)
+            // Compare layout (use content hash, not relationship ID)
+            if (slide1.LayoutHash != slide2.LayoutHash)
             {
                 result.Changes.Add(new PmlChange
                 {
