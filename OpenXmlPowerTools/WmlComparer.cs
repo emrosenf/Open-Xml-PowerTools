@@ -3271,6 +3271,9 @@ namespace OpenXmlPowerTools
                                         CorrelationStatus = formatDiff ? CorrelationStatus.FormatChanged : CorrelationStatus.Equal,
                                         ContentElementBefore = before.ContentElement,
                                         ComparisonUnitAtomBefore = before,
+                                        // Store "before" document ancestors for proper round-trip support
+                                        AncestorElementsBefore = before.AncestorElements,
+                                        PartBefore = before.Part,
                                     };
 
                                     // Set FormattingChangeRPrBefore immediately for FormatChanged atoms
@@ -4720,7 +4723,20 @@ namespace OpenXmlPowerTools
             var elementList = grouped
                 .Select(g =>
                 {
-                    var ancestorBeingConstructed = g.First().AncestorElements[level]; // these will all be the same, by definition
+                    var firstAtom = g.First();
+                    // For VML elements, prefer "before" ancestors to preserve original document structure
+                    // This ensures proper round-trip behavior when rejecting revisions
+                    XElement ancestorBeingConstructed;
+                    if (firstAtom.AncestorElementsBefore != null &&
+                        level < firstAtom.AncestorElementsBefore.Length &&
+                        IsVmlRelatedElement(firstAtom.AncestorElements[level].Name))
+                    {
+                        ancestorBeingConstructed = firstAtom.AncestorElementsBefore[level];
+                    }
+                    else
+                    {
+                        ancestorBeingConstructed = firstAtom.AncestorElements[level];
+                    }
 
                     // need to group by corr stat
                     // IMPORTANT: Also group by formatting signature to prevent merging atoms with different formatting changes
@@ -6998,6 +7014,18 @@ namespace OpenXmlPowerTools
             VML.textbox, W.txbxContent, VML.image
         };
 
+        // VML-related elements where we prefer "before" document ancestors for proper round-trip
+        private static readonly HashSet<XName> VmlRelatedElements = new HashSet<XName>
+        {
+            W.pict, VML.shape, VML.rect, VML.group, VML.oval, VML.line, VML.arc, VML.curve, VML.polyline,
+            VML.roundrect, VML.textbox, VML.shapetype, W.txbxContent
+        };
+
+        private static bool IsVmlRelatedElement(XName name)
+        {
+            return VmlRelatedElements.Contains(name);
+        }
+
         // Helper method to get all non-content children of a VML element
         private static IEnumerable<XElement> GetVmlPropertyChildren(XElement element)
         {
@@ -7456,6 +7484,11 @@ namespace OpenXmlPowerTools
         public XElement ContentElementBefore;
         public ComparisonUnitAtom ComparisonUnitAtomBefore;
         public OpenXmlPart Part;
+
+        // For Equal/FormatChanged atoms, store "before" document ancestors
+        // This allows reconstruction to use appropriate ancestors based on context
+        public XElement[] AncestorElementsBefore;
+        public OpenXmlPart PartBefore;
         public XElement RevTrackElement;
         public string FormattingSignature;
         public XElement NormalizedRPr;
