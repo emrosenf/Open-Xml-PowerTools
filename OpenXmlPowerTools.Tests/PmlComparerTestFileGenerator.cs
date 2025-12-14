@@ -263,7 +263,7 @@ namespace OxPt
                             new NonVisualDrawingProperties { Id = 1U, Name = "" },
                             new NonVisualGroupShapeDrawingProperties(),
                             new ApplicationNonVisualDrawingProperties()),
-                        new Draw.GroupShapeProperties())));
+                        new GroupShapeProperties())));
         }
 
         private static SlideLayout CreateSlideLayout()
@@ -275,7 +275,7 @@ namespace OxPt
                             new NonVisualDrawingProperties { Id = 1U, Name = "" },
                             new NonVisualGroupShapeDrawingProperties(),
                             new ApplicationNonVisualDrawingProperties()),
-                        new Draw.GroupShapeProperties())))
+                        new GroupShapeProperties())))
             { Type = SlideLayoutValues.Title };
         }
 
@@ -335,7 +335,7 @@ namespace OxPt
                     new NonVisualDrawingProperties { Id = 1U, Name = "" },
                     new NonVisualGroupShapeDrawingProperties(),
                     new ApplicationNonVisualDrawingProperties()),
-                new Draw.GroupShapeProperties(
+                new GroupShapeProperties(
                     new Draw.TransformGroup(
                         new Draw.Offset { X = 0, Y = 0 },
                         new Draw.Extents { Cx = 0, Cy = 0 },
