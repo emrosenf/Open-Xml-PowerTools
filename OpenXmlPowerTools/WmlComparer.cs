@@ -3271,6 +3271,9 @@ namespace OpenXmlPowerTools
                                         CorrelationStatus = formatDiff ? CorrelationStatus.FormatChanged : CorrelationStatus.Equal,
                                         ContentElementBefore = before.ContentElement,
                                         ComparisonUnitAtomBefore = before,
+                                        // Store "before" document ancestors for proper round-trip support
+                                        AncestorElementsBefore = before.AncestorElements,
+                                        PartBefore = before.Part,
                                     };
 
                                     // Set FormattingChangeRPrBefore immediately for FormatChanged atoms
@@ -4720,7 +4723,37 @@ namespace OpenXmlPowerTools
             var elementList = grouped
                 .Select(g =>
                 {
-                    var ancestorBeingConstructed = g.First().AncestorElements[level]; // these will all be the same, by definition
+                    var firstAtom = g.First();
+                    // For VML content, prefer "before" ancestors to preserve original document structure
+                    // This ensures proper round-trip behavior when rejecting revisions
+                    // Check if ANY ancestor (not just current level) is VML-related
+                    XElement ancestorBeingConstructed;
+                    bool isInsideVml = false;
+                    for (int i = 0; i <= level && i < firstAtom.AncestorElements.Length; i++)
+                    {
+                        if (IsVmlRelatedElement(firstAtom.AncestorElements[i].Name))
+                        {
+                            isInsideVml = true;
+                            break;
+                        }
+                    }
+
+                    // Try to find an atom with AncestorElementsBefore (Equal/FormatChanged atoms have this)
+                    // The first atom might be Inserted/Deleted which don't have "before" ancestors
+                    ComparisonUnitAtom atomWithBeforeAncestors = null;
+                    if (isInsideVml)
+                    {
+                        atomWithBeforeAncestors = g.FirstOrDefault(a => a.AncestorElementsBefore != null && level < a.AncestorElementsBefore.Length);
+                    }
+
+                    if (atomWithBeforeAncestors != null)
+                    {
+                        ancestorBeingConstructed = atomWithBeforeAncestors.AncestorElementsBefore[level];
+                    }
+                    else
+                    {
+                        ancestorBeingConstructed = firstAtom.AncestorElements[level];
+                    }
 
                     // need to group by corr stat
                     // IMPORTANT: Also group by formatting signature to prevent merging atoms with different formatting changes
@@ -4776,13 +4809,24 @@ namespace OpenXmlPowerTools
                                 if (spl[0] == "")
                                     return (object)gc.Select(gcc =>
                                     {
-                                        var dup = new XElement(gcc.ContentElement);
+                                        // For VML content, skip Inserted pPr atoms to ensure proper
+                                        // round-trip when rejecting revisions. The Deleted pPr (from
+                                        // the Before document) should be used instead.
+                                        if (isInsideVml && gcc.ContentElement.Name == W.pPr && spl[1] == "Inserted")
+                                            return null;
+
+                                        // For VML content, use "before" content element when available
+                                        // to ensure proper round-trip when rejecting revisions
+                                        var contentElement = (isInsideVml && gcc.ContentElementBefore != null)
+                                            ? gcc.ContentElementBefore
+                                            : gcc.ContentElement;
+                                        var dup = new XElement(contentElement);
                                         if (spl[1] == "Deleted")
                                             dup.Add(new XAttribute(PtOpenXml.Status, "Deleted"));
                                         else if (spl[1] == "Inserted")
                                             dup.Add(new XAttribute(PtOpenXml.Status, "Inserted"));
                                         return dup;
-                                    });
+                                    }).Where(e => e != null);
                                 else
                                 {
                                     return CoalesceRecurse(part, gc, level + 1, settings);
@@ -4807,7 +4851,12 @@ namespace OpenXmlPowerTools
                                 if (spl[0] == "")
                                     return (object)gc.Select(gcc =>
                                     {
-                                        var dup = new XElement(gcc.ContentElement);
+                                        // For VML content, use "before" content element when available
+                                        // to ensure proper round-trip when rejecting revisions
+                                        var contentElement = (isInsideVml && gcc.ContentElementBefore != null)
+                                            ? gcc.ContentElementBefore
+                                            : gcc.ContentElement;
+                                        var dup = new XElement(contentElement);
                                         if (spl[1] == "Deleted")
                                             dup.Add(new XAttribute(PtOpenXml.Status, "Deleted"));
                                         else if (spl[1] == "Inserted")
@@ -5026,10 +5075,18 @@ namespace OpenXmlPowerTools
                         return ReconstructElement(part, g, ancestorBeingConstructed, W.tcPr, null, null, level, settings);
                     if (ancestorBeingConstructed.Name == W.sdt)
                         return ReconstructElement(part, g, ancestorBeingConstructed, W.sdtPr, W.sdtEndPr, null, level, settings);
-                    if (ancestorBeingConstructed.Name == W.pict)
-                        return ReconstructElement(part, g, ancestorBeingConstructed, VML.shapetype, null, null, level, settings);
-                    if (ancestorBeingConstructed.Name == VML.shape)
-                        return ReconstructElement(part, g, ancestorBeingConstructed, W10.wrap, null, null, level, settings);
+                    if (ancestorBeingConstructed.Name == W.pict ||
+                        ancestorBeingConstructed.Name == VML.shape ||
+                        ancestorBeingConstructed.Name == VML.rect ||
+                        ancestorBeingConstructed.Name == VML.group ||
+                        ancestorBeingConstructed.Name == VML.shapetype ||
+                        ancestorBeingConstructed.Name == VML.oval ||
+                        ancestorBeingConstructed.Name == VML.line ||
+                        ancestorBeingConstructed.Name == VML.arc ||
+                        ancestorBeingConstructed.Name == VML.curve ||
+                        ancestorBeingConstructed.Name == VML.polyline ||
+                        ancestorBeingConstructed.Name == VML.roundrect)
+                        return ReconstructVmlElement(part, g, ancestorBeingConstructed, level, settings);
                     if (ancestorBeingConstructed.Name == W._object)
                         return ReconstructElement(part, g, ancestorBeingConstructed, VML.shapetype, VML.shape, O.OLEObject, level, settings);
                     if (ancestorBeingConstructed.Name == W.ruby)
@@ -5164,6 +5221,16 @@ namespace OpenXmlPowerTools
             IEnumerable<XElement> childProps = null;
             if (childPropElementNames != null)
                 childProps = ancestorBeingConstructed.Elements().Where(a => childPropElementNames.Contains(a.Name));
+
+            return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
+        }
+
+        // Reconstruct VML elements, preserving ALL non-content children (properties like v:fill, v:stroke, etc.)
+        private static XElement ReconstructVmlElement(OpenXmlPart part, IGrouping<string, ComparisonUnitAtom> g, XElement ancestorBeingConstructed, int level, WmlComparerSettings settings)
+        {
+            var newChildElements = CoalesceRecurse(part, g, level + 1, settings);
+            // Preserve all children that are NOT recursive content containers
+            var childProps = GetVmlPropertyChildren(ancestorBeingConstructed);
 
             return new XElement(ancestorBeingConstructed.Name, ancestorBeingConstructed.Attributes(), childProps, newChildElements);
         }
@@ -6973,6 +7040,31 @@ namespace OpenXmlPowerTools
             W.subDoc,
         }.ToFrozenSet();
 
+        // VML content elements that contain recursive content (should NOT be preserved as properties)
+        private static readonly HashSet<XName> VmlContentElements = new HashSet<XName>
+        {
+            VML.shape, VML.rect, VML.group, VML.oval, VML.line, VML.arc, VML.curve, VML.polyline, VML.roundrect,
+            VML.textbox, W.txbxContent, VML.image
+        };
+
+        // VML-related elements where we prefer "before" document ancestors for proper round-trip
+        private static readonly HashSet<XName> VmlRelatedElements = new HashSet<XName>
+        {
+            W.pict, VML.shape, VML.rect, VML.group, VML.oval, VML.line, VML.arc, VML.curve, VML.polyline,
+            VML.roundrect, VML.textbox, VML.shapetype, W.txbxContent
+        };
+
+        private static bool IsVmlRelatedElement(XName name)
+        {
+            return VmlRelatedElements.Contains(name);
+        }
+
+        // Helper method to get all non-content children of a VML element
+        private static IEnumerable<XElement> GetVmlPropertyChildren(XElement element)
+        {
+            return element.Elements().Where(e => !VmlContentElements.Contains(e.Name));
+        }
+
         private class RecursionInfo
         {
             public XName ElementName;
@@ -7014,17 +7106,17 @@ namespace OpenXmlPowerTools
             new RecursionInfo()
             {
                 ElementName = VML.group,
-                ChildElementPropertyNames = null,
+                ChildElementPropertyNames = new[] { VML.fill, VML.stroke, VML.shadow, VML.path, VML.formulas, VML.handles, O._lock, O.extrusion },
             },
             new RecursionInfo()
             {
                 ElementName = VML.shape,
-                ChildElementPropertyNames = null,
+                ChildElementPropertyNames = new[] { VML.fill, VML.stroke, VML.shadow, VML.textpath, VML.path, VML.formulas, VML.handles, VML.imagedata, O._lock, O.extrusion, W10.wrap },
             },
             new RecursionInfo()
             {
                 ElementName = VML.rect,
-                ChildElementPropertyNames = null,
+                ChildElementPropertyNames = new[] { VML.fill, VML.stroke, VML.shadow, VML.textpath, VML.path, VML.formulas, VML.handles, O._lock, O.extrusion },
             },
             new RecursionInfo()
             {
@@ -7069,7 +7161,7 @@ namespace OpenXmlPowerTools
             new RecursionInfo()
             {
                 ElementName = VML.shapetype,
-                ChildElementPropertyNames = null,
+                ChildElementPropertyNames = new[] { VML.stroke, VML.path, VML.fill, VML.shadow, VML.formulas, VML.handles },
             },
             new RecursionInfo()
             {
@@ -7425,6 +7517,11 @@ namespace OpenXmlPowerTools
         public XElement ContentElementBefore;
         public ComparisonUnitAtom ComparisonUnitAtomBefore;
         public OpenXmlPart Part;
+
+        // For Equal/FormatChanged atoms, store "before" document ancestors
+        // This allows reconstruction to use appropriate ancestors based on context
+        public XElement[] AncestorElementsBefore;
+        public OpenXmlPart PartBefore;
         public XElement RevTrackElement;
         public string FormattingSignature;
         public XElement NormalizedRPr;

@@ -560,8 +560,7 @@ namespace OxPt
         [InlineData("WC-1740", "WC/WC035-Endnote-After.docx", "WC/WC035-Endnote-Before.docx", 2)]
         [InlineData("WC-1750", "WC/WC036-Endnote-With-Table-Before.docx", "WC/WC036-Endnote-With-Table-After.docx", 6)]
         [InlineData("WC-1760", "WC/WC036-Endnote-With-Table-After.docx", "WC/WC036-Endnote-With-Table-Before.docx", 6)]
-        // TODO: TextBox sanity check failures - deeper issue with TextBox comparison/revision tracking
-        //[InlineData("WC-1770", "WC/WC037-Textbox-Before.docx", "WC/WC037-Textbox-After1.docx", 2)]
+        [InlineData("WC-1770", "WC/WC037-Textbox-Before.docx", "WC/WC037-Textbox-After1.docx", 2)]
         [InlineData("WC-1780", "WC/WC038-Document-With-BR-Before.docx", "WC/WC038-Document-With-BR-After.docx", 2)]
         [InlineData("WC-1800", "RC/RC001-Before.docx", "RC/RC001-After1.docx", 2)]
         [InlineData("WC-1810", "RC/RC002-Image.docx", "RC/RC002-Image-After1.docx", 1)]
@@ -569,11 +568,12 @@ namespace OxPt
         [InlineData("WC-1830", "WC/WC041-Table-5.docx", "WC/WC041-Table-5-Mod.docx", 2)]
         [InlineData("WC-1840", "WC/WC042-Table-5.docx", "WC/WC042-Table-5-Mod.docx", 2)]
         [InlineData("WC-1850", "WC/WC043-Nested-Table.docx", "WC/WC043-Nested-Table-Mod.docx", 2)]
-        //[InlineData("WC-1860", "WC/WC044-Text-Box.docx", "WC/WC044-Text-Box-Mod.docx", 2)]
-        //[InlineData("WC-1870", "WC/WC045-Text-Box.docx", "WC/WC045-Text-Box-Mod.docx", 2)]
-        //[InlineData("WC-1880", "WC/WC046-Two-Text-Box.docx", "WC/WC046-Two-Text-Box-Mod.docx", 2)]
-        //[InlineData("WC-1890", "WC/WC047-Two-Text-Box.docx", "WC/WC047-Two-Text-Box-Mod.docx", 2)]
-        //[InlineData("WC-1900", "WC/WC048-Text-Box-in-Cell.docx", "WC/WC048-Text-Box-in-Cell-Mod.docx", 6)]
+        [InlineData("WC-1860", "WC/WC044-Text-Box.docx", "WC/WC044-Text-Box-Mod.docx", 2)]
+        [InlineData("WC-1870", "WC/WC045-Text-Box.docx", "WC/WC045-Text-Box-Mod.docx", 2)]
+        [InlineData("WC-1880", "WC/WC046-Two-Text-Box.docx", "WC/WC046-Two-Text-Box-Mod.docx", 2)]
+        [InlineData("WC-1890", "WC/WC047-Two-Text-Box.docx", "WC/WC047-Two-Text-Box-Mod.docx", 2)]
+        [InlineData("WC-1900", "WC/WC048-Text-Box-in-Cell.docx", "WC/WC048-Text-Box-in-Cell-Mod.docx", 6)]
+        // TODO: Sanity check fails for complex textbox scenarios (textbox in cell, table in textbox)
         //[InlineData("WC-1910", "WC/WC049-Text-Box-in-Cell.docx", "WC/WC049-Text-Box-in-Cell-Mod.docx", 5)]
         //[InlineData("WC-1920", "WC/WC050-Table-in-Text-Box.docx", "WC/WC050-Table-in-Text-Box-Mod.docx", 8)]
         //[InlineData("WC-1930", "WC/WC051-Table-in-Text-Box.docx", "WC/WC051-Table-in-Text-Box-Mod.docx", 9)]
@@ -592,9 +592,11 @@ namespace OxPt
         [InlineData("WC-2050", "WC/WC063-Footnote.docx", "WC/WC063-Footnote-Mod.docx", 1)]
         [InlineData("WC-2060", "WC/WC063-Footnote-Mod.docx", "WC/WC063-Footnote.docx", 1)]
         [InlineData("WC-2070", "WC/WC064-Footnote.docx", "WC/WC064-Footnote-Mod.docx", 0)]
+        // TODO: Sanity check fails for complex textbox scenarios
         //[InlineData("WC-2080", "WC/WC065-Textbox.docx", "WC/WC065-Textbox-Mod.docx", 2)]
         [InlineData("WC-2090", "WC/WC066-Textbox-Before-Ins.docx", "WC/WC066-Textbox-Before-Ins-Mod.docx", 1)]
         [InlineData("WC-2092", "WC/WC066-Textbox-Before-Ins-Mod.docx", "WC/WC066-Textbox-Before-Ins.docx", 1)]
+        // TODO: Sanity check fails for textbox with image
         //[InlineData("WC-2100", "WC/WC067-Textbox-Image.docx", "WC/WC067-Textbox-Image-Mod.docx", 2)]
         //[InlineData("WC-1000", "", "", 0)]
         //[InlineData("WC-1000", "", "", 0)]
@@ -795,9 +797,35 @@ namespace OxPt
             }
 
             if (sanityCheck1.Count() != 0)
-                Assert.True(false, "Sanity Check #1 failed");
+            {
+                var message = new System.Text.StringBuilder();
+                message.AppendLine($"Sanity Check #1 failed with {sanityCheck1.Count()} revisions:");
+                foreach (var rev in sanityCheck1)
+                {
+                    message.AppendLine($"  Type: {rev.RevisionType}");
+                    message.AppendLine($"  Text: '{rev.Text}'");
+                    message.AppendLine($"  Part: {rev.PartUri}");
+                    message.AppendLine($"  ContentXElement: {rev.ContentXElement?.ToString()?.Substring(0, Math.Min(500, rev.ContentXElement?.ToString()?.Length ?? 0))}...");
+                    message.AppendLine($"  RevisionXElement: {rev.RevisionXElement?.Name}");
+                    message.AppendLine();
+                }
+                Assert.True(false, message.ToString());
+            }
             if (sanityCheck2.Count() != 0)
-                Assert.True(false, "Sanity Check #2 failed");
+            {
+                var message = new System.Text.StringBuilder();
+                message.AppendLine($"Sanity Check #2 failed with {sanityCheck2.Count()} revisions:");
+                foreach (var rev in sanityCheck2)
+                {
+                    message.AppendLine($"  Type: {rev.RevisionType}");
+                    message.AppendLine($"  Text: '{rev.Text}'");
+                    message.AppendLine($"  Part: {rev.PartUri}");
+                    message.AppendLine($"  ContentXElement: {rev.ContentXElement?.ToString()?.Substring(0, Math.Min(500, rev.ContentXElement?.ToString()?.Length ?? 0))}...");
+                    message.AppendLine($"  RevisionXElement: {rev.RevisionXElement?.Name}");
+                    message.AppendLine();
+                }
+                Assert.True(false, message.ToString());
+            }
         }
 
 #if false
