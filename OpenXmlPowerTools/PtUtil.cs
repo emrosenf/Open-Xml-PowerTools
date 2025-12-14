@@ -18,30 +18,34 @@ namespace OpenXmlPowerTools
 {
     public static class PtUtils
     {
+        /// <summary>
+        /// Computes SHA1 hash of a UTF-8 encoded string.
+        /// Uses modern .NET static HashData method for better performance (no instance allocation).
+        /// </summary>
         public static string SHA1HashStringForUTF8String(string s)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(s);
-            var sha1 = SHA1.Create();
-            byte[] hashBytes = sha1.ComputeHash(bytes);
-            return HexStringFromBytes(hashBytes);
+            byte[] hashBytes = SHA1.HashData(bytes);
+            return Convert.ToHexString(hashBytes).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Computes SHA1 hash of a byte array.
+        /// Uses modern .NET static HashData method for better performance (no instance allocation).
+        /// </summary>
         public static string SHA1HashStringForByteArray(byte[] bytes)
         {
-            var sha1 = SHA1.Create();
-            byte[] hashBytes = sha1.ComputeHash(bytes);
-            return HexStringFromBytes(hashBytes);
+            byte[] hashBytes = SHA1.HashData(bytes);
+            return Convert.ToHexString(hashBytes).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Converts byte array to lowercase hex string.
+        /// Uses Convert.ToHexString for zero-allocation conversion in .NET 5+.
+        /// </summary>
         public static string HexStringFromBytes(byte[] bytes)
         {
-            var sb = new StringBuilder();
-            foreach (byte b in bytes)
-            {
-                var hex = b.ToString("x2");
-                sb.Append(hex);
-            }
-            return sb.ToString();
+            return Convert.ToHexString(bytes).ToLowerInvariant();
         }
 
         public static string NormalizeDirName(string dirName)
@@ -556,20 +560,22 @@ namespace OpenXmlPowerTools
             return xmlDoc;
         }
 
+        /// <summary>
+        /// Concatenates all strings in the sequence.
+        /// Uses string.Concat which is optimized in modern .NET for better performance.
+        /// </summary>
         public static string StringConcatenate(this IEnumerable<string> source)
         {
-            return source.Aggregate(
-                new StringBuilder(),
-                (sb, s) => sb.Append(s),
-                sb => sb.ToString());
+            return string.Concat(source);
         }
 
+        /// <summary>
+        /// Projects each element to a string and concatenates all results.
+        /// Uses string.Concat which is optimized in modern .NET for better performance.
+        /// </summary>
         public static string StringConcatenate<T>(this IEnumerable<T> source, Func<T, string> projectionFunc)
         {
-            return source.Aggregate(
-                new StringBuilder(),
-                (sb, i) => sb.Append(projectionFunc(i)),
-                sb => sb.ToString());
+            return string.Concat(source.Select(projectionFunc));
         }
 
         public static IEnumerable<TResult> PtZip<TFirst, TSecond, TResult>(
