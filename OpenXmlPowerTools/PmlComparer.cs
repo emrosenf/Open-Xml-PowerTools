@@ -714,12 +714,16 @@ namespace OpenXmlPowerTools
                 signature.NotesText = ExtractNotesText(slidePart.NotesSlidePart);
             }
 
-            // Compute content hash
+            // Compute content hash (includes shape names and types for consistency)
             var contentBuilder = new StringBuilder();
             contentBuilder.Append(signature.TitleText ?? "");
             foreach (var shape in signature.Shapes)
             {
                 contentBuilder.Append("|");
+                contentBuilder.Append(shape.Name ?? "");
+                contentBuilder.Append(":");
+                contentBuilder.Append(shape.Type);
+                contentBuilder.Append(":");
                 contentBuilder.Append(shape.TextBody?.PlainText ?? "");
             }
             signature.ContentHash = PmlHasher.ComputeHash(contentBuilder.ToString());
