@@ -2060,7 +2060,7 @@ namespace OpenXmlPowerTools
                 commentList.Add(comment);
             }
 
-            commentsPart.PutXDocument();
+            commentsPart.PutXDocument(commentsXDoc);
 
             // Add VML drawing part for comment display (required for comments to show)
             AddVmlDrawingForComments(worksheetPart, changes);
