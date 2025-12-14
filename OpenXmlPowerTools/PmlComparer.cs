@@ -1793,24 +1793,30 @@ namespace OpenXmlPowerTools
                 switch (slideMatch.MatchType)
                 {
                     case SlideMatchType.Inserted:
-                        result.Changes.Add(new PmlChange
+                        if (settings.CompareSlideStructure)
                         {
-                            ChangeType = PmlChangeType.SlideInserted,
-                            SlideIndex = slideMatch.NewIndex
-                        });
+                            result.Changes.Add(new PmlChange
+                            {
+                                ChangeType = PmlChangeType.SlideInserted,
+                                SlideIndex = slideMatch.NewIndex
+                            });
+                        }
                         break;
 
                     case SlideMatchType.Deleted:
-                        result.Changes.Add(new PmlChange
+                        if (settings.CompareSlideStructure)
                         {
-                            ChangeType = PmlChangeType.SlideDeleted,
-                            OldSlideIndex = slideMatch.OldIndex
-                        });
+                            result.Changes.Add(new PmlChange
+                            {
+                                ChangeType = PmlChangeType.SlideDeleted,
+                                OldSlideIndex = slideMatch.OldIndex
+                            });
+                        }
                         break;
 
                     case SlideMatchType.Matched:
                         // Check if moved
-                        if (slideMatch.WasMoved)
+                        if (settings.CompareSlideStructure && slideMatch.WasMoved)
                         {
                             result.Changes.Add(new PmlChange
                             {
