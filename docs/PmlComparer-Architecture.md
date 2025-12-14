@@ -924,134 +924,225 @@ internal static class PmlDiffEngine
 
 ## 6. Renderers
 
-### 6.1 Markup Renderer (Primary)
+The renderer subsystem transforms a `PmlComparisonResult` into visual output. The current implementation includes the **Markup Renderer**, which produces an annotated PPTX file.
 
-Produces a standard PPTX with visual change overlays that opens in any PowerPoint version.
+### 6.1 Markup Renderer (Implemented)
+
+The `PmlMarkupRenderer` produces a standard PPTX file with visual change overlays that opens in any PowerPoint version. It takes the **newer** presentation as a base and adds visual annotations for each detected change.
+
+#### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PmlMarkupRenderer                             │
+│                                                                  │
+│  Input: Newer Presentation + Comparison Result + Settings        │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ 1. Clone newer presentation into memory stream            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                           │                                      │
+│                           ▼                                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ 2. Group changes by slide index                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                           │                                      │
+│                           ▼                                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ 3. For each slide with changes:                           │  │
+│  │    - Add visual overlays (boxes, labels, callouts)        │  │
+│  │    - Add speaker notes annotations (if enabled)           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                           │                                      │
+│                           ▼                                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ 4. Add summary slide at end (if enabled)                  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                           │                                      │
+│                           ▼                                      │
+│  Output: Annotated PmlDocument                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Visual Overlay Types
+
+| Change Type | Visual Indicator | Color (Default) |
+|-------------|------------------|-----------------|
+| `ShapeInserted` | Dashed bounding box + "INSERTED" label | Green (#00AA00) |
+| `ShapeDeleted` | "DELETED: {name}" label at old position | Red (#FF0000) |
+| `ShapeMoved` | "MOVED" label | Blue (#0000FF) |
+| `ShapeResized` | "RESIZED" label | Orange (#FFA500) |
+| `TextChanged` | "TEXT CHANGED" label + callout with old text | Orange (#FFA500) |
+| `ImageReplaced` | "IMAGE REPLACED" label | Orange (#FFA500) |
+
+#### Code Structure
 
 ```csharp
 public static class PmlMarkupRenderer
 {
+    // Main entry point
     public static PmlDocument RenderMarkedPresentation(
         PmlDocument newerDoc,
         PmlComparisonResult result,
         PmlComparerSettings settings)
     {
+        // Returns original doc if no changes
+        if (result.TotalChanges == 0)
+            return newerDoc;
+
+        // Clone and annotate
         using var ms = new MemoryStream();
         ms.Write(newerDoc.DocumentByteArray, 0, newerDoc.DocumentByteArray.Length);
 
-        using var pDoc = PresentationDocument.Open(ms, true);
-
-        foreach (var slideChange in result.Changes.GroupBy(c => c.SlideIndex))
+        using (var pDoc = PresentationDocument.Open(ms, true))
         {
-            if (slideChange.Key == null) continue;
-
-            var slidePart = GetSlidePart(pDoc, slideChange.Key.Value);
-            if (slidePart == null) continue;
-
-            var slideXDoc = slidePart.GetXDocument();
-            var spTree = slideXDoc.Root.Element(P.cSld)?.Element(P.spTree);
-            if (spTree == null) continue;
-
-            foreach (var change in slideChange)
+            // Process each slide
+            foreach (var slideChanges in changesBySlide)
             {
-                AddChangeOverlay(spTree, change, settings);
+                AddChangeOverlays(slidePart, slideChanges, settings);
+
+                if (settings.AddNotesAnnotations)
+                    AddNotesAnnotations(slidePart, slideChanges, settings);
             }
 
-            // Add change summary to speaker notes
-            AddChangeSummaryToNotes(slidePart, slideChange, settings);
-
-            slidePart.PutXDocument();
+            // Add summary slide at the end
+            if (settings.AddSummarySlide)
+                AddSummarySlide(presentationPart, result, settings);
         }
 
-        // Add summary slide at the end
-        if (settings.AddSummarySlide)
-        {
-            AddSummarySlide(pDoc, result, settings);
-        }
-
-        pDoc.Save();
         return new PmlDocument(newerDoc.FileName, ms.ToArray());
-    }
-
-    private static void AddChangeOverlay(
-        XElement spTree,
-        PmlChange change,
-        PmlComparerSettings settings)
-    {
-        switch (change.ChangeType)
-        {
-            case PmlChangeType.ShapeInserted:
-                // Add green bounding box around new shape
-                AddBoundingBox(spTree, change, settings.InsertedColor, "New");
-                break;
-
-            case PmlChangeType.ShapeDeleted:
-                // Add red "ghost" indicator where shape was
-                AddDeletedIndicator(spTree, change, settings.DeletedColor);
-                break;
-
-            case PmlChangeType.ShapeMoved:
-                // Add arrow from old position to new
-                AddMoveIndicator(spTree, change, settings.MovedColor);
-                break;
-
-            case PmlChangeType.TextChanged:
-                // Add callout with before/after text
-                AddTextChangeCallout(spTree, change, settings);
-                break;
-
-            case PmlChangeType.ImageReplaced:
-                // Add "Image Replaced" label
-                AddChangeLabel(spTree, change, "Image Replaced", settings.ModifiedColor);
-                break;
-        }
-    }
-
-    private static void AddBoundingBox(
-        XElement spTree,
-        PmlChange change,
-        string color,
-        string label)
-    {
-        // Create a rectangle shape with no fill, colored stroke
-        var boundingBox = new XElement(P.sp,
-            new XElement(P.nvSpPr,
-                new XElement(P.cNvPr,
-                    new XAttribute("id", GetNextShapeId(spTree)),
-                    new XAttribute("name", $"Change: {label} - {change.ShapeName}")),
-                new XElement(P.cNvSpPr),
-                new XElement(P.nvPr)),
-            new XElement(P.spPr,
-                new XElement(A.xfrm,
-                    new XElement(A.off,
-                        new XAttribute("x", change.NewTransform?.X ?? 0),
-                        new XAttribute("y", change.NewTransform?.Y ?? 0)),
-                    new XElement(A.ext,
-                        new XAttribute("cx", change.NewTransform?.Cx ?? 914400),
-                        new XAttribute("cy", change.NewTransform?.Cy ?? 914400))),
-                new XElement(A.prstGeom,
-                    new XAttribute("prst", "rect"),
-                    new XElement(A.avLst)),
-                new XElement(A.noFill),
-                new XElement(A.ln,
-                    new XAttribute("w", "38100"), // 3pt
-                    new XElement(A.solidFill,
-                        new XElement(A.srgbClr,
-                            new XAttribute("val", color))),
-                    new XElement(A.prstDash,
-                        new XAttribute("val", "dash")))));
-
-        spTree.Add(boundingBox);
-
-        // Add label
-        AddLabel(spTree, change.NewTransform, label, color);
     }
 }
 ```
 
-### 6.2 Two-Up Renderer
+### 6.2 Summary Slide
 
-Creates side-by-side comparison slides:
+When `settings.AddSummarySlide = true` (the default), a **summary slide is appended** at the end of the marked presentation. This slide lists all detected changes.
+
+#### Summary Slide Content
+
+The summary slide includes:
+
+1. **Title**: "Comparison Summary"
+2. **Statistics**: Counts of each change type
+3. **Change List**: Bullet points describing each change
+
+Example summary slide content:
+```
+Comparison Summary
+─────────────────────────────────
+
+Statistics:
+• Total Changes: 5
+• Slides Inserted: 1
+• Slides Deleted: 0
+• Shapes Inserted: 2
+• Shapes Deleted: 1
+• Text Changes: 1
+
+Changes:
+• Slide 3 inserted
+• Shape 'Title' inserted on slide 1
+• Shape 'Chart1' inserted on slide 2
+• Shape 'OldLogo' deleted from slide 1
+• Text changed in 'Content' on slide 2
+```
+
+#### Implementation
+
+```csharp
+private static void AddSummarySlide(
+    PresentationPart presentationPart,
+    PmlComparisonResult result,
+    PmlComparerSettings settings)
+{
+    // Create new slide part
+    var slidePart = presentationPart.AddNewPart<SlidePart>();
+
+    // Build slide XML with title and content shapes
+    var slideXDoc = new XDocument(
+        new XElement(P.sld,
+            new XElement(P.cSld,
+                new XElement(P.spTree,
+                    CreateTitleShape("Comparison Summary", 2),
+                    CreateSummaryContentShape(result, settings, 3)))));
+
+    slidePart.PutXDocument(slideXDoc);
+
+    // Add to presentation's slide list
+    AddSlideToPresentation(presentationPart, slidePart);
+}
+```
+
+### 6.3 Speaker Notes Annotations
+
+When `settings.AddNotesAnnotations = true` (the default), change details are added to each slide's speaker notes. This provides a detailed description without cluttering the slide visually.
+
+#### Notes Content Example
+
+```
+─── PmlComparer Changes ───
+2 changes on this slide:
+
+1. INSERTED: Shape 'NewChart'
+   Position: (100, 200)
+   Size: 400 x 300
+
+2. TEXT CHANGED: Shape 'Title'
+   Old: "Q3 Results"
+   New: "Q4 Results"
+────────────────────────────
+```
+
+### 6.4 Renderer Settings Reference
+
+The following `PmlComparerSettings` properties control renderer behavior:
+
+#### Output Control Settings
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `AddSummarySlide` | bool | `true` | Append a summary slide listing all changes |
+| `AddNotesAnnotations` | bool | `true` | Add change details to speaker notes |
+| `AuthorForChanges` | string | `"Open-Xml-PowerTools"` | Author name in change annotations |
+
+#### Color Settings
+
+All colors are specified as 6-character RGB hex strings (without `#`):
+
+| Setting | Default | Used For |
+|---------|---------|----------|
+| `InsertedColor` | `"00AA00"` (Green) | New shapes, inserted slides |
+| `DeletedColor` | `"FF0000"` (Red) | Deleted shapes, removed content |
+| `ModifiedColor` | `"FFA500"` (Orange) | Text changes, image replacements |
+| `MovedColor` | `"0000FF"` (Blue) | Moved shapes |
+| `FormattingColor` | `"9932CC"` (Purple) | Formatting-only changes |
+
+#### Example: Customizing Renderer Output
+
+```csharp
+var settings = new PmlComparerSettings
+{
+    // Enable all visual annotations
+    AddSummarySlide = true,
+    AddNotesAnnotations = true,
+
+    // Custom branding
+    AuthorForChanges = "ACME Corp Review System",
+
+    // Custom colors (corporate palette)
+    InsertedColor = "2E8B57",   // Sea green
+    DeletedColor = "DC143C",    // Crimson
+    ModifiedColor = "DAA520",   // Goldenrod
+    MovedColor = "4169E1"       // Royal blue
+};
+
+var markedDoc = PmlComparer.ProduceMarkedPresentation(older, newer, settings);
+```
+
+### 6.5 Two-Up Renderer (Future)
+
+The Two-Up Renderer is designed but not yet fully implemented. It will create side-by-side comparison slides:
 
 ```csharp
 public static class PmlTwoUpRenderer
@@ -1062,21 +1153,20 @@ public static class PmlTwoUpRenderer
         PmlComparisonResult result,
         PmlComparerSettings settings)
     {
-        // For each changed slide, create a new slide showing:
-        // Left side: scaled "before" version
-        // Right side: scaled "after" version
-        // Connectors between matched shapes
-        // Change annotations
+        // For each changed slide:
+        // - Create new slide with 50% width "Before" on left
+        // - Create 50% width "After" on right
+        // - Draw connectors between matched shapes
+        // - Add change annotations in margin
 
         // Implementation follows PresentationBuilder patterns
-        // ...
     }
 }
 ```
 
-### 6.3 Merge Applier
+### 6.6 Merge Applier (Future)
 
-Applies changes from source B onto source A:
+The Merge Applier is designed but not yet implemented:
 
 ```csharp
 public static class PmlMergeApplier
@@ -1091,22 +1181,6 @@ public static class PmlMergeApplier
         // - "Accept all changes" workflow
         // - Selective merge of specific changes
         // - Three-way merge (future)
-
-        using var ms = new MemoryStream();
-        ms.Write(baseDoc.DocumentByteArray, 0, baseDoc.DocumentByteArray.Length);
-
-        using var pDoc = PresentationDocument.Open(ms, true);
-
-        foreach (var change in result.Changes)
-        {
-            if (mergeSettings.ShouldApply(change))
-            {
-                ApplyChange(pDoc, change, changedDoc);
-            }
-        }
-
-        pDoc.Save();
-        return new PmlDocument(baseDoc.FileName, ms.ToArray());
     }
 }
 ```
@@ -1622,23 +1696,258 @@ Different use cases need different outputs:
 
 ---
 
-## Appendix C: Future Considerations
+## Appendix C: Future Work and Extension Guide
 
-### Three-Way Merge
+This section describes planned enhancements and provides guidance for extending the renderer and comparison engine.
 
-For collaborative scenarios: merge changes from two branches against a common ancestor.
+### C.1 Renderer Extensions
 
-### Office Add-in Integration
+#### Adding New Overlay Types
 
-Store diff metadata in a Custom XML part. Build a taskpane add-in that:
-- Shows revisions list
-- Allows accept/reject per change
-- Applies changes to live presentation
+To add a new visual overlay type to the markup renderer:
 
-### Real-Time Collaboration Diff
+1. **Add the change type** to `PmlChangeType` enum (if needed)
+2. **Add overlay logic** to `AddChangeOverlays()` in `PmlMarkupRenderer`
+3. **Add color setting** to `PmlComparerSettings` (if needed)
 
-Compare against collaboration session revision history (if accessible).
+Example: Adding a "ShapeStyleChanged" overlay:
 
-### AI-Assisted Matching
+```csharp
+// In AddChangeOverlays switch statement:
+case PmlChangeType.ShapeFillChanged:
+case PmlChangeType.ShapeLineChanged:
+    AddStyleChangeIndicator(spTree, change, settings.FormattingColor, nextId++);
+    break;
 
-Use embedding similarity for fuzzy text matching when exact matches fail.
+// New helper method:
+private static void AddStyleChangeIndicator(
+    XElement spTree,
+    PmlChange change,
+    string color,
+    uint shapeId)
+{
+    // Create small icon or badge indicating style change
+    var indicator = CreateBadgeShape(
+        shapeId,
+        "STYLE",
+        color,
+        change.NewX ?? 0,
+        change.NewY ?? 0);
+    spTree.Add(indicator);
+}
+```
+
+#### Customizing the Summary Slide
+
+The summary slide can be extended by modifying `CreateSummaryContentShape()`:
+
+- **Add custom sections**: Include change breakdown by author, date, or category
+- **Add thumbnails**: Embed slide thumbnails showing where changes occurred
+- **Add hyperlinks**: Link each change item to its slide (using `a:hlinkClick`)
+
+#### Creating a Custom Renderer
+
+To create a completely custom renderer (e.g., HTML output, PDF):
+
+```csharp
+public static class PmlHtmlRenderer
+{
+    public static string RenderHtmlReport(
+        PmlDocument older,
+        PmlDocument newer,
+        PmlComparisonResult result,
+        PmlComparerSettings settings)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("<html><body>");
+        sb.AppendLine($"<h1>Comparison Report</h1>");
+        sb.AppendLine($"<p>Total Changes: {result.TotalChanges}</p>");
+
+        foreach (var change in result.Changes)
+        {
+            sb.AppendLine($"<div class='change {change.ChangeType}'>");
+            sb.AppendLine($"  <span>{change.GetDescription()}</span>");
+            sb.AppendLine("</div>");
+        }
+
+        sb.AppendLine("</body></html>");
+        return sb.ToString();
+    }
+}
+```
+
+### C.2 Comparison Engine Extensions
+
+#### Adding New Change Types
+
+To detect additional change types:
+
+1. **Add to `PmlChangeType` enum**
+2. **Extract relevant data** in `PmlCanonicalizer`
+3. **Add detection logic** in `PmlDiffEngine.CompareMatchedShapes()`
+
+Example: Detecting animation changes:
+
+```csharp
+// In CompareMatchedShapes:
+if (settings.CompareAnimations)
+{
+    var anim1 = ExtractAnimationSignature(shape1);
+    var anim2 = ExtractAnimationSignature(shape2);
+
+    if (anim1 != anim2)
+    {
+        result.Changes.Add(new PmlChange
+        {
+            ChangeType = PmlChangeType.AnimationChanged,
+            SlideIndex = slideIndex,
+            ShapeName = shape2.Name
+        });
+    }
+}
+```
+
+#### Improving Shape Matching
+
+The shape matching algorithm can be extended:
+
+- **Add matching strategies**: Implement `MatchByGeometry()` for shapes with unique geometry
+- **Adjust scoring weights**: Modify `ComputeShapeMatchScore()` for domain-specific needs
+- **Add machine learning**: Use embedding similarity for content-based matching
+
+### C.3 Planned Features
+
+#### Two-Up Renderer
+
+Side-by-side comparison slides showing before/after:
+
+```
+┌──────────────────────────────────────────────┐
+│              Changed Slide 3                  │
+├─────────────────────┬────────────────────────┤
+│      BEFORE         │        AFTER           │
+│   ┌───────────┐     │    ┌───────────┐       │
+│   │  Title    │     │    │  Title    │       │
+│   └───────────┘     │    └───────────┘       │
+│   ┌───────────┐     │    ┌───────────┐       │
+│   │  OLD TEXT │─────┼───▶│  NEW TEXT │       │
+│   └───────────┘     │    └───────────┘       │
+│                     │    ┌───────────┐       │
+│                     │    │  [NEW]    │       │
+│                     │    └───────────┘       │
+├─────────────────────┴────────────────────────┤
+│ Changes: Text modified in "Content"           │
+│          Shape "Chart1" inserted              │
+└──────────────────────────────────────────────┘
+```
+
+#### Merge Engine
+
+Programmatic change application:
+
+```csharp
+var mergeSettings = new PmlMergeSettings
+{
+    // Apply only specific change types
+    IncludeChangeTypes = new[]
+    {
+        PmlChangeType.TextChanged,
+        PmlChangeType.ImageReplaced
+    },
+
+    // Or filter by slide
+    IncludeSlides = new[] { 1, 2, 5 },
+
+    // Conflict resolution
+    ConflictStrategy = MergeConflictStrategy.PreferNewer
+};
+
+var merged = PmlMergeApplier.ApplyChanges(
+    baseDoc,
+    changedDoc,
+    result,
+    mergeSettings);
+```
+
+#### Three-Way Merge
+
+For collaborative scenarios with a common ancestor:
+
+```csharp
+var result = PmlComparer.ThreeWayMerge(
+    ancestorDoc,    // Common base version
+    branchADoc,     // Changes from user A
+    branchBDoc,     // Changes from user B
+    settings);
+
+// Returns merged result with conflict markers
+```
+
+### C.4 Office Add-in Integration
+
+Store diff metadata in a Custom XML part for add-in consumption:
+
+```xml
+<!-- /customXml/item1.xml -->
+<pmlCompareResult xmlns="http://openxmlpowertools.com/pmlcomparer">
+  <metadata>
+    <comparedAt>2025-01-15T10:30:00Z</comparedAt>
+    <olderFile>presentation_v1.pptx</olderFile>
+    <newerFile>presentation_v2.pptx</newerFile>
+  </metadata>
+  <changes>
+    <change type="TextChanged" slideIndex="1" shapeId="5">
+      <old>Original text</old>
+      <new>Modified text</new>
+    </change>
+    <!-- ... -->
+  </changes>
+</pmlCompareResult>
+```
+
+A PowerPoint add-in can then:
+- Display a revision panel
+- Allow accept/reject per change
+- Navigate to change locations
+- Show change history
+
+### C.5 Performance Optimizations
+
+For large presentations (100+ slides):
+
+1. **Parallel canonicalization**: Process slides in parallel
+2. **Lazy shape extraction**: Only extract shapes when comparing matched slides
+3. **Incremental comparison**: Cache signatures for unchanged slides
+4. **Streaming output**: Write marked presentation incrementally
+
+```csharp
+var settings = new PmlComparerSettings
+{
+    // Performance tuning
+    MaxDegreeOfParallelism = Environment.ProcessorCount,
+    EnableSignatureCaching = true,
+    LazyShapeExtraction = true
+};
+```
+
+### C.6 AI-Assisted Matching
+
+Future enhancement using embedding similarity:
+
+```csharp
+// Pseudocode for AI-assisted text matching
+private static double ComputeSemanticSimilarity(string text1, string text2)
+{
+    // Use embedding model (e.g., sentence-transformers)
+    var embedding1 = EmbeddingModel.Encode(text1);
+    var embedding2 = EmbeddingModel.Encode(text2);
+
+    // Cosine similarity
+    return CosineSimilarity(embedding1, embedding2);
+}
+```
+
+This would improve matching for:
+- Paraphrased content
+- Translated text
+- Restructured slides with similar meaning
