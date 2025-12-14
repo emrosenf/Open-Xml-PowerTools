@@ -1754,6 +1754,508 @@ namespace OxPt
         }
 
         #endregion
+
+        #region Phase 3 Tests - Named Ranges, Comments, Data Validation, Merged Cells, Hyperlinks
+
+        [Fact]
+        public void SC041_NamedRange_Added_DetectedCorrectly()
+        {
+            // Arrange - original has no named ranges
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Value1",
+                    ["A2"] = "Value2"
+                }
+            };
+
+            var doc1 = CreateTestWorkbook(data1);
+
+            // Create doc2 with a named range
+            var doc2Bytes = CreateWorkbookWithNamedRange("TestRange", "Sheet1!$A$1:$A$2");
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings { CompareNamedRanges = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.NamedRangeAdded);
+            Assert.True(result.NamedRangesAdded >= 1);
+        }
+
+        [Fact]
+        public void SC042_NamedRange_Deleted_DetectedCorrectly()
+        {
+            // Arrange
+            var doc1Bytes = CreateWorkbookWithNamedRange("TestRange", "Sheet1!$A$1:$A$2");
+            var doc1 = new SmlDocument("original.xlsx", doc1Bytes);
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Value1",
+                    ["A2"] = "Value2"
+                }
+            };
+            var doc2 = CreateTestWorkbook(data2);
+
+            var settings = new SmlComparerSettings { CompareNamedRanges = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.NamedRangeDeleted);
+            Assert.True(result.NamedRangesDeleted >= 1);
+        }
+
+        [Fact]
+        public void SC043_NamedRange_Changed_DetectedCorrectly()
+        {
+            // Arrange
+            var doc1Bytes = CreateWorkbookWithNamedRange("TestRange", "Sheet1!$A$1:$A$2");
+            var doc1 = new SmlDocument("original.xlsx", doc1Bytes);
+
+            var doc2Bytes = CreateWorkbookWithNamedRange("TestRange", "Sheet1!$A$1:$A$5");
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings { CompareNamedRanges = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.NamedRangeChanged);
+            Assert.True(result.NamedRangesChanged >= 1);
+        }
+
+        [Fact]
+        public void SC044_MergedCells_Added_DetectedCorrectly()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["B1"] = "",
+                    ["C1"] = ""
+                }
+            };
+            var doc1 = CreateTestWorkbook(data1);
+
+            // Create doc2 with merged cells
+            var doc2Bytes = CreateWorkbookWithMergedCells("A1:C1");
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings { CompareMergedCells = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.MergedCellAdded);
+            Assert.True(result.MergedCellsAdded >= 1);
+        }
+
+        [Fact]
+        public void SC045_MergedCells_Deleted_DetectedCorrectly()
+        {
+            // Arrange
+            var doc1Bytes = CreateWorkbookWithMergedCells("A1:C1");
+            var doc1 = new SmlDocument("original.xlsx", doc1Bytes);
+
+            var data2 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Header",
+                    ["B1"] = "",
+                    ["C1"] = ""
+                }
+            };
+            var doc2 = CreateTestWorkbook(data2);
+
+            var settings = new SmlComparerSettings { CompareMergedCells = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.MergedCellDeleted);
+            Assert.True(result.MergedCellsDeleted >= 1);
+        }
+
+        [Fact]
+        public void SC046_Hyperlink_Added_DetectedCorrectly()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Click here"
+                }
+            };
+            var doc1 = CreateTestWorkbook(data1);
+
+            var doc2Bytes = CreateWorkbookWithHyperlink("A1", "https://example.com");
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings { CompareHyperlinks = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.HyperlinkAdded);
+            Assert.True(result.HyperlinksAdded >= 1);
+        }
+
+        [Fact]
+        public void SC047_Hyperlink_Changed_DetectedCorrectly()
+        {
+            // Arrange
+            var doc1Bytes = CreateWorkbookWithHyperlink("A1", "https://old-example.com");
+            var doc1 = new SmlDocument("original.xlsx", doc1Bytes);
+
+            var doc2Bytes = CreateWorkbookWithHyperlink("A1", "https://new-example.com");
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings { CompareHyperlinks = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.HyperlinkChanged);
+            Assert.True(result.HyperlinksChanged >= 1);
+        }
+
+        [Fact]
+        public void SC048_DataValidation_Added_DetectedCorrectly()
+        {
+            // Arrange
+            var data1 = new Dictionary<string, Dictionary<string, object>>
+            {
+                ["Sheet1"] = new Dictionary<string, object>
+                {
+                    ["A1"] = "Status"
+                }
+            };
+            var doc1 = CreateTestWorkbook(data1);
+
+            var doc2Bytes = CreateWorkbookWithDataValidation("A2", new[] { "Active", "Inactive", "Pending" });
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings { CompareDataValidation = true, EnableRowAlignment = false };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert
+            Assert.Contains(result.Changes, c => c.ChangeType == SmlChangeType.DataValidationAdded);
+            Assert.True(result.DataValidationsAdded >= 1);
+        }
+
+        [Fact]
+        public void SC049_Phase3_Statistics_CorrectlySummarized()
+        {
+            // Arrange - Create workbooks with multiple Phase 3 features
+            var doc1Bytes = CreateWorkbookWithNamedRange("Range1", "Sheet1!$A$1");
+            var doc1 = new SmlDocument("original.xlsx", doc1Bytes);
+
+            // Modified version: different named range, added merged cells
+            var doc2Bytes = CreateWorkbookWithPhase3Features();
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            var settings = new SmlComparerSettings
+            {
+                CompareNamedRanges = true,
+                CompareMergedCells = true,
+                CompareHyperlinks = true,
+                EnableRowAlignment = false
+            };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - should detect various Phase 3 changes
+            Assert.True(result.TotalChanges > 0, "Should detect Phase 3 changes");
+        }
+
+        [Fact]
+        public void SC050_Phase3_Features_DisabledByDefault()
+        {
+            // Arrange
+            var doc1Bytes = CreateWorkbookWithNamedRange("Range1", "Sheet1!$A$1");
+            var doc1 = new SmlDocument("original.xlsx", doc1Bytes);
+
+            var doc2Bytes = CreateWorkbookWithNamedRange("Range1", "Sheet1!$A$1:$A$5");
+            var doc2 = new SmlDocument("modified.xlsx", doc2Bytes);
+
+            // Settings with Phase 3 features disabled
+            var settings = new SmlComparerSettings
+            {
+                CompareNamedRanges = false,
+                CompareMergedCells = false,
+                CompareHyperlinks = false,
+                CompareDataValidation = false,
+                CompareComments = false,
+                EnableRowAlignment = false
+            };
+
+            // Act
+            var result = SmlComparer.Compare(doc1, doc2, settings);
+
+            // Assert - should not detect named range changes when disabled
+            Assert.DoesNotContain(result.Changes, c => c.ChangeType == SmlChangeType.NamedRangeChanged);
+        }
+
+        #region Phase 3 Test Helpers
+
+        private static byte[] CreateWorkbookWithNamedRange(string name, string reference)
+        {
+            using var ms = new MemoryStream();
+            using (var doc = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = doc.AddWorkbookPart();
+                workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                // Add worksheet
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(
+                    new DocumentFormat.OpenXml.Spreadsheet.SheetData(
+                        new DocumentFormat.OpenXml.Spreadsheet.Row(
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = "A1",
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Value1"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            },
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = "A2",
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Value2"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            }
+                        ) { RowIndex = 1 }
+                    )
+                );
+
+                // Add sheets
+                workbookPart.Workbook.Sheets = new DocumentFormat.OpenXml.Spreadsheet.Sheets(
+                    new DocumentFormat.OpenXml.Spreadsheet.Sheet
+                    {
+                        Id = workbookPart.GetIdOfPart(worksheetPart),
+                        SheetId = 1,
+                        Name = "Sheet1"
+                    }
+                );
+
+                // Add defined names
+                workbookPart.Workbook.DefinedNames = new DocumentFormat.OpenXml.Spreadsheet.DefinedNames(
+                    new DocumentFormat.OpenXml.Spreadsheet.DefinedName(reference) { Name = name }
+                );
+            }
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateWorkbookWithMergedCells(string mergeRange)
+        {
+            using var ms = new MemoryStream();
+            using (var doc = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = doc.AddWorkbookPart();
+                workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(
+                    new DocumentFormat.OpenXml.Spreadsheet.SheetData(
+                        new DocumentFormat.OpenXml.Spreadsheet.Row(
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = "A1",
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Header"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            }
+                        ) { RowIndex = 1 }
+                    ),
+                    new DocumentFormat.OpenXml.Spreadsheet.MergeCells(
+                        new DocumentFormat.OpenXml.Spreadsheet.MergeCell { Reference = mergeRange }
+                    )
+                );
+
+                workbookPart.Workbook.Sheets = new DocumentFormat.OpenXml.Spreadsheet.Sheets(
+                    new DocumentFormat.OpenXml.Spreadsheet.Sheet
+                    {
+                        Id = workbookPart.GetIdOfPart(worksheetPart),
+                        SheetId = 1,
+                        Name = "Sheet1"
+                    }
+                );
+            }
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateWorkbookWithHyperlink(string cellRef, string url)
+        {
+            using var ms = new MemoryStream();
+            using (var doc = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = doc.AddWorkbookPart();
+                workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+
+                // Add hyperlink relationship
+                var hyperlinkRel = worksheetPart.AddHyperlinkRelationship(new Uri(url), true);
+
+                worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(
+                    new DocumentFormat.OpenXml.Spreadsheet.SheetData(
+                        new DocumentFormat.OpenXml.Spreadsheet.Row(
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = cellRef,
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Click here"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            }
+                        ) { RowIndex = 1 }
+                    ),
+                    new DocumentFormat.OpenXml.Spreadsheet.Hyperlinks(
+                        new DocumentFormat.OpenXml.Spreadsheet.Hyperlink
+                        {
+                            Reference = cellRef,
+                            Id = hyperlinkRel.Id
+                        }
+                    )
+                );
+
+                workbookPart.Workbook.Sheets = new DocumentFormat.OpenXml.Spreadsheet.Sheets(
+                    new DocumentFormat.OpenXml.Spreadsheet.Sheet
+                    {
+                        Id = workbookPart.GetIdOfPart(worksheetPart),
+                        SheetId = 1,
+                        Name = "Sheet1"
+                    }
+                );
+            }
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateWorkbookWithDataValidation(string cellRef, string[] listItems)
+        {
+            using var ms = new MemoryStream();
+            using (var doc = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = doc.AddWorkbookPart();
+                workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(
+                    new DocumentFormat.OpenXml.Spreadsheet.SheetData(
+                        new DocumentFormat.OpenXml.Spreadsheet.Row(
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = "A1",
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Status"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            }
+                        ) { RowIndex = 1 }
+                    ),
+                    new DocumentFormat.OpenXml.Spreadsheet.DataValidations(
+                        new DocumentFormat.OpenXml.Spreadsheet.DataValidation
+                        {
+                            Type = DocumentFormat.OpenXml.Spreadsheet.DataValidationValues.List,
+                            AllowBlank = true,
+                            ShowInputMessage = true,
+                            ShowErrorMessage = true,
+                            SequenceOfReferences = new DocumentFormat.OpenXml.ListValue<DocumentFormat.OpenXml.StringValue>(
+                                new[] { new DocumentFormat.OpenXml.StringValue(cellRef) }
+                            ),
+                            Formula1 = new DocumentFormat.OpenXml.Spreadsheet.Formula1($"\"{string.Join(",", listItems)}\"")
+                        }
+                    ) { Count = 1 }
+                );
+
+                workbookPart.Workbook.Sheets = new DocumentFormat.OpenXml.Spreadsheet.Sheets(
+                    new DocumentFormat.OpenXml.Spreadsheet.Sheet
+                    {
+                        Id = workbookPart.GetIdOfPart(worksheetPart),
+                        SheetId = 1,
+                        Name = "Sheet1"
+                    }
+                );
+            }
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateWorkbookWithPhase3Features()
+        {
+            using var ms = new MemoryStream();
+            using (var doc = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = doc.AddWorkbookPart();
+                workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+
+                // Add hyperlink
+                var hyperlinkRel = worksheetPart.AddHyperlinkRelationship(new Uri("https://example.com"), true);
+
+                worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(
+                    new DocumentFormat.OpenXml.Spreadsheet.SheetData(
+                        new DocumentFormat.OpenXml.Spreadsheet.Row(
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = "A1",
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Header"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            },
+                            new DocumentFormat.OpenXml.Spreadsheet.Cell
+                            {
+                                CellReference = "B1",
+                                CellValue = new DocumentFormat.OpenXml.Spreadsheet.CellValue("Link"),
+                                DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.String
+                            }
+                        ) { RowIndex = 1 }
+                    ),
+                    new DocumentFormat.OpenXml.Spreadsheet.MergeCells(
+                        new DocumentFormat.OpenXml.Spreadsheet.MergeCell { Reference = "A1:A2" }
+                    ),
+                    new DocumentFormat.OpenXml.Spreadsheet.Hyperlinks(
+                        new DocumentFormat.OpenXml.Spreadsheet.Hyperlink
+                        {
+                            Reference = "B1",
+                            Id = hyperlinkRel.Id
+                        }
+                    )
+                );
+
+                workbookPart.Workbook.Sheets = new DocumentFormat.OpenXml.Spreadsheet.Sheets(
+                    new DocumentFormat.OpenXml.Spreadsheet.Sheet
+                    {
+                        Id = workbookPart.GetIdOfPart(worksheetPart),
+                        SheetId = 1,
+                        Name = "Sheet1"
+                    }
+                );
+
+                // Different named range
+                workbookPart.Workbook.DefinedNames = new DocumentFormat.OpenXml.Spreadsheet.DefinedNames(
+                    new DocumentFormat.OpenXml.Spreadsheet.DefinedName("Sheet1!$A$1:$B$2") { Name = "Range2" }
+                );
+            }
+            return ms.ToArray();
+        }
+
+        #endregion
+
+        #endregion
     }
 }
 
