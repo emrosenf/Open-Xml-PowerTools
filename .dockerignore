@@ -1,0 +1,27 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# CI
+.github/
+
+# NuGet
+*.nupkg
+
+# Temporary files
+*.log
+*.tmp
