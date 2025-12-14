@@ -4724,12 +4724,22 @@ namespace OpenXmlPowerTools
                 .Select(g =>
                 {
                     var firstAtom = g.First();
-                    // For VML elements, prefer "before" ancestors to preserve original document structure
+                    // For VML content, prefer "before" ancestors to preserve original document structure
                     // This ensures proper round-trip behavior when rejecting revisions
+                    // Check if ANY ancestor (not just current level) is VML-related
                     XElement ancestorBeingConstructed;
+                    bool isInsideVml = false;
+                    for (int i = 0; i <= level && i < firstAtom.AncestorElements.Length; i++)
+                    {
+                        if (IsVmlRelatedElement(firstAtom.AncestorElements[i].Name))
+                        {
+                            isInsideVml = true;
+                            break;
+                        }
+                    }
                     if (firstAtom.AncestorElementsBefore != null &&
                         level < firstAtom.AncestorElementsBefore.Length &&
-                        IsVmlRelatedElement(firstAtom.AncestorElements[level].Name))
+                        isInsideVml)
                     {
                         ancestorBeingConstructed = firstAtom.AncestorElementsBefore[level];
                     }
