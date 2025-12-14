@@ -1387,26 +1387,33 @@ namespace OpenXmlPowerTools
             }
             // If both have no title, don't include in calculation (neutral)
 
-            // Content hash match
-            maxScore += 2;
-            if (s1.ContentHash == s2.ContentHash)
-                score += 2;
-
-            // Shape count similarity
+            // Content hash match (lower weight - content may change while structure stays same)
             maxScore += 1;
+            if (s1.ContentHash == s2.ContentHash)
+                score += 1;
+
+            // Shape count similarity (high weight - structure is important)
+            maxScore += 2;
             var shapeCount1 = s1.Shapes.Count;
             var shapeCount2 = s2.Shapes.Count;
             if (shapeCount1 == shapeCount2)
-                score += 1;
+                score += 2;
             else if (Math.Abs(shapeCount1 - shapeCount2) <= 2)
-                score += 0.5;
+                score += 1;
 
-            // Shape types match
-            maxScore += 1;
+            // Shape types match (high weight - structure is important)
+            maxScore += 2;
             var types1 = s1.Shapes.Select(s => s.Type).OrderBy(t => t).ToList();
             var types2 = s2.Shapes.Select(s => s.Type).OrderBy(t => t).ToList();
             if (types1.SequenceEqual(types2))
-                score += 1;
+                score += 2;
+
+            // Shape names match (important for identifying same slides)
+            maxScore += 2;
+            var names1 = s1.Shapes.Select(s => s.Name).OrderBy(n => n).ToList();
+            var names2 = s2.Shapes.Select(s => s.Name).OrderBy(n => n).ToList();
+            if (names1.SequenceEqual(names2))
+                score += 2;
 
             return maxScore > 0 ? score / maxScore : 0;
         }
