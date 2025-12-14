@@ -113,7 +113,7 @@ namespace OxPt
                             new Pres.NonVisualDrawingProperties { Id = 1U, Name = "" },
                             new Pres.NonVisualGroupShapeDrawingProperties(),
                             new ApplicationNonVisualDrawingProperties()),
-                        new GroupShapeProperties())));
+                        new Draw.GroupShapeProperties())));
         }
 
         private static SlideLayout CreateSlideLayout()
@@ -125,57 +125,57 @@ namespace OxPt
                             new Pres.NonVisualDrawingProperties { Id = 1U, Name = "" },
                             new Pres.NonVisualGroupShapeDrawingProperties(),
                             new ApplicationNonVisualDrawingProperties()),
-                        new GroupShapeProperties())))
+                        new Draw.GroupShapeProperties())))
             {
                 Type = SlideLayoutValues.Title
             };
         }
 
-        private static Theme CreateTheme()
+        private static Draw.Theme CreateTheme()
         {
-            return new Theme(
-                new ThemeElements(
-                    new ColorScheme(
-                        new Dark1Color(new SystemColor { Val = SystemColorValues.WindowText }),
-                        new Light1Color(new SystemColor { Val = SystemColorValues.Window }),
-                        new Dark2Color(new RgbColorModelHex { Val = "1F497D" }),
-                        new Light2Color(new RgbColorModelHex { Val = "EEECE1" }),
-                        new Accent1Color(new RgbColorModelHex { Val = "4F81BD" }),
-                        new Accent2Color(new RgbColorModelHex { Val = "C0504D" }),
-                        new Accent3Color(new RgbColorModelHex { Val = "9BBB59" }),
-                        new Accent4Color(new RgbColorModelHex { Val = "8064A2" }),
-                        new Accent5Color(new RgbColorModelHex { Val = "4BACC6" }),
-                        new Accent6Color(new RgbColorModelHex { Val = "F79646" }),
-                        new Hyperlink(new RgbColorModelHex { Val = "0000FF" }),
-                        new FollowedHyperlinkColor(new RgbColorModelHex { Val = "800080" }))
+            return new Draw.Theme(
+                new Draw.ThemeElements(
+                    new Draw.ColorScheme(
+                        new Draw.Dark1Color(new Draw.SystemColor { Val = Draw.SystemColorValues.WindowText }),
+                        new Draw.Light1Color(new Draw.SystemColor { Val = Draw.SystemColorValues.Window }),
+                        new Draw.Dark2Color(new Draw.RgbColorModelHex { Val = "1F497D" }),
+                        new Draw.Light2Color(new Draw.RgbColorModelHex { Val = "EEECE1" }),
+                        new Draw.Accent1Color(new Draw.RgbColorModelHex { Val = "4F81BD" }),
+                        new Draw.Accent2Color(new Draw.RgbColorModelHex { Val = "C0504D" }),
+                        new Draw.Accent3Color(new Draw.RgbColorModelHex { Val = "9BBB59" }),
+                        new Draw.Accent4Color(new Draw.RgbColorModelHex { Val = "8064A2" }),
+                        new Draw.Accent5Color(new Draw.RgbColorModelHex { Val = "4BACC6" }),
+                        new Draw.Accent6Color(new Draw.RgbColorModelHex { Val = "F79646" }),
+                        new Draw.Hyperlink(new Draw.RgbColorModelHex { Val = "0000FF" }),
+                        new Draw.FollowedHyperlinkColor(new Draw.RgbColorModelHex { Val = "800080" }))
                     { Name = "Office" },
-                    new FontScheme(
-                        new MajorFont(
-                            new LatinFont { Typeface = "Calibri" },
-                            new EastAsianFont { Typeface = "" },
-                            new ComplexScriptFont { Typeface = "" }),
-                        new MinorFont(
-                            new LatinFont { Typeface = "Calibri" },
-                            new EastAsianFont { Typeface = "" },
-                            new ComplexScriptFont { Typeface = "" }))
+                    new Draw.FontScheme(
+                        new Draw.MajorFont(
+                            new Draw.LatinFont { Typeface = "Calibri" },
+                            new Draw.EastAsianFont { Typeface = "" },
+                            new Draw.ComplexScriptFont { Typeface = "" }),
+                        new Draw.MinorFont(
+                            new Draw.LatinFont { Typeface = "Calibri" },
+                            new Draw.EastAsianFont { Typeface = "" },
+                            new Draw.ComplexScriptFont { Typeface = "" }))
                     { Name = "Office" },
-                    new FormatScheme(
-                        new FillStyleList(
-                            new SolidFill(new SchemeColor { Val = SchemeColorValues.PhColor }),
-                            new GradientFill(new GradientStopList()),
-                            new GradientFill(new GradientStopList())),
-                        new LineStyleList(
-                            new Outline(),
-                            new Outline(),
-                            new Outline()),
-                        new EffectStyleList(
-                            new EffectStyle(new EffectList()),
-                            new EffectStyle(new EffectList()),
-                            new EffectStyle(new EffectList())),
-                        new BackgroundFillStyleList(
-                            new SolidFill(new SchemeColor { Val = SchemeColorValues.PhColor }),
-                            new GradientFill(new GradientStopList()),
-                            new GradientFill(new GradientStopList())))
+                    new Draw.FormatScheme(
+                        new Draw.FillStyleList(
+                            new Draw.SolidFill(new Draw.SchemeColor { Val = Draw.SchemeColorValues.PhColor }),
+                            new Draw.GradientFill(new Draw.GradientStopList()),
+                            new Draw.GradientFill(new Draw.GradientStopList())),
+                        new Draw.LineStyleList(
+                            new Draw.Outline(),
+                            new Draw.Outline(),
+                            new Draw.Outline()),
+                        new Draw.EffectStyleList(
+                            new Draw.EffectStyle(new Draw.EffectList()),
+                            new Draw.EffectStyle(new Draw.EffectList()),
+                            new Draw.EffectStyle(new Draw.EffectList())),
+                        new Draw.BackgroundFillStyleList(
+                            new Draw.SolidFill(new Draw.SchemeColor { Val = Draw.SchemeColorValues.PhColor }),
+                            new Draw.GradientFill(new Draw.GradientStopList()),
+                            new Draw.GradientFill(new Draw.GradientStopList())))
                     { Name = "Office" }))
             { Name = "Office Theme" };
         }
@@ -187,12 +187,12 @@ namespace OxPt
                     new Pres.NonVisualDrawingProperties { Id = 1U, Name = "" },
                     new Pres.NonVisualGroupShapeDrawingProperties(),
                     new ApplicationNonVisualDrawingProperties()),
-                new GroupShapeProperties(
-                    new TransformGroup(
-                        new Offset { X = 0, Y = 0 },
-                        new Extents { Cx = 0, Cy = 0 },
-                        new ChildOffset { X = 0, Y = 0 },
-                        new ChildExtents { Cx = 0, Cy = 0 })));
+                new Draw.GroupShapeProperties(
+                    new Draw.TransformGroup(
+                        new Draw.Offset { X = 0, Y = 0 },
+                        new Draw.Extents { Cx = 0, Cy = 0 },
+                        new Draw.ChildOffset { X = 0, Y = 0 },
+                        new Draw.ChildExtents { Cx = 0, Cy = 0 })));
 
             uint shapeId = 2;
 
@@ -249,19 +249,19 @@ namespace OxPt
             }
 
             var spPr = new Pres.ShapeProperties(
-                new Transform2D(
-                    new Offset { X = x, Y = y },
-                    new Extents { Cx = cx, Cy = cy }),
-                new PresetGeometry(new AdjustValueList()) { Preset = ShapeTypeValues.Rectangle });
+                new Draw.Transform2D(
+                    new Draw.Offset { X = x, Y = y },
+                    new Draw.Extents { Cx = cx, Cy = cy }),
+                new Draw.PresetGeometry(new Draw.AdjustValueList()) { Preset = Draw.ShapeTypeValues.Rectangle });
 
             var txBody = new Pres.TextBody(
-                new BodyProperties(),
-                new ListStyle(),
-                new Paragraph(
-                    new Run(
-                        new RunProperties { Language = "en-US" },
+                new Draw.BodyProperties(),
+                new Draw.ListStyle(),
+                new Draw.Paragraph(
+                    new Draw.Run(
+                        new Draw.RunProperties { Language = "en-US" },
                         new Draw.Text(text)),
-                    new EndParagraphRunProperties { Language = "en-US" }));
+                    new Draw.EndParagraphRunProperties { Language = "en-US" }));
 
             return new Pres.Shape(nvSpPr, spPr, txBody);
         }
