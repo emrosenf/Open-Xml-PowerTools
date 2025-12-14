@@ -63,7 +63,7 @@ namespace OpenXmlPowerTools
         public bool EnableFuzzyShapeMatching { get; set; } = true;
 
         /// <summary>Minimum similarity score (0.0-1.0) for fuzzy slide matching.</summary>
-        public double SlideSimilarityThreshold { get; set; } = 0.6;
+        public double SlideSimilarityThreshold { get; set; } = 0.4;
 
         /// <summary>Minimum similarity score (0.0-1.0) for fuzzy shape matching.</summary>
         public double ShapeSimilarityThreshold { get; set; } = 0.7;
@@ -1392,28 +1392,32 @@ namespace OpenXmlPowerTools
             if (s1.ContentHash == s2.ContentHash)
                 score += 1;
 
-            // Shape count similarity (high weight - structure is important)
-            maxScore += 2;
+            // Shape count similarity (moderate weight)
+            maxScore += 1;
             var shapeCount1 = s1.Shapes.Count;
             var shapeCount2 = s2.Shapes.Count;
             if (shapeCount1 == shapeCount2)
-                score += 2;
-            else if (Math.Abs(shapeCount1 - shapeCount2) <= 2)
                 score += 1;
+            else if (Math.Abs(shapeCount1 - shapeCount2) <= 2)
+                score += 0.5;
 
-            // Shape types match (high weight - structure is important)
-            maxScore += 2;
-            var types1 = s1.Shapes.Select(s => s.Type).OrderBy(t => t).ToList();
-            var types2 = s2.Shapes.Select(s => s.Type).OrderBy(t => t).ToList();
-            if (types1.SequenceEqual(types2))
-                score += 2;
+            // Shape types overlap (check for common types, not exact match)
+            maxScore += 1;
+            var types1 = s1.Shapes.Select(s => s.Type).ToList();
+            var types2 = s2.Shapes.Select(s => s.Type).ToList();
+            var commonTypes = types1.Intersect(types2).Count();
+            var totalTypes = Math.Max(types1.Count, types2.Count);
+            if (totalTypes > 0)
+                score += (double)commonTypes / totalTypes;
 
-            // Shape names match (important for identifying same slides)
+            // Shape names overlap (important for identifying same slides)
             maxScore += 2;
-            var names1 = s1.Shapes.Select(s => s.Name).OrderBy(n => n).ToList();
-            var names2 = s2.Shapes.Select(s => s.Name).OrderBy(n => n).ToList();
-            if (names1.SequenceEqual(names2))
-                score += 2;
+            var names1 = s1.Shapes.Select(s => s.Name).Where(n => !string.IsNullOrEmpty(n)).ToHashSet();
+            var names2 = s2.Shapes.Select(s => s.Name).Where(n => !string.IsNullOrEmpty(n)).ToHashSet();
+            var commonNames = names1.Intersect(names2).Count();
+            var totalNames = Math.Max(names1.Count, names2.Count);
+            if (totalNames > 0)
+                score += 2.0 * commonNames / totalNames;
 
             return maxScore > 0 ? score / maxScore : 0;
         }
