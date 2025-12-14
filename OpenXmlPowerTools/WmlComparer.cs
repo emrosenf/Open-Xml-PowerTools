@@ -3266,9 +3266,7 @@ namespace OpenXmlPowerTools
                                         }
                                     }
 
-                                    // Use "before" document's ancestors for Equal/FormatChanged atoms
-                                    // This ensures that when rejecting revisions, the document structure matches the "before" document
-                                    var atom = new ComparisonUnitAtom(after.ContentElement, before.AncestorElements, before.Part, settings)
+                                    var atom = new ComparisonUnitAtom(after.ContentElement, after.AncestorElements, after.Part, settings)
                                     {
                                         CorrelationStatus = formatDiff ? CorrelationStatus.FormatChanged : CorrelationStatus.Equal,
                                         ContentElementBefore = before.ContentElement,
