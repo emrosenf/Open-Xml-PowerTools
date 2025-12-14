@@ -659,13 +659,12 @@ namespace OpenXmlPowerTools
             if (slidePart.SlideLayoutPart != null)
             {
                 signature.LayoutRelationshipId = slidePart.GetIdOfPart(slidePart.SlideLayoutPart);
-                // Compute layout hash based on actual content, not relationship ID
+                // Compute layout hash based on layout type, not relationship ID or full content
+                // (full content hash can differ due to XML serialization differences)
                 var layoutXDoc = slidePart.SlideLayoutPart.GetXDocument();
                 var layoutRoot = layoutXDoc.Root;
-                var layoutType = (string)layoutRoot?.Attribute("type") ?? "";
-                var layoutCsld = layoutRoot?.Element(P.cSld);
-                var layoutHashContent = layoutType + "|" + (layoutCsld?.ToString(SaveOptions.DisableFormatting) ?? "");
-                signature.LayoutHash = PmlHasher.ComputeHash(layoutHashContent);
+                var layoutType = (string)layoutRoot?.Attribute("type") ?? "custom";
+                signature.LayoutHash = PmlHasher.ComputeHash(layoutType);
             }
 
             // Get common slide data
