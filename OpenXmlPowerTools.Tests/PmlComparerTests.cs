@@ -14,9 +14,9 @@ using DocumentFormat.OpenXml.Presentation;
 using OpenXmlPowerTools;
 using Xunit;
 
-// Aliases to resolve ambiguous references
-using P = DocumentFormat.OpenXml.Presentation;
-using A = DocumentFormat.OpenXml.Drawing;
+// Aliases to resolve ambiguous references (Pres/Draw to avoid conflict with OpenXmlPowerTools.P/A)
+using Pres = DocumentFormat.OpenXml.Presentation;
+using Draw = DocumentFormat.OpenXml.Drawing;
 
 #if !ELIDE_XUNIT_TESTS
 
@@ -109,9 +109,9 @@ namespace OxPt
             return new SlideMaster(
                 new CommonSlideData(
                     new ShapeTree(
-                        new P.NonVisualGroupShapeProperties(
-                            new P.NonVisualDrawingProperties { Id = 1U, Name = "" },
-                            new P.NonVisualGroupShapeDrawingProperties(),
+                        new Pres.NonVisualGroupShapeProperties(
+                            new Pres.NonVisualDrawingProperties { Id = 1U, Name = "" },
+                            new Pres.NonVisualGroupShapeDrawingProperties(),
                             new ApplicationNonVisualDrawingProperties()),
                         new GroupShapeProperties())));
         }
@@ -121,9 +121,9 @@ namespace OxPt
             return new SlideLayout(
                 new CommonSlideData(
                     new ShapeTree(
-                        new P.NonVisualGroupShapeProperties(
-                            new P.NonVisualDrawingProperties { Id = 1U, Name = "" },
-                            new P.NonVisualGroupShapeDrawingProperties(),
+                        new Pres.NonVisualGroupShapeProperties(
+                            new Pres.NonVisualDrawingProperties { Id = 1U, Name = "" },
+                            new Pres.NonVisualGroupShapeDrawingProperties(),
                             new ApplicationNonVisualDrawingProperties()),
                         new GroupShapeProperties())))
             {
@@ -183,9 +183,9 @@ namespace OxPt
         private static Slide CreateSlide(SlideData data)
         {
             var shapeTree = new ShapeTree(
-                new P.NonVisualGroupShapeProperties(
-                    new P.NonVisualDrawingProperties { Id = 1U, Name = "" },
-                    new P.NonVisualGroupShapeDrawingProperties(),
+                new Pres.NonVisualGroupShapeProperties(
+                    new Pres.NonVisualDrawingProperties { Id = 1U, Name = "" },
+                    new Pres.NonVisualGroupShapeDrawingProperties(),
                     new ApplicationNonVisualDrawingProperties()),
                 new GroupShapeProperties(
                     new TransformGroup(
@@ -227,7 +227,7 @@ namespace OxPt
             return new Slide(new CommonSlideData(shapeTree));
         }
 
-        private static P.Shape CreateTextShape(
+        private static Pres.Shape CreateTextShape(
             uint id,
             string name,
             string text,
@@ -237,9 +237,9 @@ namespace OxPt
             long cy,
             string placeholderType = null)
         {
-            var nvSpPr = new P.NonVisualShapeProperties(
-                new P.NonVisualDrawingProperties { Id = id, Name = name },
-                new P.NonVisualShapeDrawingProperties(),
+            var nvSpPr = new Pres.NonVisualShapeProperties(
+                new Pres.NonVisualDrawingProperties { Id = id, Name = name },
+                new Pres.NonVisualShapeDrawingProperties(),
                 new ApplicationNonVisualDrawingProperties());
 
             if (!string.IsNullOrEmpty(placeholderType))
@@ -248,22 +248,22 @@ namespace OxPt
                     new PlaceholderShape { Type = GetPlaceholderType(placeholderType) });
             }
 
-            var spPr = new P.ShapeProperties(
+            var spPr = new Pres.ShapeProperties(
                 new Transform2D(
                     new Offset { X = x, Y = y },
                     new Extents { Cx = cx, Cy = cy }),
                 new PresetGeometry(new AdjustValueList()) { Preset = ShapeTypeValues.Rectangle });
 
-            var txBody = new P.TextBody(
+            var txBody = new Pres.TextBody(
                 new BodyProperties(),
                 new ListStyle(),
                 new Paragraph(
                     new Run(
                         new RunProperties { Language = "en-US" },
-                        new A.Text(text)),
+                        new Draw.Text(text)),
                     new EndParagraphRunProperties { Language = "en-US" }));
 
-            return new P.Shape(nvSpPr, spPr, txBody);
+            return new Pres.Shape(nvSpPr, spPr, txBody);
         }
 
         private static PlaceholderValues GetPlaceholderType(string type)

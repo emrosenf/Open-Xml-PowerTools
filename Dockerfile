@@ -18,4 +18,4 @@ RUN dotnet build OpenXmlPowerTools/OpenXmlPowerTools.csproj --no-restore --confi
     dotnet build OpenXmlPowerTools.Tests/OpenXmlPowerTools.Tests.csproj --no-restore --configuration Release
 
 # Default command runs the same test filter as GitHub Actions
-CMD ["dotnet", "test", "OpenXmlPowerTools.Tests/OpenXmlPowerTools.Tests.csproj", "--no-build", "--configuration", "Release", "--verbosity", "normal", "--filter", "FullyQualifiedName~WcTests|FullyQualifiedName~FormattingChange|FullyQualifiedName~SmlComparer"]
+CMD ["dotnet", "test", "OpenXmlPowerTools.Tests/OpenXmlPowerTools.Tests.csproj", "--no-build", "--configuration", "Release", "--verbosity", "normal", "--filter", "FullyQualifiedName~WcTests|FullyQualifiedName~FormattingChange|FullyQualifiedName~SmlComparer|FullyQualifiedName~PmlComparer"]
