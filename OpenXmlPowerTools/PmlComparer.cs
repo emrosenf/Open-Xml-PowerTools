@@ -1372,14 +1372,20 @@ namespace OpenXmlPowerTools
             double maxScore = 0;
 
             // Title match (high weight)
-            maxScore += 3;
-            if (!string.IsNullOrEmpty(s1.TitleText) && s1.TitleText == s2.TitleText)
-                score += 3;
-            else if (!string.IsNullOrEmpty(s1.TitleText) && !string.IsNullOrEmpty(s2.TitleText))
+            // If both have titles, compare them; if both are empty, consider it a match
+            if (!string.IsNullOrEmpty(s1.TitleText) || !string.IsNullOrEmpty(s2.TitleText))
             {
-                var similarity = ComputeTextSimilarity(s1.TitleText, s2.TitleText);
-                score += similarity * 2;
+                maxScore += 3;
+                if (!string.IsNullOrEmpty(s1.TitleText) && s1.TitleText == s2.TitleText)
+                    score += 3;
+                else if (!string.IsNullOrEmpty(s1.TitleText) && !string.IsNullOrEmpty(s2.TitleText))
+                {
+                    var similarity = ComputeTextSimilarity(s1.TitleText, s2.TitleText);
+                    score += similarity * 2;
+                }
+                // One has title, one doesn't - no score
             }
+            // If both have no title, don't include in calculation (neutral)
 
             // Content hash match
             maxScore += 2;
