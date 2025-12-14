@@ -4809,6 +4809,12 @@ namespace OpenXmlPowerTools
                                 if (spl[0] == "")
                                     return (object)gc.Select(gcc =>
                                     {
+                                        // For VML content, skip Inserted pPr atoms to ensure proper
+                                        // round-trip when rejecting revisions. The Deleted pPr (from
+                                        // the Before document) should be used instead.
+                                        if (isInsideVml && gcc.ContentElement.Name == W.pPr && spl[1] == "Inserted")
+                                            return null;
+
                                         // For VML content, use "before" content element when available
                                         // to ensure proper round-trip when rejecting revisions
                                         var contentElement = (isInsideVml && gcc.ContentElementBefore != null)
@@ -4820,7 +4826,7 @@ namespace OpenXmlPowerTools
                                         else if (spl[1] == "Inserted")
                                             dup.Add(new XAttribute(PtOpenXml.Status, "Inserted"));
                                         return dup;
-                                    });
+                                    }).Where(e => e != null);
                                 else
                                 {
                                     return CoalesceRecurse(part, gc, level + 1, settings);
