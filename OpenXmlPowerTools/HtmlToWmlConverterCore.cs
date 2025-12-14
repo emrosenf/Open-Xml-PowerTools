@@ -1138,6 +1138,11 @@ namespace OpenXmlPowerTools.HtmlToWml
 
         private static int? CalcWidthOfRunInPixels(XElement r)
         {
+            // System.Drawing is Windows-only in modern .NET; on non-Windows platforms we skip layout
+            // calculations that depend on GDI+ so conversion can still succeed.
+            if (!OperatingSystem.IsWindows())
+                return 0;
+
             var fontName = (string)r.Attribute(PtOpenXml.FontName) ??
                (string)r.Ancestors(W.p).First().Attribute(PtOpenXml.FontName);
             if (fontName == null)
@@ -1885,9 +1890,12 @@ namespace OpenXmlPowerTools.HtmlToWml
                 if (_knownFamilies == null)
                 {
                     _knownFamilies = new HashSet<string>();
-                    var families = FontFamily.Families;
-                    foreach (var fam in families)
-                        _knownFamilies.Add(fam.Name);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        var families = FontFamily.Families;
+                        foreach (var fam in families)
+                            _knownFamilies.Add(fam.Name);
+                    }
                 }
                 return _knownFamilies;
             }
@@ -2277,6 +2285,10 @@ namespace OpenXmlPowerTools.HtmlToWml
 
         private static XElement TransformImageToWml(XElement element, HtmlToWmlConverterSettings settings, WordprocessingDocument wDoc)
         {
+            // Image sizing currently relies on System.Drawing.Bitmap; skip images on non-Windows.
+            if (!OperatingSystem.IsWindows())
+                return null;
+
             string srcAttribute = (string)element.Attribute(XhtmlNoNamespace.src);
             byte[] ba = null;
             Bitmap bmp = null;

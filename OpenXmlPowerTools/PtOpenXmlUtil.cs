@@ -634,12 +634,20 @@ namespace OpenXmlPowerTools
 
         public static int CalcWidthOfRunInTwips(XElement r)
         {
+            // System.Drawing is Windows-only in modern .NET; when running on non-Windows platforms
+            // (e.g., Linux test containers) treat run width as 0 to avoid GDI+ dependency.
+            if (!OperatingSystem.IsWindows())
+                return 0;
+
             if (KnownFamilies == null)
             {
                 KnownFamilies = new HashSet<string>();
-                var families = FontFamily.Families;
-                foreach (var fam in families)
-                    KnownFamilies.Add(fam.Name);
+                if (OperatingSystem.IsWindows())
+                {
+                    var families = FontFamily.Families;
+                    foreach (var fam in families)
+                        KnownFamilies.Add(fam.Name);
+                }
             }
 
             var fontName = (string)r.Attribute(PtOpenXml.pt + "FontName");

@@ -76,7 +76,9 @@ namespace OpenXmlPowerTools
                 double dv;
                 if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out dv))
                 {
-                    if (dv > 0)
+                    // With two sections, Excel uses the first for positive numbers and zeros, and the
+                    // second for negative numbers.
+                    if (dv >= 0)
                     {
                         return FormatDouble(splitFormatCode[0], dv, out color);
                     }
@@ -232,7 +234,7 @@ namespace OpenXmlPowerTools
                 var s = dv.ToString(fc.FormatCode, CultureInfo.InvariantCulture).Trim();
                 return s;
             }
-            if ((cfc.Contains('(') && cfc.Contains(')')) || cfc.Contains('-'))
+            if (dv < 0 && ((cfc.Contains('(') && cfc.Contains(')')) || cfc.Contains('-')))
             {
                 var s3 = (-dv).ToString(cfc, CultureInfo.InvariantCulture).Trim();
                 return s3;

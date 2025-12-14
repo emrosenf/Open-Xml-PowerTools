@@ -54,6 +54,8 @@ namespace OpenXmlPowerTools
                 AcceptRevisionsForPart(doc.MainDocumentPart.FootnotesPart);
             if (doc.MainDocumentPart.StyleDefinitionsPart != null)
                 AcceptRevisionsForStylesDefinitionPart(doc.MainDocumentPart.StyleDefinitionsPart);
+
+            NormalizeDuplicateTextBoxes(doc);
         }
 
         // Reject revisions for those revisions that can't be rejected by inverting the sense of the revision, and then accepting.
@@ -1279,6 +1281,8 @@ namespace OpenXmlPowerTools
                 AcceptRevisionsForPart(doc.MainDocumentPart.FootnotesPart);
             if (doc.MainDocumentPart.StyleDefinitionsPart != null)
                 AcceptRevisionsForStylesDefinitionPart(doc.MainDocumentPart.StyleDefinitionsPart);
+
+            NormalizeDuplicateTextBoxes(doc);
         }
 
         private static void AcceptRevisionsForStylesDefinitionPart(StyleDefinitionsPart stylesDefinitionsPart)
@@ -1325,6 +1329,314 @@ namespace OpenXmlPowerTools
             documentElement.Descendants(W.numPr).Where(np => !np.HasElements).Remove();
             XDocument newXDoc = new XDocument(documentElement);
             part.PutXDocument(newXDoc);
+        }
+
+        // Merge duplicated VML textboxes (same spid) that can be emitted while handling tracked
+        // changes, so that the resulting document matches the original/modified structure.
+        private static void NormalizeDuplicateTextBoxes(WordprocessingDocument doc)
+        {
+            var parts = new List<OpenXmlPart> { doc.MainDocumentPart };
+            parts.AddRange(doc.MainDocumentPart.HeaderParts);
+            parts.AddRange(doc.MainDocumentPart.FooterParts);
+            if (doc.MainDocumentPart.EndnotesPart != null)
+                parts.Add(doc.MainDocumentPart.EndnotesPart);
+            if (doc.MainDocumentPart.FootnotesPart != null)
+                parts.Add(doc.MainDocumentPart.FootnotesPart);
+
+            foreach (var part in parts)
+            {
+                var xDoc = part.GetXDocument();
+
+                var picts = xDoc
+                    .Descendants(W.pict)
+                    .Select(p => new
+                    {
+                        Pict = p,
+                        Shape = p.Descendants(VML.shape).FirstOrDefault(),
+                        Txbx = p.Descendants(W.txbxContent).FirstOrDefault(),
+                    })
+                    .Where(x => x.Shape != null && x.Txbx != null)
+                    .ToList();
+
+                var groups = picts
+                    .GroupBy(x => (string)x.Shape.Attribute(O.spid))
+                    .Where(g => g.Key != null && g.Count() > 1)
+                    .ToList();
+
+                if (!groups.Any())
+                    continue;
+
+                foreach (var group in groups)
+                {
+                    var keeper = group.First();
+                    foreach (var dup in group.Skip(1))
+                    {
+                        MergeTextBoxContent(keeper.Txbx, dup.Txbx);
+                        dup.Pict.Remove();
+                    }
+                }
+
+                part.PutXDocument();
+            }
+        }
+
+        private static void MergeTextBoxContent(XElement keeperTxbx, XElement dupTxbx)
+        {
+            if (keeperTxbx == null || dupTxbx == null)
+                return;
+
+            var keeperHasTable = keeperTxbx.Elements(W.tbl).Any();
+            var dupHasTable = dupTxbx.Elements(W.tbl).Any();
+
+            if (!keeperHasTable && !dupHasTable)
+            {
+                var keeperParas = keeperTxbx.Elements(W.p).ToList();
+                var dupParas = dupTxbx.Elements(W.p).ToList();
+
+                if (keeperParas.Count == 1 && dupParas.Count == 1)
+                {
+                    keeperParas[0].Add(dupParas[0].Elements());
+                }
+                else
+                {
+                    keeperTxbx.Add(dupParas);
+                }
+
+                var other = dupTxbx.Elements().Where(e => e.Name != W.p).ToList();
+                if (other.Count > 0)
+                    keeperTxbx.Add(other);
+
+                return;
+            }
+
+            foreach (var dupChild in dupTxbx.Elements().ToList())
+            {
+                if (dupChild.Name == W.tbl)
+                {
+                    MergeOrAddTable(keeperTxbx, dupChild);
+                    continue;
+                }
+
+                if (dupChild.Name == W.p)
+                {
+                    MergeOrAddParagraphInTableTextBox(keeperTxbx, dupChild);
+                    continue;
+                }
+
+                keeperTxbx.Add(dupChild);
+            }
+        }
+
+        private static void MergeOrAddParagraphInTableTextBox(XElement keeperTxbx, XElement dupPara)
+        {
+            if (dupPara == null || dupPara.Name != W.p)
+                return;
+
+            var dupUnid = (string)dupPara.Attribute(PtOpenXml.Unid);
+            if (dupUnid != null)
+            {
+                var existing = keeperTxbx.Elements(W.p).FirstOrDefault(p => (string)p.Attribute(PtOpenXml.Unid) == dupUnid);
+                if (existing != null)
+                {
+                    MergeParagraph(existing, dupPara);
+                    return;
+                }
+            }
+
+            if (IsEmptyParagraph(dupPara) && keeperTxbx.Elements(W.p).Any(IsEmptyParagraph))
+                return;
+
+            keeperTxbx.Add(dupPara);
+        }
+
+        private static void MergeOrAddTable(XElement keeperTxbx, XElement dupTable)
+        {
+            if (dupTable == null || dupTable.Name != W.tbl)
+                return;
+
+            var dupUnid = (string)dupTable.Attribute(PtOpenXml.Unid);
+            XElement keeperTable = null;
+            if (dupUnid != null)
+            {
+                keeperTable = keeperTxbx.Elements(W.tbl).FirstOrDefault(t => (string)t.Attribute(PtOpenXml.Unid) == dupUnid);
+            }
+
+            if (keeperTable == null)
+            {
+                var existingTables = keeperTxbx.Elements(W.tbl).ToList();
+                if (existingTables.Count == 1)
+                    keeperTable = existingTables[0];
+            }
+
+            if (keeperTable == null)
+            {
+                keeperTxbx.Add(dupTable);
+                return;
+            }
+
+            MergeTable(keeperTable, dupTable);
+        }
+
+        private static void MergeTable(XElement keeperTable, XElement dupTable)
+        {
+            var keeperRows = keeperTable.Elements(W.tr).ToList();
+            var dupRows = dupTable.Elements(W.tr).ToList();
+
+            for (int rowIndex = 0; rowIndex < dupRows.Count; rowIndex++)
+            {
+                var dupRow = dupRows[rowIndex];
+                var dupRowUnid = (string)dupRow.Attribute(PtOpenXml.Unid);
+
+                XElement keeperRow = null;
+                if (dupRowUnid != null)
+                {
+                    keeperRow = keeperRows.FirstOrDefault(r => (string)r.Attribute(PtOpenXml.Unid) == dupRowUnid);
+                    if (keeperRow == null)
+                    {
+                        keeperTable.Add(dupRow);
+                        keeperRows.Add(dupRow);
+                        continue;
+                    }
+                }
+                else if (rowIndex < keeperRows.Count)
+                {
+                    keeperRow = keeperRows[rowIndex];
+                }
+
+                if (keeperRow == null)
+                {
+                    keeperTable.Add(dupRow);
+                    keeperRows.Add(dupRow);
+                    continue;
+                }
+
+                MergeTableRow(keeperRow, dupRow);
+            }
+        }
+
+        private static void MergeTableRow(XElement keeperRow, XElement dupRow)
+        {
+            var keeperCells = keeperRow.Elements(W.tc).ToList();
+            var dupCells = dupRow.Elements(W.tc).ToList();
+
+            for (int cellIndex = 0; cellIndex < dupCells.Count; cellIndex++)
+            {
+                var dupCell = dupCells[cellIndex];
+                var dupCellUnid = (string)dupCell.Attribute(PtOpenXml.Unid);
+
+                XElement keeperCell = null;
+                if (dupCellUnid != null)
+                {
+                    keeperCell = keeperCells.FirstOrDefault(c => (string)c.Attribute(PtOpenXml.Unid) == dupCellUnid);
+                    if (keeperCell == null)
+                    {
+                        keeperRow.Add(dupCell);
+                        keeperCells = keeperRow.Elements(W.tc).ToList();
+                        continue;
+                    }
+                }
+                else if (cellIndex < keeperCells.Count)
+                {
+                    keeperCell = keeperCells[cellIndex];
+                }
+
+                if (keeperCell == null)
+                {
+                    if (cellIndex == 0 && keeperCells.Count > 0)
+                        keeperCells[0].AddBeforeSelf(dupCell);
+                    else if (cellIndex - 1 >= 0 && cellIndex - 1 < keeperCells.Count)
+                        keeperCells[cellIndex - 1].AddAfterSelf(dupCell);
+                    else
+                        keeperRow.Add(dupCell);
+
+                    keeperCells = keeperRow.Elements(W.tc).ToList();
+                    continue;
+                }
+
+                MergeTableCell(keeperCell, dupCell);
+            }
+        }
+
+        private static void MergeTableCell(XElement keeperCell, XElement dupCell)
+        {
+            var keeperTcPr = keeperCell.Element(W.tcPr);
+            var dupTcPr = dupCell.Element(W.tcPr);
+            if (keeperTcPr == null && dupTcPr != null)
+                keeperCell.AddFirst(new XElement(dupTcPr));
+
+            var keeperContent = keeperCell.Elements().Where(e => e.Name != W.tcPr).ToList();
+            var dupContent = dupCell.Elements().Where(e => e.Name != W.tcPr).ToList();
+            var dupParas = dupContent.Where(e => e.Name == W.p).ToList();
+
+            foreach (var dupChild in dupContent)
+            {
+                if (dupChild.Name == W.p)
+                {
+                    MergeOrAddCellParagraph(keeperCell, dupCell, dupChild, keeperContent, dupParas);
+                    continue;
+                }
+
+                keeperCell.Add(dupChild);
+            }
+        }
+
+        private static void MergeOrAddCellParagraph(
+            XElement keeperCell,
+            XElement dupCell,
+            XElement dupPara,
+            List<XElement> keeperCellContent,
+            List<XElement> dupCellParas)
+        {
+            var dupUnid = (string)dupPara.Attribute(PtOpenXml.Unid);
+            if (dupUnid != null)
+            {
+                var existing = keeperCell.Elements(W.p).FirstOrDefault(p => (string)p.Attribute(PtOpenXml.Unid) == dupUnid);
+                if (existing != null)
+                {
+                    MergeParagraph(existing, dupPara);
+                    return;
+                }
+            }
+
+            var keeperParas = keeperCellContent.Where(e => e.Name == W.p).ToList();
+            var keeperHasOther = keeperCellContent.Any(e => e.Name != W.p);
+            var dupHasOther = dupCell.Elements().Where(e => e.Name != W.tcPr).Any(e => e.Name != W.p);
+            if (!keeperHasOther && !dupHasOther && keeperParas.Count == 1 && dupCellParas.Count == 1)
+            {
+                MergeParagraph(keeperParas[0], dupPara);
+                return;
+            }
+
+            if (IsEmptyParagraph(dupPara) && keeperCell.Elements(W.p).Any(IsEmptyParagraph))
+                return;
+
+            keeperCell.Add(dupPara);
+        }
+
+        private static void MergeParagraph(XElement keeperPara, XElement dupPara)
+        {
+            var keeperPPr = keeperPara.Element(W.pPr);
+            var dupPPr = dupPara.Element(W.pPr);
+            if (keeperPPr == null && dupPPr != null)
+                keeperPara.AddFirst(new XElement(dupPPr));
+
+            var nodesToMove = dupPara.Nodes().Where(n => !(n is XElement e && e.Name == W.pPr)).ToList();
+            keeperPara.Add(nodesToMove);
+        }
+
+        private static bool IsEmptyParagraph(XElement p)
+        {
+            if (p == null || p.Name != W.p)
+                return false;
+
+            if (p.Descendants(W.t).Any())
+                return false;
+            if (p.Descendants(W.drawing).Any() || p.Descendants(W.pict).Any())
+                return false;
+            if (p.Descendants(W.tbl).Any())
+                return false;
+
+            return true;
         }
 
         // Note that AcceptRevisionsForElement is an incomplete implementation.  It is not possible to accept all varieties of revisions
@@ -3234,4 +3546,3 @@ namespace OpenXmlPowerTools
 ///   cell immediately preceding the group of deleted cells by the
 ///   ***sum*** of the values of the w:val attributes of w:gridSpan
 ///   elements of each of the deleted cells.
-
