@@ -81,6 +81,36 @@ namespace OpenXmlPowerTools
 
         /// <summary>Number of cells to sample per row for row signature hashing.</summary>
         public int RowSignatureSampleSize = 10;
+
+        // Phase 3: Additional Comparison Settings
+
+        /// <summary>Whether to compare named ranges (defined names).</summary>
+        public bool CompareNamedRanges = true;
+
+        /// <summary>Whether to compare cell comments/notes.</summary>
+        public bool CompareComments = true;
+
+        /// <summary>Whether to compare data validation rules.</summary>
+        public bool CompareDataValidation = true;
+
+        /// <summary>Whether to compare merged cell regions.</summary>
+        public bool CompareMergedCells = true;
+
+        /// <summary>Whether to compare conditional formatting rules.</summary>
+        public bool CompareConditionalFormatting = true;
+
+        /// <summary>Whether to compare hyperlinks.</summary>
+        public bool CompareHyperlinks = true;
+
+        // Highlight colors for Phase 3 features
+        /// <summary>Fill color for named range changes (default: light purple).</summary>
+        public string NamedRangeChangeColor = "DDA0DD";
+
+        /// <summary>Fill color for comment changes (default: light yellow).</summary>
+        public string CommentChangeColor = "FFFACD";
+
+        /// <summary>Fill color for data validation changes (default: light orange).</summary>
+        public string DataValidationChangeColor = "FFDAB9";
     }
 
     /// <summary>
@@ -105,6 +135,35 @@ namespace OpenXmlPowerTools
         ValueChanged,
         FormulaChanged,
         FormatChanged,
+
+        // Phase 3: Named ranges
+        NamedRangeAdded,
+        NamedRangeDeleted,
+        NamedRangeChanged,
+
+        // Phase 3: Comments
+        CommentAdded,
+        CommentDeleted,
+        CommentChanged,
+
+        // Phase 3: Data validation
+        DataValidationAdded,
+        DataValidationDeleted,
+        DataValidationChanged,
+
+        // Phase 3: Merged cells
+        MergedCellAdded,
+        MergedCellDeleted,
+
+        // Phase 3: Conditional formatting
+        ConditionalFormatAdded,
+        ConditionalFormatDeleted,
+        ConditionalFormatChanged,
+
+        // Phase 3: Hyperlinks
+        HyperlinkAdded,
+        HyperlinkDeleted,
+        HyperlinkChanged,
     }
 
     /// <summary>
@@ -130,6 +189,33 @@ namespace OpenXmlPowerTools
         public CellFormatSignature OldFormat { get; set; }
         public CellFormatSignature NewFormat { get; set; }
 
+        // Phase 3: Named range properties
+        public string NamedRangeName { get; set; }
+        public string OldNamedRangeValue { get; set; }
+        public string NewNamedRangeValue { get; set; }
+
+        // Phase 3: Comment properties
+        public string OldComment { get; set; }
+        public string NewComment { get; set; }
+        public string CommentAuthor { get; set; }
+
+        // Phase 3: Data validation properties
+        public string DataValidationType { get; set; }
+        public string OldDataValidation { get; set; }
+        public string NewDataValidation { get; set; }
+
+        // Phase 3: Merged cell range
+        public string MergedCellRange { get; set; }
+
+        // Phase 3: Hyperlink properties
+        public string OldHyperlink { get; set; }
+        public string NewHyperlink { get; set; }
+
+        // Phase 3: Conditional formatting properties
+        public string ConditionalFormatRange { get; set; }
+        public string OldConditionalFormat { get; set; }
+        public string NewConditionalFormat { get; set; }
+
         /// <summary>
         /// Returns a human-readable description of this change.
         /// </summary>
@@ -149,6 +235,36 @@ namespace OpenXmlPowerTools
                 SmlChangeType.ValueChanged => $"Cell {SheetName}!{CellAddress} value changed from '{OldValue}' to '{NewValue}'",
                 SmlChangeType.FormulaChanged => $"Cell {SheetName}!{CellAddress} formula changed from '{OldFormula}' to '{NewFormula}'",
                 SmlChangeType.FormatChanged => $"Cell {SheetName}!{CellAddress} formatting changed",
+
+                // Phase 3: Named ranges
+                SmlChangeType.NamedRangeAdded => $"Named range '{NamedRangeName}' was added with value '{NewNamedRangeValue}'",
+                SmlChangeType.NamedRangeDeleted => $"Named range '{NamedRangeName}' was deleted (had value '{OldNamedRangeValue}')",
+                SmlChangeType.NamedRangeChanged => $"Named range '{NamedRangeName}' changed from '{OldNamedRangeValue}' to '{NewNamedRangeValue}'",
+
+                // Phase 3: Comments
+                SmlChangeType.CommentAdded => $"Comment added to {SheetName}!{CellAddress}: '{TruncateForDisplay(NewComment)}'",
+                SmlChangeType.CommentDeleted => $"Comment deleted from {SheetName}!{CellAddress}",
+                SmlChangeType.CommentChanged => $"Comment changed at {SheetName}!{CellAddress}",
+
+                // Phase 3: Data validation
+                SmlChangeType.DataValidationAdded => $"Data validation ({DataValidationType}) added to {SheetName}!{CellAddress}",
+                SmlChangeType.DataValidationDeleted => $"Data validation removed from {SheetName}!{CellAddress}",
+                SmlChangeType.DataValidationChanged => $"Data validation changed at {SheetName}!{CellAddress}",
+
+                // Phase 3: Merged cells
+                SmlChangeType.MergedCellAdded => $"Merged cell region {MergedCellRange} added in sheet '{SheetName}'",
+                SmlChangeType.MergedCellDeleted => $"Merged cell region {MergedCellRange} removed from sheet '{SheetName}'",
+
+                // Phase 3: Conditional formatting
+                SmlChangeType.ConditionalFormatAdded => $"Conditional formatting added to {ConditionalFormatRange} in sheet '{SheetName}'",
+                SmlChangeType.ConditionalFormatDeleted => $"Conditional formatting removed from {ConditionalFormatRange} in sheet '{SheetName}'",
+                SmlChangeType.ConditionalFormatChanged => $"Conditional formatting changed at {ConditionalFormatRange} in sheet '{SheetName}'",
+
+                // Phase 3: Hyperlinks
+                SmlChangeType.HyperlinkAdded => $"Hyperlink added to {SheetName}!{CellAddress}: '{NewHyperlink}'",
+                SmlChangeType.HyperlinkDeleted => $"Hyperlink removed from {SheetName}!{CellAddress}",
+                SmlChangeType.HyperlinkChanged => $"Hyperlink changed at {SheetName}!{CellAddress} from '{OldHyperlink}' to '{NewHyperlink}'",
+
                 _ => $"Unknown change at {SheetName}!{CellAddress}"
             };
         }
@@ -163,6 +279,13 @@ namespace OpenXmlPowerTools
                 columnNumber /= 26;
             }
             return result;
+        }
+
+        private static string TruncateForDisplay(string text, int maxLength = 50)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+            if (text.Length <= maxLength) return text;
+            return text.Substring(0, maxLength - 3) + "...";
         }
     }
 
@@ -190,8 +313,25 @@ namespace OpenXmlPowerTools
         public int ColumnsInserted => Changes.Count(c => c.ChangeType == SmlChangeType.ColumnInserted);
         public int ColumnsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.ColumnDeleted);
 
+        // Phase 3 statistics
+        public int NamedRangesAdded => Changes.Count(c => c.ChangeType == SmlChangeType.NamedRangeAdded);
+        public int NamedRangesDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.NamedRangeDeleted);
+        public int NamedRangesChanged => Changes.Count(c => c.ChangeType == SmlChangeType.NamedRangeChanged);
+        public int CommentsAdded => Changes.Count(c => c.ChangeType == SmlChangeType.CommentAdded);
+        public int CommentsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.CommentDeleted);
+        public int CommentsChanged => Changes.Count(c => c.ChangeType == SmlChangeType.CommentChanged);
+        public int DataValidationsAdded => Changes.Count(c => c.ChangeType == SmlChangeType.DataValidationAdded);
+        public int DataValidationsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.DataValidationDeleted);
+        public int DataValidationsChanged => Changes.Count(c => c.ChangeType == SmlChangeType.DataValidationChanged);
+        public int MergedCellsAdded => Changes.Count(c => c.ChangeType == SmlChangeType.MergedCellAdded);
+        public int MergedCellsDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.MergedCellDeleted);
+        public int HyperlinksAdded => Changes.Count(c => c.ChangeType == SmlChangeType.HyperlinkAdded);
+        public int HyperlinksDeleted => Changes.Count(c => c.ChangeType == SmlChangeType.HyperlinkDeleted);
+        public int HyperlinksChanged => Changes.Count(c => c.ChangeType == SmlChangeType.HyperlinkChanged);
+
         public int StructuralChanges => CellsAdded + CellsDeleted + SheetsAdded + SheetsDeleted +
-            SheetsRenamed + RowsInserted + RowsDeleted + ColumnsInserted + ColumnsDeleted;
+            SheetsRenamed + RowsInserted + RowsDeleted + ColumnsInserted + ColumnsDeleted +
+            MergedCellsAdded + MergedCellsDeleted;
 
         /// <summary>
         /// Get all changes for a specific sheet.
@@ -232,6 +372,21 @@ namespace OpenXmlPowerTools
                     RowsDeleted,
                     ColumnsInserted,
                     ColumnsDeleted,
+                    // Phase 3 statistics
+                    NamedRangesAdded,
+                    NamedRangesDeleted,
+                    NamedRangesChanged,
+                    CommentsAdded,
+                    CommentsDeleted,
+                    CommentsChanged,
+                    DataValidationsAdded,
+                    DataValidationsDeleted,
+                    DataValidationsChanged,
+                    MergedCellsAdded,
+                    MergedCellsDeleted,
+                    HyperlinksAdded,
+                    HyperlinksDeleted,
+                    HyperlinksChanged,
                     StructuralChanges
                 },
                 Changes = Changes.Select(c => new
@@ -246,6 +401,17 @@ namespace OpenXmlPowerTools
                     c.NewValue,
                     c.OldFormula,
                     c.NewFormula,
+                    // Phase 3 properties
+                    c.NamedRangeName,
+                    c.OldNamedRangeValue,
+                    c.NewNamedRangeValue,
+                    c.OldComment,
+                    c.NewComment,
+                    c.CommentAuthor,
+                    c.DataValidationType,
+                    c.MergedCellRange,
+                    c.OldHyperlink,
+                    c.NewHyperlink,
                     Description = c.GetDescription()
                 })
             }, options);
@@ -489,6 +655,12 @@ namespace OpenXmlPowerTools
         public Dictionary<int, string> RowSignatures { get; } = new Dictionary<int, string>();
         public Dictionary<int, string> ColumnSignatures { get; } = new Dictionary<int, string>();
 
+        // Phase 3: Comments, data validation, merged cells, hyperlinks
+        public Dictionary<string, CommentSignature> Comments { get; } = new Dictionary<string, CommentSignature>();
+        public Dictionary<string, DataValidationSignature> DataValidations { get; } = new Dictionary<string, DataValidationSignature>();
+        public HashSet<string> MergedCellRanges { get; } = new HashSet<string>();
+        public Dictionary<string, HyperlinkSignature> Hyperlinks { get; } = new Dictionary<string, HyperlinkSignature>();
+
         /// <summary>
         /// Get all cells in a specific row.
         /// </summary>
@@ -541,6 +713,78 @@ namespace OpenXmlPowerTools
         public static string ComputeHash(string value, string formula)
         {
             var content = $"{value ?? ""}|{formula ?? ""}";
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
+            return Convert.ToBase64String(bytes);
+        }
+    }
+
+    /// <summary>
+    /// Phase 3: Represents a cell comment for comparison.
+    /// </summary>
+    internal class CommentSignature
+    {
+        public string CellAddress { get; set; }
+        public string Author { get; set; }
+        public string Text { get; set; }
+
+        public string ComputeHash()
+        {
+            var content = $"{Author ?? ""}|{Text ?? ""}";
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
+            return Convert.ToBase64String(bytes);
+        }
+    }
+
+    /// <summary>
+    /// Phase 3: Represents a data validation rule for comparison.
+    /// </summary>
+    internal class DataValidationSignature
+    {
+        public string CellRange { get; set; }
+        public string Type { get; set; }  // list, whole, decimal, date, time, textLength, custom
+        public string Operator { get; set; }  // between, notBetween, equal, notEqual, etc.
+        public string Formula1 { get; set; }
+        public string Formula2 { get; set; }
+        public bool AllowBlank { get; set; }
+        public bool ShowDropDown { get; set; }
+        public bool ShowInputMessage { get; set; }
+        public bool ShowErrorMessage { get; set; }
+        public string ErrorTitle { get; set; }
+        public string Error { get; set; }
+        public string PromptTitle { get; set; }
+        public string Prompt { get; set; }
+
+        public string ComputeHash()
+        {
+            var content = $"{Type}|{Operator}|{Formula1}|{Formula2}|{AllowBlank}|{ShowDropDown}";
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
+            return Convert.ToBase64String(bytes);
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Type: {Type}");
+            if (!string.IsNullOrEmpty(Operator)) sb.Append($", Operator: {Operator}");
+            if (!string.IsNullOrEmpty(Formula1)) sb.Append($", Formula1: {Formula1}");
+            if (!string.IsNullOrEmpty(Formula2)) sb.Append($", Formula2: {Formula2}");
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Phase 3: Represents a hyperlink for comparison.
+    /// </summary>
+    internal class HyperlinkSignature
+    {
+        public string CellAddress { get; set; }
+        public string Target { get; set; }
+        public string Display { get; set; }
+        public string Tooltip { get; set; }
+
+        public string ComputeHash()
+        {
+            var content = $"{Target ?? ""}|{Display ?? ""}";
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
             return Convert.ToBase64String(bytes);
         }
@@ -642,6 +886,30 @@ namespace OpenXmlPowerTools
                 ComputeColumnSignatures(signature, settings);
             }
 
+            // Phase 3: Extract comments
+            if (settings.CompareComments)
+            {
+                ExtractComments(worksheetPart, signature);
+            }
+
+            // Phase 3: Extract data validations
+            if (settings.CompareDataValidation)
+            {
+                ExtractDataValidations(wsXDoc, signature);
+            }
+
+            // Phase 3: Extract merged cells
+            if (settings.CompareMergedCells)
+            {
+                ExtractMergedCells(wsXDoc, signature);
+            }
+
+            // Phase 3: Extract hyperlinks
+            if (settings.CompareHyperlinks)
+            {
+                ExtractHyperlinks(worksheetPart, wsXDoc, signature);
+            }
+
             return signature;
         }
 
@@ -720,6 +988,158 @@ namespace OpenXmlPowerTools
                 return hash.ToString("X8");
             }
         }
+
+        #region Phase 3: Extraction Methods
+
+        /// <summary>
+        /// Extract cell comments from the worksheet.
+        /// </summary>
+        private static void ExtractComments(WorksheetPart worksheetPart, WorksheetSignature signature)
+        {
+            var commentsPart = worksheetPart.WorksheetCommentsPart;
+            if (commentsPart == null) return;
+
+            var commentsXDoc = commentsPart.GetXDocument();
+            if (commentsXDoc?.Root == null) return;
+
+            // Get authors
+            var authors = commentsXDoc.Root.Element(S.authors)?
+                .Elements(S.author)
+                .Select((a, i) => new { Index = i, Name = (string)a })
+                .ToDictionary(a => a.Index, a => a.Name) ?? new Dictionary<int, string>();
+
+            // Get comments
+            var commentList = commentsXDoc.Root.Element(S.commentList);
+            if (commentList == null) return;
+
+            foreach (var comment in commentList.Elements(S.comment))
+            {
+                var cellRef = (string)comment.Attribute("ref");
+                if (string.IsNullOrEmpty(cellRef)) continue;
+
+                var authorId = (int?)comment.Attribute("authorId") ?? 0;
+                var author = authors.GetValueOrDefault(authorId, "Unknown");
+
+                // Extract comment text (may have multiple runs)
+                var textElement = comment.Element(S.text);
+                var text = textElement?.Descendants(S.t)
+                    .Select(t => (string)t)
+                    .StringConcatenate() ?? "";
+
+                signature.Comments[cellRef] = new CommentSignature
+                {
+                    CellAddress = cellRef,
+                    Author = author,
+                    Text = text
+                };
+            }
+        }
+
+        /// <summary>
+        /// Extract data validation rules from the worksheet.
+        /// </summary>
+        private static void ExtractDataValidations(XDocument wsXDoc, WorksheetSignature signature)
+        {
+            var dataValidations = wsXDoc.Root.Element(S.dataValidations);
+            if (dataValidations == null) return;
+
+            foreach (var dv in dataValidations.Elements(S.dataValidation))
+            {
+                var sqref = (string)dv.Attribute("sqref");
+                if (string.IsNullOrEmpty(sqref)) continue;
+
+                // Parse the sqref into individual cell references
+                foreach (var range in sqref.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var dvSig = new DataValidationSignature
+                    {
+                        CellRange = range,
+                        Type = (string)dv.Attribute("type") ?? "none",
+                        Operator = (string)dv.Attribute("operator"),
+                        Formula1 = (string)dv.Element(S.formula1),
+                        Formula2 = (string)dv.Element(S.formula2),
+                        AllowBlank = (string)dv.Attribute("allowBlank") == "1",
+                        ShowDropDown = (string)dv.Attribute("showDropDown") != "1", // Note: attribute means HIDE dropdown
+                        ShowInputMessage = (string)dv.Attribute("showInputMessage") == "1",
+                        ShowErrorMessage = (string)dv.Attribute("showErrorMessage") == "1",
+                        ErrorTitle = (string)dv.Attribute("errorTitle"),
+                        Error = (string)dv.Attribute("error"),
+                        PromptTitle = (string)dv.Attribute("promptTitle"),
+                        Prompt = (string)dv.Attribute("prompt")
+                    };
+
+                    // Use the range as key - if it's a range, store by first cell
+                    var key = range.Contains(':') ? range.Split(':')[0] : range;
+                    signature.DataValidations[key] = dvSig;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Extract merged cell regions from the worksheet.
+        /// </summary>
+        private static void ExtractMergedCells(XDocument wsXDoc, WorksheetSignature signature)
+        {
+            var mergeCells = wsXDoc.Root.Element(S.mergeCells);
+            if (mergeCells == null) return;
+
+            foreach (var mc in mergeCells.Elements(S.mergeCell))
+            {
+                var range = (string)mc.Attribute("ref");
+                if (!string.IsNullOrEmpty(range))
+                {
+                    signature.MergedCellRanges.Add(range);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Extract hyperlinks from the worksheet.
+        /// </summary>
+        private static void ExtractHyperlinks(WorksheetPart worksheetPart, XDocument wsXDoc, WorksheetSignature signature)
+        {
+            var hyperlinks = wsXDoc.Root.Element(S.hyperlinks);
+            if (hyperlinks == null) return;
+
+            foreach (var hl in hyperlinks.Elements(S.hyperlink))
+            {
+                var cellRef = (string)hl.Attribute("ref");
+                if (string.IsNullOrEmpty(cellRef)) continue;
+
+                var rId = (string)hl.Attribute(R.id);
+                string target = null;
+
+                // Get external target from relationship
+                if (!string.IsNullOrEmpty(rId))
+                {
+                    try
+                    {
+                        var rel = worksheetPart.HyperlinkRelationships.FirstOrDefault(r => r.Id == rId);
+                        target = rel?.Uri?.ToString();
+                    }
+                    catch
+                    {
+                        // Ignore relationship lookup errors
+                    }
+                }
+
+                // Could also be an internal reference (location attribute)
+                if (string.IsNullOrEmpty(target))
+                {
+                    target = (string)hl.Attribute("location");
+                }
+
+                signature.Hyperlinks[cellRef] = new HyperlinkSignature
+                {
+                    CellAddress = cellRef,
+                    Target = target ?? "",
+                    Display = (string)hl.Attribute("display"),
+                    Tooltip = (string)hl.Attribute("tooltip")
+                };
+            }
+        }
+
+        #endregion
 
         private static CellSignature CanonicalizeCell(
             XElement cell,
@@ -1251,6 +1671,36 @@ namespace OpenXmlPowerTools
                 {
                     CompareWorksheetsCellByCell(ws1, ws2, match.NewName, settings, result);
                 }
+
+                // Phase 3: Compare comments
+                if (settings.CompareComments)
+                {
+                    CompareComments(ws1, ws2, match.NewName, result);
+                }
+
+                // Phase 3: Compare data validations
+                if (settings.CompareDataValidation)
+                {
+                    CompareDataValidations(ws1, ws2, match.NewName, result);
+                }
+
+                // Phase 3: Compare merged cells
+                if (settings.CompareMergedCells)
+                {
+                    CompareMergedCells(ws1, ws2, match.NewName, result);
+                }
+
+                // Phase 3: Compare hyperlinks
+                if (settings.CompareHyperlinks)
+                {
+                    CompareHyperlinks(ws1, ws2, match.NewName, result);
+                }
+            }
+
+            // Phase 3: Compare named ranges at workbook level
+            if (settings.CompareNamedRanges)
+            {
+                CompareNamedRanges(sig1, sig2, result);
             }
 
             return result;
@@ -1795,6 +2245,256 @@ namespace OpenXmlPowerTools
                 });
             }
         }
+
+        #region Phase 3: Comparison Methods
+
+        /// <summary>
+        /// Compare named ranges between two workbooks.
+        /// </summary>
+        private static void CompareNamedRanges(
+            WorkbookSignature sig1,
+            WorkbookSignature sig2,
+            SmlComparisonResult result)
+        {
+            var allNames = sig1.DefinedNames.Keys.Union(sig2.DefinedNames.Keys);
+
+            foreach (var name in allNames)
+            {
+                var has1 = sig1.DefinedNames.TryGetValue(name, out var value1);
+                var has2 = sig2.DefinedNames.TryGetValue(name, out var value2);
+
+                if (!has1 && has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.NamedRangeAdded,
+                        NamedRangeName = name,
+                        NewNamedRangeValue = value2
+                    });
+                }
+                else if (has1 && !has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.NamedRangeDeleted,
+                        NamedRangeName = name,
+                        OldNamedRangeValue = value1
+                    });
+                }
+                else if (has1 && has2 && value1 != value2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.NamedRangeChanged,
+                        NamedRangeName = name,
+                        OldNamedRangeValue = value1,
+                        NewNamedRangeValue = value2
+                    });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compare comments between two worksheets.
+        /// </summary>
+        private static void CompareComments(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            string sheetName,
+            SmlComparisonResult result)
+        {
+            var allAddresses = ws1.Comments.Keys.Union(ws2.Comments.Keys);
+
+            foreach (var addr in allAddresses)
+            {
+                var has1 = ws1.Comments.TryGetValue(addr, out var comment1);
+                var has2 = ws2.Comments.TryGetValue(addr, out var comment2);
+
+                if (!has1 && has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.CommentAdded,
+                        SheetName = sheetName,
+                        CellAddress = addr,
+                        NewComment = comment2.Text,
+                        CommentAuthor = comment2.Author
+                    });
+                }
+                else if (has1 && !has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.CommentDeleted,
+                        SheetName = sheetName,
+                        CellAddress = addr,
+                        OldComment = comment1.Text,
+                        CommentAuthor = comment1.Author
+                    });
+                }
+                else if (has1 && has2)
+                {
+                    // Compare comment content
+                    if (comment1.Text != comment2.Text || comment1.Author != comment2.Author)
+                    {
+                        result.Changes.Add(new SmlChange
+                        {
+                            ChangeType = SmlChangeType.CommentChanged,
+                            SheetName = sheetName,
+                            CellAddress = addr,
+                            OldComment = comment1.Text,
+                            NewComment = comment2.Text,
+                            CommentAuthor = comment2.Author
+                        });
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compare data validations between two worksheets.
+        /// </summary>
+        private static void CompareDataValidations(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            string sheetName,
+            SmlComparisonResult result)
+        {
+            var allKeys = ws1.DataValidations.Keys.Union(ws2.DataValidations.Keys);
+
+            foreach (var key in allKeys)
+            {
+                var has1 = ws1.DataValidations.TryGetValue(key, out var dv1);
+                var has2 = ws2.DataValidations.TryGetValue(key, out var dv2);
+
+                if (!has1 && has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.DataValidationAdded,
+                        SheetName = sheetName,
+                        CellAddress = key,
+                        DataValidationType = dv2.Type,
+                        NewDataValidation = dv2.ToString()
+                    });
+                }
+                else if (has1 && !has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.DataValidationDeleted,
+                        SheetName = sheetName,
+                        CellAddress = key,
+                        DataValidationType = dv1.Type,
+                        OldDataValidation = dv1.ToString()
+                    });
+                }
+                else if (has1 && has2)
+                {
+                    // Compare by hash
+                    if (dv1.ComputeHash() != dv2.ComputeHash())
+                    {
+                        result.Changes.Add(new SmlChange
+                        {
+                            ChangeType = SmlChangeType.DataValidationChanged,
+                            SheetName = sheetName,
+                            CellAddress = key,
+                            DataValidationType = dv2.Type,
+                            OldDataValidation = dv1.ToString(),
+                            NewDataValidation = dv2.ToString()
+                        });
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compare merged cell regions between two worksheets.
+        /// </summary>
+        private static void CompareMergedCells(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            string sheetName,
+            SmlComparisonResult result)
+        {
+            // Merged cells added
+            foreach (var range in ws2.MergedCellRanges.Except(ws1.MergedCellRanges))
+            {
+                result.Changes.Add(new SmlChange
+                {
+                    ChangeType = SmlChangeType.MergedCellAdded,
+                    SheetName = sheetName,
+                    MergedCellRange = range
+                });
+            }
+
+            // Merged cells deleted
+            foreach (var range in ws1.MergedCellRanges.Except(ws2.MergedCellRanges))
+            {
+                result.Changes.Add(new SmlChange
+                {
+                    ChangeType = SmlChangeType.MergedCellDeleted,
+                    SheetName = sheetName,
+                    MergedCellRange = range
+                });
+            }
+        }
+
+        /// <summary>
+        /// Compare hyperlinks between two worksheets.
+        /// </summary>
+        private static void CompareHyperlinks(
+            WorksheetSignature ws1,
+            WorksheetSignature ws2,
+            string sheetName,
+            SmlComparisonResult result)
+        {
+            var allAddresses = ws1.Hyperlinks.Keys.Union(ws2.Hyperlinks.Keys);
+
+            foreach (var addr in allAddresses)
+            {
+                var has1 = ws1.Hyperlinks.TryGetValue(addr, out var hl1);
+                var has2 = ws2.Hyperlinks.TryGetValue(addr, out var hl2);
+
+                if (!has1 && has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.HyperlinkAdded,
+                        SheetName = sheetName,
+                        CellAddress = addr,
+                        NewHyperlink = hl2.Target
+                    });
+                }
+                else if (has1 && !has2)
+                {
+                    result.Changes.Add(new SmlChange
+                    {
+                        ChangeType = SmlChangeType.HyperlinkDeleted,
+                        SheetName = sheetName,
+                        CellAddress = addr,
+                        OldHyperlink = hl1.Target
+                    });
+                }
+                else if (has1 && has2)
+                {
+                    // Compare by hash
+                    if (hl1.ComputeHash() != hl2.ComputeHash())
+                    {
+                        result.Changes.Add(new SmlChange
+                        {
+                            ChangeType = SmlChangeType.HyperlinkChanged,
+                            SheetName = sheetName,
+                            CellAddress = addr,
+                            OldHyperlink = hl1.Target,
+                            NewHyperlink = hl2.Target
+                        });
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 
     /// <summary>
