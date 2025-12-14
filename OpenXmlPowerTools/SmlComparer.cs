@@ -68,7 +68,7 @@ namespace OpenXmlPowerTools
         // Phase 2: Row/Column Alignment Settings
 
         /// <summary>Enable row alignment using LCS algorithm to detect inserted/deleted rows.</summary>
-        public bool EnableRowAlignment = true;
+        public bool EnableRowAlignment = false;
 
         /// <summary>Enable column alignment using LCS algorithm to detect inserted/deleted columns.</summary>
         public bool EnableColumnAlignment = false;  // Off by default, can be expensive
