@@ -28,7 +28,7 @@ usage() {
 }
 
 # Default values
-FILTER="FullyQualifiedName~WcTests|FullyQualifiedName~FormattingChange|FullyQualifiedName~SmlComparer"
+FILTER="FullyQualifiedName~WcTests|FullyQualifiedName~FormattingChange|FullyQualifiedName~SmlComparer|FullyQualifiedName~PmlComparer"
 REBUILD=false
 SHELL_MODE=false
 NO_FILTER=false
