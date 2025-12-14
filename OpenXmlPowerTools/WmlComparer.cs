@@ -4737,11 +4737,18 @@ namespace OpenXmlPowerTools
                             break;
                         }
                     }
-                    if (firstAtom.AncestorElementsBefore != null &&
-                        level < firstAtom.AncestorElementsBefore.Length &&
-                        isInsideVml)
+
+                    // Try to find an atom with AncestorElementsBefore (Equal/FormatChanged atoms have this)
+                    // The first atom might be Inserted/Deleted which don't have "before" ancestors
+                    ComparisonUnitAtom atomWithBeforeAncestors = null;
+                    if (isInsideVml)
                     {
-                        ancestorBeingConstructed = firstAtom.AncestorElementsBefore[level];
+                        atomWithBeforeAncestors = g.FirstOrDefault(a => a.AncestorElementsBefore != null && level < a.AncestorElementsBefore.Length);
+                    }
+
+                    if (atomWithBeforeAncestors != null)
+                    {
+                        ancestorBeingConstructed = atomWithBeforeAncestors.AncestorElementsBefore[level];
                     }
                     else
                     {
