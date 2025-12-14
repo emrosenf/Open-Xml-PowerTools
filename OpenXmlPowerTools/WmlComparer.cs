@@ -5034,6 +5034,8 @@ namespace OpenXmlPowerTools
                         return ReconstructElement(part, g, ancestorBeingConstructed, VmlRectPropertyNames, level, settings);
                     if (ancestorBeingConstructed.Name == VML.group)
                         return ReconstructElement(part, g, ancestorBeingConstructed, VmlGroupPropertyNames, level, settings);
+                    if (ancestorBeingConstructed.Name == VML.shapetype)
+                        return ReconstructElement(part, g, ancestorBeingConstructed, VmlShapetypePropertyNames, level, settings);
                     if (ancestorBeingConstructed.Name == W._object)
                         return ReconstructElement(part, g, ancestorBeingConstructed, VML.shapetype, VML.shape, O.OLEObject, level, settings);
                     if (ancestorBeingConstructed.Name == W.ruby)
@@ -6982,6 +6984,7 @@ namespace OpenXmlPowerTools
         private static readonly XName[] VmlShapePropertyNames = new[] { VML.fill, VML.stroke, VML.shadow, VML.textpath, VML.path, VML.formulas, VML.handles, VML.imagedata, O._lock, O.extrusion, W10.wrap };
         private static readonly XName[] VmlRectPropertyNames = new[] { VML.fill, VML.stroke, VML.shadow, VML.textpath, VML.path, VML.formulas, VML.handles, O._lock, O.extrusion };
         private static readonly XName[] VmlGroupPropertyNames = new[] { VML.fill, VML.stroke, VML.shadow, VML.path, VML.formulas, VML.handles, O._lock, O.extrusion };
+        private static readonly XName[] VmlShapetypePropertyNames = new[] { VML.stroke, VML.path, VML.fill, VML.shadow, VML.formulas, VML.handles };
 
         private class RecursionInfo
         {
@@ -7079,7 +7082,7 @@ namespace OpenXmlPowerTools
             new RecursionInfo()
             {
                 ElementName = VML.shapetype,
-                ChildElementPropertyNames = null,
+                ChildElementPropertyNames = new[] { VML.stroke, VML.path, VML.fill, VML.shadow, VML.formulas, VML.handles },
             },
             new RecursionInfo()
             {
