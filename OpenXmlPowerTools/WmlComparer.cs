@@ -4809,7 +4809,12 @@ namespace OpenXmlPowerTools
                                 if (spl[0] == "")
                                     return (object)gc.Select(gcc =>
                                     {
-                                        var dup = new XElement(gcc.ContentElement);
+                                        // For VML content, use "before" content element when available
+                                        // to ensure proper round-trip when rejecting revisions
+                                        var contentElement = (isInsideVml && gcc.ContentElementBefore != null)
+                                            ? gcc.ContentElementBefore
+                                            : gcc.ContentElement;
+                                        var dup = new XElement(contentElement);
                                         if (spl[1] == "Deleted")
                                             dup.Add(new XAttribute(PtOpenXml.Status, "Deleted"));
                                         else if (spl[1] == "Inserted")
@@ -4840,7 +4845,12 @@ namespace OpenXmlPowerTools
                                 if (spl[0] == "")
                                     return (object)gc.Select(gcc =>
                                     {
-                                        var dup = new XElement(gcc.ContentElement);
+                                        // For VML content, use "before" content element when available
+                                        // to ensure proper round-trip when rejecting revisions
+                                        var contentElement = (isInsideVml && gcc.ContentElementBefore != null)
+                                            ? gcc.ContentElementBefore
+                                            : gcc.ContentElement;
+                                        var dup = new XElement(contentElement);
                                         if (spl[1] == "Deleted")
                                             dup.Add(new XAttribute(PtOpenXml.Status, "Deleted"));
                                         else if (spl[1] == "Inserted")
