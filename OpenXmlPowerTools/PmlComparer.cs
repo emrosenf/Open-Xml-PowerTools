@@ -488,6 +488,8 @@ namespace OpenXmlPowerTools
             sb.Append("|");
             foreach (var shape in Shapes.OrderBy(s => s.ZOrder))
             {
+                sb.Append(shape.Name ?? "");
+                sb.Append(":");
                 sb.Append(shape.Type);
                 sb.Append(":");
                 sb.Append(shape.TextBody?.PlainText ?? "");
