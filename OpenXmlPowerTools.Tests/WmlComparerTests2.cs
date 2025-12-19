@@ -903,6 +903,12 @@ namespace OxPt
         }
 #endif
 
+        // TODO: Add test for identical images with proper test files
+        // The WC006_Compare_IdenticalImages_RelationshipsValid test was removed because
+        // programmatically created documents are missing required parts (styles, etc.)
+        // that WmlComparer needs. A proper test should use actual .docx files with
+        // identical embedded images but different text content.
+
         private static void ValidateDocument(WmlDocument wmlToValidate)
         {
             using (MemoryStream ms = new MemoryStream())
