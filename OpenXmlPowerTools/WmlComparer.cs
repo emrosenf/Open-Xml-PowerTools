@@ -5424,9 +5424,18 @@ namespace OpenXmlPowerTools
                                 }
                                 else
                                 {
+                                    // Equal status: still need to copy related parts (images) and update rIds
                                     return gc.Select(gcc =>
                                     {
-                                        return gcc.ContentElement;
+                                        var newDrawing = new XElement(gcc.ContentElement);
+
+                                        var openXmlPartOfSourceContent = gc.First().Part;
+                                        var openXmlPartInNewDocument = part;
+                                        Package packageOfSourceContent = openXmlPartOfSourceContent.OpenXmlPackage.Package;
+                                        Package packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.Package;
+                                        PackagePart partInSourceDocument = packageOfSourceContent.GetPart(part.Uri);
+                                        PackagePart partInNewDocument = packageOfNewContent.GetPart(part.Uri);
+                                        return MoveRelatedPartsToDestination(partInSourceDocument, partInNewDocument, newDrawing);
                                     });
                                 }
                             })
