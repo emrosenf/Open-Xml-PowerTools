@@ -80,7 +80,11 @@ namespace OpenXmlPowerTools
         /// </summary>
         public bool IsWordSeparator(char c) => _wordSeparatorsSearchValues?.Contains(c) ?? false;
 
-        public string AuthorForRevisions = "Open-Xml-PowerTools";
+        /// <summary>
+        /// Author name for tracked revisions. If null, the author will be extracted
+        /// from the modified document's LastModifiedBy or Creator core property.
+        /// </summary>
+        public string AuthorForRevisions = null;
         public string DateTimeForRevisions = DateTime.Now.ToString("o");
         public double DetailThreshold = 0.15;
         public bool CaseInsensitive = false;
@@ -139,9 +143,37 @@ namespace OpenXmlPowerTools
             return CompareInternal(source1, source2, settings, true);
         }
 
+        /// <summary>
+        /// Extracts the author from a document's core properties.
+        /// Tries LastModifiedBy first, then falls back to Creator.
+        /// </summary>
+        private static string ExtractAuthorFromDocument(WmlDocument document)
+        {
+            using (var ms = new MemoryStream(document.DocumentByteArray))
+            using (var wDoc = WordprocessingDocument.Open(ms, false))
+            {
+                var corePart = wDoc.CoreFilePropertiesPart;
+                if (corePart != null)
+                {
+                    var coreXDoc = corePart.GetXDocument();
+                    var author = (string)coreXDoc.Descendants(CP.lastModifiedBy).FirstOrDefault()
+                              ?? (string)coreXDoc.Descendants(DC.creator).FirstOrDefault();
+                    return string.IsNullOrWhiteSpace(author) ? null : author.Trim();
+                }
+            }
+            return null;
+        }
+
         private static WmlDocument CompareInternal(WmlDocument source1, WmlDocument source2, WmlComparerSettings settings,
             bool preProcessMarkupInOriginal)
         {
+            // If AuthorForRevisions is not set, extract from the modified document's core properties
+            if (string.IsNullOrEmpty(settings.AuthorForRevisions))
+            {
+                settings.AuthorForRevisions = ExtractAuthorFromDocument(source2) ?? "Unknown";
+                Trace(settings, $"CompareInternal: extracted author from source2: {settings.AuthorForRevisions}");
+            }
+
             if (preProcessMarkupInOriginal)
                 source1 = PreProcessMarkup(source1, settings.StartingIdForFootnotesEndnotes + 1000);
             source2 = PreProcessMarkup(source2, settings.StartingIdForFootnotesEndnotes + 2000);

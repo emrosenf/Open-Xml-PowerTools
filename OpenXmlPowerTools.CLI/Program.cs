@@ -11,10 +11,9 @@ var doc2Argument = new Argument<FileInfo>("document2", "Path to the modified doc
 var outputOption = new Option<FileInfo?>(
     aliases: new[] { "-o", "--output" },
     description: "Output path for the comparison result (defaults to comparison-result.[ext])");
-var authorOption = new Option<string>(
+var authorOption = new Option<string?>(
     aliases: new[] { "-a", "--author" },
-    getDefaultValue: () => "Comparer",
-    description: "Author name for revision tracking (Word only)");
+    description: "Author name for revision tracking. If not specified, uses the modified document's author (Word only)");
 
 compareCommand.AddArgument(doc1Argument);
 compareCommand.AddArgument(doc2Argument);
@@ -76,7 +75,7 @@ rootCommand.AddCommand(compareCommand);
 
 return await rootCommand.InvokeAsync(args);
 
-void CompareWord(FileInfo doc1, FileInfo doc2, FileInfo? output, string author)
+void CompareWord(FileInfo doc1, FileInfo doc2, FileInfo? output, string? author)
 {
     var outputPath = output?.FullName ?? "comparison-result.docx";
 
@@ -91,9 +90,14 @@ void CompareWord(FileInfo doc1, FileInfo doc2, FileInfo? output, string author)
 
     var settings = new WmlComparerSettings
     {
-        AuthorForRevisions = author,
         DateTimeForRevisions = DateTime.Now.ToString("o"),
     };
+
+    // Only set author if explicitly provided; otherwise WmlComparer extracts from the modified document
+    if (!string.IsNullOrEmpty(author))
+    {
+        settings.AuthorForRevisions = author;
+    }
 
     var result = WmlComparer.Compare(source1, source2, settings);
     result.SaveAs(outputPath);
