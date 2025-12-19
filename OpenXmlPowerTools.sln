@@ -55,6 +55,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpreadsheetWriter02", "Open
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenXmlPowerTools.Tests", "OpenXmlPowerTools.Tests\OpenXmlPowerTools.Tests.csproj", "{B1328B70-33B8-40E0-A729-38C34D659B5C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenXmlPowerTools.CLI", "OpenXmlPowerTools.CLI\OpenXmlPowerTools.CLI.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DocumentAssembler02", "OpenXmlPowerToolsExamples\DocumentAssembler02\DocumentAssembler02.csproj", "{D6DFAC7C-82F4-4318-A9F0-6450D2945D96}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HtmlToWmlConverter01", "OpenXmlPowerToolsExamples\HtmlToWmlConverter01\HtmlToWmlConverter01.csproj", "{9E194D13-F5A0-4430-8F87-D74326457385}"
@@ -195,6 +197,10 @@ Global
 		{B1328B70-33B8-40E0-A729-38C34D659B5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1328B70-33B8-40E0-A729-38C34D659B5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1328B70-33B8-40E0-A729-38C34D659B5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D6DFAC7C-82F4-4318-A9F0-6450D2945D96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D6DFAC7C-82F4-4318-A9F0-6450D2945D96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6DFAC7C-82F4-4318-A9F0-6450D2945D96}.Release|Any CPU.ActiveCfg = Release|Any CPU
