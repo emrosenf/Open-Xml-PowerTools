@@ -12,12 +12,13 @@ NC='\033[0m' # No Color
 usage() {
     echo "Usage: $0 <document1> <document2> [output]"
     echo ""
-    echo "Compare two Word documents and produce a redline comparison."
+    echo "Compare two Office documents and produce a comparison result."
+    echo "Supports Word (.docx), PowerPoint (.pptx), and Excel (.xlsx) files."
     echo ""
     echo "Arguments:"
     echo "  document1    Path to the original document"
     echo "  document2    Path to the modified document"
-    echo "  output       Output path (optional, defaults to ./comparison-result.docx)"
+    echo "  output       Output path (optional, defaults to ./comparison-result.[ext])"
     echo ""
     echo "Options:"
     echo "  --rebuild    Force rebuild of Docker image"
@@ -25,7 +26,8 @@ usage() {
     echo ""
     echo "Examples:"
     echo "  $0 original.docx modified.docx"
-    echo "  $0 original.docx modified.docx result.docx"
+    echo "  $0 original.pptx modified.pptx result.pptx"
+    echo "  $0 original.xlsx modified.xlsx"
     echo "  $0 --rebuild original.docx modified.docx"
 }
 
