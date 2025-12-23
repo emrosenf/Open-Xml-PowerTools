@@ -108,20 +108,22 @@ namespace OpenXmlPowerTools.Tests
                     bodyElement.Add(new XElement(W.p, new XElement(W.r, new XElement(W.t, "Added through PowerTools"))));
                     part.PutXDocument();
 
-                    // Get the part's content through the SDK. However, we will only see what we
+                    // SDK 3.x Behavioral Change: In earlier SDK versions, we would only see what we
                     // added through the SDK, not what we added through the PowerTools functionality.
+                    // However, SDK 3.x synchronizes parts differently - PutXDocument immediately
+                    // makes changes visible through the strongly typed classes.
+                    // The old assertion was: Assert.Single(paragraphs);
                     body = part.Document.Body;
                     List<Paragraph> paragraphs = body.Elements<Paragraph>().ToList();
-                    Assert.Single(paragraphs);
+                    Assert.Equal(2, paragraphs.Count);
                     Assert.Equal("Added through SDK", paragraphs[0].InnerText);
+                    Assert.Equal("Added through PowerTools", paragraphs[1].InnerText);
 
-                    // Now, let's end the PowerTools Block, which reloads the root element of this
-                    // one part. Reloading those root elements this way is fine if you know exactly
-                    // which parts had their content changed by the Open XML PowerTools.
+                    // Now, let's end the PowerTools Block. In SDK 3.x, changes are already visible,
+                    // but EndPowerToolsBlock is still needed for proper cleanup and consistency.
                     wordDocument.EndPowerToolsBlock();
 
-                    // Get the part's content through the SDK. Having reloaded the root element,
-                    // we should now see both paragraphs.
+                    // Verify the paragraphs are still there after ending the PowerTools block.
                     body = part.Document.Body;
                     paragraphs = body.Elements<Paragraph>().ToList();
                     Assert.Equal(2, paragraphs.Count);

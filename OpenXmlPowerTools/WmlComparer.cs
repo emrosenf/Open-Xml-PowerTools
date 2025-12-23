@@ -16,6 +16,7 @@ using System.IO.Packaging;
 using System.Text;
 using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Experimental;
 using System.Drawing;
 using System.Security.Cryptography;
 using OpenXmlPowerTools;
@@ -456,10 +457,24 @@ namespace OpenXmlPowerTools
                     FlattenAlternateContent(wDoc);
                     MergeDuplicateTextBoxes(wDoc);
                     ChangeFootnoteEndnoteReferencesToUniqueRange(wDoc, startingIdForFootnotesEndnotes);
-                    AddUnidsToMarkupInContentParts(wDoc);
+                    // Note: AddUnidsToMarkupInContentParts moved to separate block below
                     AddFootnotesEndnotesParts(wDoc);
                     FillInEmptyFootnotesEndnotes(wDoc);
                     DetachExternalData(wDoc);
+                }
+                source = new WmlDocument(source.FileName, ms.ToArray());
+            }
+
+            // SDK 3.x Fix: Add Unids in a separate block WITHOUT ProcessAllParts settings.
+            // With ProcessAllParts, SDK 3.x strips attributes from ignorable namespaces (like pt14)
+            // when saving the document. By adding Unids after MC processing completes,
+            // they aren't stripped on save.
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(source.DocumentByteArray, 0, source.DocumentByteArray.Length);
+                using (WordprocessingDocument wDoc = WordprocessingDocument.Open(ms, true))
+                {
+                    AddUnidsToMarkupInContentParts(wDoc);
                 }
                 return new WmlDocument(source.FileName, ms.ToArray());
             }
@@ -1795,10 +1810,11 @@ namespace OpenXmlPowerTools
             ConsolidationInfo consolidationInfo,
             WmlComparerSettings settings)
         {
-            Package packageOfDeletedContent = wDocDelta.MainDocumentPart.OpenXmlPackage.Package;
-            Package packageOfNewContent = consolidatedWDoc.MainDocumentPart.OpenXmlPackage.Package;
-            PackagePart partInDeletedDocument = packageOfDeletedContent.GetPart(wDocDelta.MainDocumentPart.Uri);
-            PackagePart partInNewDocument = packageOfNewContent.GetPart(consolidatedWDoc.MainDocumentPart.Uri);
+            // SDK 3.x: Use GetPackage() extension method and IPackage/IPackagePart interfaces
+            var packageOfDeletedContent = wDocDelta.MainDocumentPart.OpenXmlPackage.GetPackage();
+            var packageOfNewContent = consolidatedWDoc.MainDocumentPart.OpenXmlPackage.GetPackage();
+            var partInDeletedDocument = packageOfDeletedContent.GetPart(wDocDelta.MainDocumentPart.Uri);
+            var partInNewDocument = packageOfNewContent.GetPart(consolidatedWDoc.MainDocumentPart.Uri);
             consolidationInfo.RevisionElement = MoveRelatedPartsToDestination(partInDeletedDocument, partInNewDocument, consolidationInfo.RevisionElement);
 
             var clonedForHashing = (XElement)CloneBlockLevelContentForHashing(consolidatedWDoc.MainDocumentPart, consolidationInfo.RevisionElement, false, settings);
@@ -3632,7 +3648,7 @@ namespace OpenXmlPowerTools
                     {
                         var thisUnid = (string)ae.Attribute(PtOpenXml.Unid);
                         if (thisUnid == null)
-                            Guid.NewGuid().ToString().Replace("-", "");
+                            throw new OpenXmlPowerToolsException("Internal error");
                         return thisUnid;
                     });
                 var thisAncestorUnids = currentAncestorUnids
@@ -5427,10 +5443,11 @@ namespace OpenXmlPowerTools
                                         var openXmlPartInNewDocument = part;
                                         return gc.Select(gce =>
                                         {
-                                            Package packageOfDeletedContent = openXmlPartOfDeletedContent.OpenXmlPackage.Package;
-                                            Package packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.Package;
-                                            PackagePart partInDeletedDocument = packageOfDeletedContent.GetPart(part.Uri);
-                                            PackagePart partInNewDocument = packageOfNewContent.GetPart(part.Uri);
+                                            // SDK 3.x: Use GetPackage() extension and IPackage/IPackagePart
+                                            var packageOfDeletedContent = openXmlPartOfDeletedContent.OpenXmlPackage.GetPackage();
+                                            var packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.GetPackage();
+                                            var partInDeletedDocument = packageOfDeletedContent.GetPart(part.Uri);
+                                            var partInNewDocument = packageOfNewContent.GetPart(part.Uri);
                                             return MoveRelatedPartsToDestination(partInDeletedDocument, partInNewDocument, newDrawing);
                                         });
                                     });
@@ -5446,10 +5463,11 @@ namespace OpenXmlPowerTools
                                         var openXmlPartInNewDocument = part;
                                         return gc.Select(gce =>
                                         {
-                                            Package packageOfSourceContent = openXmlPartOfInsertedContent.OpenXmlPackage.Package;
-                                            Package packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.Package;
-                                            PackagePart partInDeletedDocument = packageOfSourceContent.GetPart(part.Uri);
-                                            PackagePart partInNewDocument = packageOfNewContent.GetPart(part.Uri);
+                                            // SDK 3.x: Use GetPackage() extension and IPackage/IPackagePart
+                                            var packageOfSourceContent = openXmlPartOfInsertedContent.OpenXmlPackage.GetPackage();
+                                            var packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.GetPackage();
+                                            var partInDeletedDocument = packageOfSourceContent.GetPart(part.Uri);
+                                            var partInNewDocument = packageOfNewContent.GetPart(part.Uri);
                                             return MoveRelatedPartsToDestination(partInDeletedDocument, partInNewDocument, newDrawing);
                                         });
                                     });
@@ -5463,10 +5481,11 @@ namespace OpenXmlPowerTools
 
                                         var openXmlPartOfSourceContent = gc.First().Part;
                                         var openXmlPartInNewDocument = part;
-                                        Package packageOfSourceContent = openXmlPartOfSourceContent.OpenXmlPackage.Package;
-                                        Package packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.Package;
-                                        PackagePart partInSourceDocument = packageOfSourceContent.GetPart(part.Uri);
-                                        PackagePart partInNewDocument = packageOfNewContent.GetPart(part.Uri);
+                                        // SDK 3.x: Use GetPackage() extension and IPackage/IPackagePart
+                                        var packageOfSourceContent = openXmlPartOfSourceContent.OpenXmlPackage.GetPackage();
+                                        var packageOfNewContent = openXmlPartInNewDocument.OpenXmlPackage.GetPackage();
+                                        var partInSourceDocument = packageOfSourceContent.GetPart(part.Uri);
+                                        var partInNewDocument = packageOfNewContent.GetPart(part.Uri);
                                         return MoveRelatedPartsToDestination(partInSourceDocument, partInNewDocument, newDrawing);
                                     });
                                 }
@@ -5579,7 +5598,8 @@ namespace OpenXmlPowerTools
             return elementList;
         }
 
-        private static XElement MoveRelatedPartsToDestination(PackagePart partOfDeletedContent, PackagePart partInNewDocument,
+        // SDK 3.x: Changed from PackagePart to IPackagePart
+        private static XElement MoveRelatedPartsToDestination(IPackagePart partOfDeletedContent, IPackagePart partInNewDocument,
             XElement contentElement)
         {
             var elementsToUpdate = contentElement
@@ -5597,7 +5617,10 @@ namespace OpenXmlPowerTools
                 {
                     var rId = (string)att;
 
-                    var relationshipForDeletedPart = partOfDeletedContent.GetRelationship(rId);
+                    // SDK 3.x: Use Relationships collection instead of GetRelationship
+                    var relationshipForDeletedPart = partOfDeletedContent.Relationships.Contains(rId)
+                        ? partOfDeletedContent.Relationships[rId]
+                        : null;
                     if (relationshipForDeletedPart == null)
                         throw new FileFormatException("Invalid document");
 
@@ -5639,24 +5662,26 @@ namespace OpenXmlPowerTools
                         else
                             uri = new Uri(uriString, UriKind.Relative);
 
-                        var newPart = partInNewDocument.Package.CreatePart(uri, relatedPackagePart.ContentType);
-                        using (var oldPartStream = relatedPackagePart.GetStream())
-                        using (var newPartStream = newPart.GetStream())
+                        // SDK 3.x: IPackage.CreatePart requires CompressionOption parameter
+                        var newPart = partInNewDocument.Package.CreatePart(uri, relatedPackagePart.ContentType, CompressionOption.Normal);
+                        using (var oldPartStream = relatedPackagePart.GetStream(FileMode.Open, FileAccess.Read))
+                        using (var newPartStream = newPart.GetStream(FileMode.Create, FileAccess.Write))
                             FileUtils.CopyStream(oldPartStream, newPartStream);
 
                         var newRid = "R" + Guid.NewGuid().ToString().Replace("-", "");
-                        partInNewDocument.CreateRelationship(newPart.Uri, TargetMode.Internal, relationshipForDeletedPart.RelationshipType, newRid);
+                        // SDK 3.x: Use Relationships.Create instead of CreateRelationship
+                        partInNewDocument.Relationships.Create(newPart.Uri, TargetMode.Internal, relationshipForDeletedPart.RelationshipType, newRid);
                         att.Value = newRid;
 
                         if (newPart.ContentType.EndsWith("xml"))
                         {
                             XDocument newPartXDoc = null;
-                            using (var stream = newPart.GetStream())
+                            using (var stream = newPart.GetStream(FileMode.Open, FileAccess.Read))
                             {
                                 newPartXDoc = XDocument.Load(stream);
                                 MoveRelatedPartsToDestination(relatedPackagePart, newPart, newPartXDoc.Root);
                             }
-                            using (var stream = newPart.GetStream())
+                            using (var stream = newPart.GetStream(FileMode.Create, FileAccess.Write))
                                 newPartXDoc.Save(stream);
                         }
                     }
@@ -5865,12 +5890,16 @@ namespace OpenXmlPowerTools
                         relevantAncestors.Add(ae);
                         break;
                     }
+                    // SDK 3.x MC processing may strip pt14 namespace attributes - generate missing Unids
                     var unidList = relevantAncestors
                         .Select(a =>
                         {
                             var unid = (string)a.Attribute(PtOpenXml.Unid);
                             if (unid == null)
-                                throw new OpenXmlPowerToolsException("Internal error");
+                            {
+                                unid = Guid.NewGuid().ToString().Replace("-", "");
+                                a.Add(new XAttribute(PtOpenXml.Unid, unid));
+                            }
                             return unid;
                         })
                         .ToArray();
@@ -5886,14 +5915,20 @@ namespace OpenXmlPowerTools
 
                         foreach (var z in zipped)
                         {
-                            var unid = z.Ancestor.Attribute(PtOpenXml.Unid);
+                            var unidAtt = z.Ancestor.Attribute(PtOpenXml.Unid);
 
                             if (z.Ancestor.Name == W.footnotes || z.Ancestor.Name == W.endnotes)
                                 continue;
 
-                            if (unid == null)
-                                throw new OpenXmlPowerToolsException("Internal error");
-                            unid.Value = z.Unid;
+                            // SDK 3.x: Add Unid attribute if missing
+                            if (unidAtt == null)
+                            {
+                                z.Ancestor.Add(new XAttribute(PtOpenXml.Unid, z.Unid));
+                            }
+                            else
+                            {
+                                unidAtt.Value = z.Unid;
+                            }
                         }
                     }
                 }

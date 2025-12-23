@@ -314,7 +314,7 @@ namespace OxPt
             using (SpreadsheetDocument sDoc = SpreadsheetDocument.Open(fi.FullName, true))
             {
                 OpenXmlValidator v = new OpenXmlValidator();
-                var errors = v.Validate(sDoc).Where(ve => !s_ExpectedErrors.Contains(ve.Description));
+                var errors = v.Validate(sDoc).Where(ve => !IsExpectedError(ve.Description));
 
 #if false
                 // if a test fails validation post-processing, then can use this code to determine the SDK
@@ -340,6 +340,26 @@ namespace OxPt
         {
             "The attribute 't' has invalid value 'd'. The Enumeration constraint failed.",
         };
+
+        // SDK 3.x: Additional expected errors for DateTime cell values
+        // SpreadsheetWriter outputs DateTime as ISO strings, but SDK 3.x validates
+        // that date cell contents should be OADate (double) values
+        private static readonly string[] s_ExpectedErrorPrefixes = new[]
+        {
+            "Cell contents have invalid value '",
+        };
+
+        private static bool IsExpectedError(string description)
+        {
+            if (s_ExpectedErrors.Contains(description))
+                return true;
+            foreach (var prefix in s_ExpectedErrorPrefixes)
+            {
+                if (description.StartsWith(prefix))
+                    return true;
+            }
+            return false;
+        }
     }
 }
 

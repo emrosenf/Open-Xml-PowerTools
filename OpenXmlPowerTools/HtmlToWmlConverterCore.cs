@@ -2325,7 +2325,8 @@ namespace OpenXmlPowerTools.HtmlToWml
 
             MainDocumentPart mdp = wDoc.MainDocumentPart;
             string rId = "R" + Guid.NewGuid().ToString().Replace("-", "");
-            ImagePartType ipt = ImagePartType.Png;
+            // SDK 3.x: ImagePartType is now a static class with PartTypeInfo fields
+            var ipt = ImagePartType.Png;
             ImagePart newPart = mdp.AddImagePart(ipt, rId);
             using (Stream s = newPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
                 s.Write(ba, 0, ba.GetUpperBound(0) + 1);

@@ -2,11 +2,13 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Suppress analyzer warnings for legacy code patterns -->
-    <NoWarn>$(NoWarn);CA1416;CA2200;CA2022</NoWarn>
+    <!-- OOXML0001: DocumentFormat.OpenXml.Experimental IPackage/IPackagePart APIs -->
+    <!-- CS8073: IdPartPair is now a struct, null comparisons always true/false -->
+    <NoWarn>$(NoWarn);CA1416;CA2200;CA2022;OOXML0001;CS8073</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DocumentFormat.OpenXml" Version="2.8.1" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 </Project>

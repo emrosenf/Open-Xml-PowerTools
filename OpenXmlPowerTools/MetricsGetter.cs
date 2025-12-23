@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.IO.Packaging;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
@@ -189,9 +188,8 @@ namespace OpenXmlPowerTools
 
         private static XElement RetrieveContentTypeList(OpenXmlPackage oxPkg)
         {
-            Package pkg = oxPkg.Package;
-
-            var nonRelationshipParts = pkg.GetParts().Cast<ZipPackagePart>().Where(p => p.ContentType != "application/vnd.openxmlformats-package.relationships+xml");
+            // Use GetAllParts() extension method instead of Package.GetParts() (SDK 3.x change)
+            var nonRelationshipParts = oxPkg.GetAllParts().Where(p => p.ContentType != "application/vnd.openxmlformats-package.relationships+xml");
             var contentTypes = nonRelationshipParts
                 .Select(p => p.ContentType)
                 .OrderBy(t => t)
@@ -203,9 +201,8 @@ namespace OpenXmlPowerTools
 
         private static XElement RetrieveNamespaceList(OpenXmlPackage oxPkg)
         {
-            Package pkg = oxPkg.Package;
-
-            var nonRelationshipParts = pkg.GetParts().Cast<ZipPackagePart>().Where(p => p.ContentType != "application/vnd.openxmlformats-package.relationships+xml");
+            // Use GetAllParts() extension method instead of Package.GetParts() (SDK 3.x change)
+            var nonRelationshipParts = oxPkg.GetAllParts().Where(p => p.ContentType != "application/vnd.openxmlformats-package.relationships+xml");
             var xmlParts = nonRelationshipParts
                 .Where(p => p.ContentType.ToLower().EndsWith("xml"));
 
@@ -451,8 +448,9 @@ namespace OpenXmlPowerTools
 
         private static void ValidateImageExists(OpenXmlPart part, string relId, Dictionary<XName, int> metrics)
         {
+            // SDK 3.x: IdPartPair is a struct, check OpenXmlPart instead of null
             var imagePart = part.Parts.FirstOrDefault(ipp => ipp.RelationshipId == relId);
-            if (imagePart == null)
+            if (imagePart.OpenXmlPart == null)
                 IncrementMetric(metrics, H.ReferenceToNullImage);
         }
 

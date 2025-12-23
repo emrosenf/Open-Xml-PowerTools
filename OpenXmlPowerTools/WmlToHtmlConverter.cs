@@ -3069,8 +3069,9 @@ namespace OpenXmlPowerTools
             var imageRid = (string)blipFill.Elements(A.blip).Attributes(R.embed).FirstOrDefault();
             if (imageRid == null) return null;
 
+            // SDK 3.x: IdPartPair is a struct, check OpenXmlPart instead of null
             var pp3 = wordDoc.MainDocumentPart.Parts.FirstOrDefault(pp => pp.RelationshipId == imageRid);
-            if (pp3 == null) return null;
+            if (pp3.OpenXmlPart == null) return null;
 
             var imagePart = (ImagePart)pp3.OpenXmlPart;
             if (imagePart == null) return null;
@@ -3142,8 +3143,9 @@ namespace OpenXmlPowerTools
 
             try
             {
+                // SDK 3.x: IdPartPair is a struct, check OpenXmlPart instead of null
                 var pp = wordDoc.MainDocumentPart.Parts.FirstOrDefault(pp2 => pp2.RelationshipId == imageRid);
-                if (pp == null) return null;
+                if (pp.OpenXmlPart == null) return null;
 
                 var imagePart = (ImagePart)pp.OpenXmlPart;
                 if (imagePart == null) return null;
