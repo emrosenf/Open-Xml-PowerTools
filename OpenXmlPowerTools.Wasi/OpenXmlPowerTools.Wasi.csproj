@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- componentize-dotnet NativeAOT settings -->
+    <UseAppHost>false</UseAppHost>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- Suppress trim warnings -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- componentize-dotnet SDK -->
+    <PackageReference Include="BytecodeAlliance.Componentize.DotNet.Wasm.SDK" Version="0.7.0-preview*" />
+    <PackageReference Include="runtime.linux-x64.microsoft.dotnet.ilcompiler.llvm" Version="10.0.0-alpha.1.25162.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use the SharpCompress-based packaging instead of OpenXmlPowerTools -->
+    <ProjectReference Include="../OpenXmlPowerTools.Packaging/OpenXmlPowerTools.Packaging.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,53 @@
+# Dockerfile for building OpenXmlPowerTools using componentize-dotnet (Native AOT WASM)
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:10.0
+
+WORKDIR /app
+
+# Create nuget.config for experimental LLVM feed
+RUN cat > /app/nuget.config << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="dotnet-experimental" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json" />
+    <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>
+EOF
+
+# Install the componentize-dotnet template
+RUN dotnet new install BytecodeAlliance.Componentize.DotNet.Templates
+
+# Create a test project from template to verify toolchain
+RUN dotnet new componentize.wasi.cli -o /app/TestWasm && \
+    cd /app/TestWasm && \
+    dotnet build -c Release
+
+# List what was built to understand the output
+RUN ls -la /app/TestWasm/bin/Release/net10.0/wasi-wasm/
+
+# Copy project files
+COPY OpenXmlPowerTools.Packaging/OpenXmlPowerTools.Packaging.csproj OpenXmlPowerTools.Packaging/
+COPY OpenXmlPowerTools.Wasi/OpenXmlPowerTools.Wasi.csproj OpenXmlPowerTools.Wasi/
+
+# Restore dependencies
+RUN dotnet restore OpenXmlPowerTools.Packaging/OpenXmlPowerTools.Packaging.csproj && \
+    dotnet restore OpenXmlPowerTools.Wasi/OpenXmlPowerTools.Wasi.csproj
+
+# Copy all source files
+COPY . .
+
+# Build the WASI component (use build, not publish - componentize-dotnet handles it)
+RUN dotnet build OpenXmlPowerTools.Wasi/OpenXmlPowerTools.Wasi.csproj \
+    -c Release \
+    2>&1 || echo "Build may have failed - checking output anyway"
+
+# Copy the WASM output to /output
+RUN mkdir -p /output && \
+    cp -r OpenXmlPowerTools.Wasi/bin/Release/net10.0/wasi-wasm/* /output/ 2>/dev/null || true && \
+    echo "=== Output directory contents ===" && \
+    ls -la /output/ && \
+    echo "=== Native directory (WASM) ===" && \
+    ls -la /output/native/ 2>/dev/null || echo "No native directory"
+
+CMD ["ls", "-la", "/output"]

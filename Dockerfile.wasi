@@ -1,0 +1,43 @@
+# Dockerfile for building OpenXmlPowerTools WASI module
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:10.0
+
+# Install WASI workload
+RUN dotnet workload install wasi-experimental
+
+# Install WASI SDK (detect architecture)
+ENV WASI_SDK_VERSION=25
+RUN apt-get update && apt-get install -y wget && \
+    ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "arm64" ]; then \
+        WASI_ARCH="arm64"; \
+    else \
+        WASI_ARCH="x86_64"; \
+    fi && \
+    wget -q https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}.0-${WASI_ARCH}-linux.tar.gz && \
+    tar xf wasi-sdk-${WASI_SDK_VERSION}.0-${WASI_ARCH}-linux.tar.gz && \
+    mv wasi-sdk-${WASI_SDK_VERSION}.0-${WASI_ARCH}-linux /opt/wasi-sdk && \
+    rm wasi-sdk-${WASI_SDK_VERSION}.0-${WASI_ARCH}-linux.tar.gz && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV WASI_SDK_PATH=/opt/wasi-sdk
+
+WORKDIR /app
+
+# Copy project files first for better layer caching
+COPY OpenXmlPowerTools.Packaging/OpenXmlPowerTools.Packaging.csproj OpenXmlPowerTools.Packaging/
+COPY OpenXmlPowerTools.Wasi/OpenXmlPowerTools.Wasi.csproj OpenXmlPowerTools.Wasi/
+
+# Restore dependencies
+RUN dotnet restore OpenXmlPowerTools.Packaging/OpenXmlPowerTools.Packaging.csproj && \
+    dotnet restore OpenXmlPowerTools.Wasi/OpenXmlPowerTools.Wasi.csproj
+
+# Copy all source files
+COPY . .
+
+# Build the WASI module
+RUN dotnet publish OpenXmlPowerTools.Wasi/OpenXmlPowerTools.Wasi.csproj \
+    -c Release \
+    -o /output
+
+# The output will include the .wasm file
+CMD ["ls", "-la", "/output"]
