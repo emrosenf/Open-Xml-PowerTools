@@ -940,10 +940,57 @@ function countWordRevisions(
   const totalWords = Math.max(words1.length, words2.length);
   const similarity = totalWords > 0 ? equalCount / totalWords : 0;
 
-  // If similarity is relatively low (< 40%), treat as complete replacement (1 del + 1 ins)
-  // This matches C# behavior for paragraphs with minimal overlap
-  // The C# groups scattered word changes together rather than counting each separately
-  if (similarity < 0.4 && hasInsertions && hasDeletions) {
+  // For paragraphs with both insertions and deletions:
+  // - If similarity < 40%, treat as complete replacement (1 del + 1 ins)
+  if (hasInsertions && hasDeletions && similarity < 0.4) {
+    return { insertions: 1, deletions: 1 };
+  }
+
+  // Check if changes are scattered due to structural tokens (FOOTNOTE_REF, DRAWING, etc.)
+  // by looking at equal sequences between changes.
+  // If ALL equals between changes are short structural tokens, group as a single modification.
+  // Trailing/leading long equals don't count (only check equals that are truly between changes).
+  let scatteredByStructuralTokens = false;
+  if (hasInsertions && hasDeletions && insertions + deletions > 2) {
+    // Look for pattern: changes separated only by short structural equals
+    let hasEqualBetweenChanges = false;
+    let allEqualsBetweenChangesAreShort = true;
+
+    for (let i = 0; i < wordCorr.length; i++) {
+      const wseq = wordCorr[i];
+      if (wseq.status === CorrelationStatus.Equal && wseq.items1) {
+        // Check if this equal is between changes (has a change before AND after)
+        const prevIsChange =
+          i > 0 &&
+          (wordCorr[i - 1].status === CorrelationStatus.Deleted ||
+            wordCorr[i - 1].status === CorrelationStatus.Inserted);
+        const nextIsChange =
+          i < wordCorr.length - 1 &&
+          (wordCorr[i + 1].status === CorrelationStatus.Deleted ||
+            wordCorr[i + 1].status === CorrelationStatus.Inserted);
+
+        if (prevIsChange && nextIsChange) {
+          hasEqualBetweenChanges = true;
+          // Check if this equal sequence is a short structural token
+          const isShortStructural =
+            wseq.items1.length === 1 &&
+            (wseq.items1[0].text.startsWith('FOOTNOTE_REF_') ||
+              wseq.items1[0].text.startsWith('ENDNOTE_REF_') ||
+              wseq.items1[0].text.startsWith('DRAWING_') ||
+              wseq.items1[0].text.startsWith('PICT_'));
+          if (!isShortStructural) {
+            allEqualsBetweenChangesAreShort = false;
+          }
+        }
+      }
+    }
+
+    if (hasEqualBetweenChanges && allEqualsBetweenChangesAreShort) {
+      scatteredByStructuralTokens = true;
+    }
+  }
+
+  if (hasInsertions && hasDeletions && scatteredByStructuralTokens) {
     return { insertions: 1, deletions: 1 };
   }
 
