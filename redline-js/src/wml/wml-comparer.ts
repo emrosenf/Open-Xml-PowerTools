@@ -344,6 +344,7 @@ function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
 /**
  * Extract paragraphs from footnotes or endnotes XML.
  * Skips separator and continuationSeparator notes.
+ * Handles tables within notes by grouping table rows.
  */
 function extractFootnoteEndnoteParagraphs(
   xmlNodes: XmlNode[],
@@ -366,17 +367,33 @@ function extractFootnoteEndnoteParagraphs(
             continue;
           }
 
-          // Extract paragraphs from this note
-          const paragraphs = findNodes(child, (n) => getTagName(n) === 'w:p');
-          for (const para of paragraphs) {
-            const text = extractParagraphText(para);
-            if (text.trim()) {
-              // Only include non-empty paragraphs
-              units.push({
-                hash: hashString(text),
-                node: cloneNode(para),
-                text,
-              });
+          // Use findTopLevelElements to properly handle tables within notes
+          const elements = findTopLevelElements(child);
+          for (const element of elements) {
+            if (element.type === 'tableRow') {
+              // Table row - combine all paragraph texts for hashing
+              const texts = element.paragraphs.map((p) => extractParagraphText(p));
+              const combinedText = texts.join(' ');
+              if (combinedText.trim()) {
+                units.push({
+                  hash: hashString(combinedText),
+                  node: cloneNode(element.node),
+                  text: combinedText,
+                  isTableRow: true,
+                  rowParagraphs: element.paragraphs.map(cloneNode),
+                  rowCells: element.cells?.map((cell) => cell.map(cloneNode)),
+                });
+              }
+            } else {
+              // Regular paragraph
+              const text = extractParagraphText(element.node);
+              if (text.trim()) {
+                units.push({
+                  hash: hashString(text),
+                  node: cloneNode(element.node),
+                  text,
+                });
+              }
             }
           }
         }
@@ -616,50 +633,86 @@ function compareAlignedParagraphs(
     const nextSeq = paraCorrelation[i + 1];
 
     if (seq.status === CorrelationStatus.Deleted && seq.items1) {
-      // Check if this is followed by an insert of same length (paragraph modification)
-      if (
-        nextSeq &&
-        nextSeq.status === CorrelationStatus.Inserted &&
-        nextSeq.items2 &&
-        nextSeq.items2.length === seq.items1.length
-      ) {
-        // This is a modification - compare at word level
-        for (let j = 0; j < seq.items1.length; j++) {
-          const para1 = seq.items1[j];
-          const para2 = nextSeq.items2[j];
+      // Check if this is followed by an insert (paragraph modification)
+      if (nextSeq && nextSeq.status === CorrelationStatus.Inserted && nextSeq.items2) {
+        // Check if both are purely table rows - do positional comparison
+        const allDelTableRows = seq.items1.every((p) => p.isTableRow);
+        const allInsTableRows = nextSeq.items2.every((p) => p.isTableRow);
 
-          if (para1.text === para2.text) {
-            // No actual change
-            continue;
+        if (allDelTableRows && allInsTableRows) {
+          // Compare corresponding table rows positionally
+          const maxLen = Math.max(seq.items1.length, nextSeq.items2.length);
+          const minLen = Math.min(seq.items1.length, nextSeq.items2.length);
+
+          for (let j = 0; j < minLen; j++) {
+            const para1 = seq.items1[j];
+            const para2 = nextSeq.items2[j];
+
+            if (para1.text === para2.text) continue;
+
+            if (para1.rowCells && para2.rowCells) {
+              const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
+              insertions += revs.insertions;
+              deletions += revs.deletions;
+            } else {
+              const wordRevs = countWordRevisions(para1.text, para2.text);
+              insertions += wordRevs.insertions;
+              deletions += wordRevs.deletions;
+            }
           }
 
-          // For table rows, compare each cell paragraph separately
-          if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
-            const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
-            insertions += revs.insertions;
-            deletions += revs.deletions;
+          // Count remaining rows as pure insertions/deletions
+          if (seq.items1.length > nextSeq.items2.length) {
+            // Extra deleted rows - count as 1 deletion (grouped)
+            deletions += 1;
+          } else if (nextSeq.items2.length > seq.items1.length) {
+            // Extra inserted rows - count as 1 insertion (grouped)
+            insertions += 1;
+          }
+
+          i++; // Skip next sequence
+        } else if (seq.items1.length === nextSeq.items2.length) {
+          // Same length, compare at word level
+          for (let j = 0; j < seq.items1.length; j++) {
+            const para1 = seq.items1[j];
+            const para2 = nextSeq.items2[j];
+
+            if (para1.text === para2.text) continue;
+
+            if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
+              const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
+              insertions += revs.insertions;
+              deletions += revs.deletions;
+            } else {
+              const wordRevs = countWordRevisions(para1.text, para2.text);
+              insertions += wordRevs.insertions;
+              deletions += wordRevs.deletions;
+            }
+          }
+          i++;
+        } else {
+          // Different lengths, not all table rows - count separately
+          const nonEmptyTableRows = seq.items1.filter((p) => p.isTableRow && p.text.trim() !== '');
+          const nonEmptyParas = seq.items1.filter((p) => !p.isTableRow && p.text.trim() !== '');
+
+          if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
+            deletions += 1;
+          } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
+            deletions += 1 + nonEmptyParas.length;
           } else {
-            // Compare at word level for regular paragraphs
-            const wordRevs = countWordRevisions(para1.text, para2.text);
-            insertions += wordRevs.insertions;
-            deletions += wordRevs.deletions;
+            deletions += Math.max(1, nonEmptyParas.length);
           }
         }
-        // Skip the next sequence since we processed it
-        i++;
       } else {
         // True deletion - check if it's table-related or regular paragraphs
         const nonEmptyTableRows = seq.items1.filter((p) => p.isTableRow && p.text.trim() !== '');
         const nonEmptyParas = seq.items1.filter((p) => !p.isTableRow && p.text.trim() !== '');
 
         if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
-          // Only non-empty table rows (and possibly empty items) = 1 revision
           deletions += 1;
         } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
-          // Mix of non-empty table rows and non-empty paragraphs = count table as 1 + each paragraph
           deletions += 1 + nonEmptyParas.length;
         } else {
-          // Only regular paragraphs = count each non-empty
           deletions += Math.max(1, nonEmptyParas.length);
         }
       }
@@ -669,13 +722,10 @@ function compareAlignedParagraphs(
       const nonEmptyParas = seq.items2.filter((p) => !p.isTableRow && p.text.trim() !== '');
 
       if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
-        // Only non-empty table rows (and possibly empty items) = 1 revision
         insertions += 1;
       } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
-        // Mix of non-empty table rows and non-empty paragraphs = count table as 1 + each paragraph
         insertions += 1 + nonEmptyParas.length;
       } else {
-        // Only regular paragraphs = count each non-empty
         insertions += Math.max(1, nonEmptyParas.length);
       }
     } else if (seq.status === CorrelationStatus.Equal && seq.items1 && seq.items2) {
