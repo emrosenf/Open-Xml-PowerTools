@@ -73,12 +73,18 @@ export interface WmlComparisonResult {
 }
 
 /**
- * A comparison unit representing a paragraph with its hash
+ * A comparison unit representing a paragraph or table row with its hash
  */
 interface ParagraphUnit extends Hashable {
   hash: string;
   node: XmlNode;
   text: string;
+  /** If true, this represents a table row, not a single paragraph */
+  isTableRow?: boolean;
+  /** For table rows, the paragraphs within the row */
+  rowParagraphs?: XmlNode[];
+  /** For table rows, paragraphs grouped by cell */
+  rowCells?: XmlNode[][];
 }
 
 /**
@@ -90,42 +96,107 @@ interface WordUnit extends Hashable {
 }
 
 /**
- * Find all top-level paragraphs in a node, excluding those inside textboxes.
- * Paragraphs inside w:txbxContent are not returned - they are treated as part
- * of their containing paragraph's content.
+ * Element types for comparison units.
+ * Table rows are treated as single units, other paragraphs are individual units.
  */
-function findTopLevelParagraphs(node: XmlNode): XmlNode[] {
-  const paragraphs: XmlNode[] = [];
+interface ComparisonElement {
+  type: 'paragraph' | 'tableRow';
+  node: XmlNode;
+  paragraphs: XmlNode[]; // For rows, all paragraphs in the row
+  cells?: XmlNode[][]; // For rows, paragraphs grouped by cell
+}
 
-  function walk(n: XmlNode, insideTextbox: boolean): void {
+/**
+ * Find all top-level comparison elements in a node.
+ * - Paragraphs outside tables are returned individually
+ * - Table rows are returned as single units (with all their paragraphs)
+ * - Paragraphs inside textboxes are part of their containing paragraph
+ */
+function findTopLevelElements(node: XmlNode): ComparisonElement[] {
+  const elements: ComparisonElement[] = [];
+
+  function extractParagraphsFromNode(n: XmlNode, insideTextbox: boolean): XmlNode[] {
     const tagName = getTagName(n);
+    const result: XmlNode[] = [];
 
-    // Track if we're inside a textbox
     if (tagName === 'w:txbxContent') {
       insideTextbox = true;
     }
 
-    // Only collect paragraphs that are NOT inside textboxes
     if (tagName === 'w:p' && !insideTextbox) {
-      paragraphs.push(n);
-      // Don't recurse into the paragraph - we've found it
-      // But we still need to handle nested content like textboxes
+      result.push(n);
+    }
+
+    // Handle mc:AlternateContent - prefer mc:Fallback
+    if (tagName === 'mc:AlternateContent') {
+      const children = getChildren(n);
+      const fallback = children.find((c) => getTagName(c) === 'mc:Fallback');
+      if (fallback) {
+        return extractParagraphsFromNode(fallback, insideTextbox);
+      }
+      const choice = children.find((c) => getTagName(c) === 'mc:Choice');
+      if (choice) {
+        return extractParagraphsFromNode(choice, insideTextbox);
+      }
+    }
+
+    for (const child of getChildren(n)) {
+      result.push(...extractParagraphsFromNode(child, insideTextbox));
+    }
+
+    return result;
+  }
+
+  function walk(n: XmlNode, insideTextbox: boolean): void {
+    const tagName = getTagName(n);
+
+    // Track textbox context
+    if (tagName === 'w:txbxContent') {
+      insideTextbox = true;
+    }
+
+    // Table row - extract as a single comparison unit
+    if (tagName === 'w:tr') {
+      const rowParas = extractParagraphsFromNode(n, insideTextbox);
+      // Also extract paragraphs grouped by cell
+      const cells: XmlNode[][] = [];
+      for (const child of getChildren(n)) {
+        if (getTagName(child) === 'w:tc') {
+          const cellParas = extractParagraphsFromNode(child, insideTextbox);
+          cells.push(cellParas);
+        }
+      }
+      elements.push({
+        type: 'tableRow',
+        node: n,
+        paragraphs: rowParas,
+        cells,
+      });
+      return; // Don't recurse into table row children
+    }
+
+    // Regular paragraph outside table
+    if (tagName === 'w:p' && !insideTextbox) {
+      elements.push({
+        type: 'paragraph',
+        node: n,
+        paragraphs: [n],
+      });
+      // Recurse into paragraph for nested content (textboxes)
       for (const child of getChildren(n)) {
         walk(child, insideTextbox);
       }
       return;
     }
 
-    // Handle mc:AlternateContent - prefer mc:Fallback (VML) for textboxes
+    // Handle mc:AlternateContent
     if (tagName === 'mc:AlternateContent') {
       const children = getChildren(n);
-      // Look for mc:Fallback first (contains VML textbox)
       const fallback = children.find((c) => getTagName(c) === 'mc:Fallback');
       if (fallback) {
         walk(fallback, insideTextbox);
         return;
       }
-      // Otherwise use mc:Choice
       const choice = children.find((c) => getTagName(c) === 'mc:Choice');
       if (choice) {
         walk(choice, insideTextbox);
@@ -140,7 +211,7 @@ function findTopLevelParagraphs(node: XmlNode): XmlNode[] {
   }
 
   walk(node, false);
-  return paragraphs;
+  return elements;
 }
 
 /**
@@ -218,9 +289,9 @@ export async function compareDocuments(
  * by accepting revisions (skipping w:del content).
  * Includes paragraphs from main body, footnotes, and endnotes.
  *
- * IMPORTANT: Paragraphs inside textboxes (w:txbxContent) are NOT extracted
- * as separate units. Textboxes are treated as atomic elements within their
- * containing paragraph - the textbox content is included in the paragraph's hash.
+ * IMPORTANT:
+ * - Paragraphs inside textboxes are NOT extracted as separate units
+ * - Table rows are treated as single comparison units
  */
 function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
   const units: ParagraphUnit[] = [];
@@ -228,15 +299,30 @@ function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
   // Extract from main document body
   const body = getDocumentBody(doc);
   if (body) {
-    // Find top-level paragraphs only (not inside textboxes)
-    const paragraphs = findTopLevelParagraphs(body);
-    for (const node of paragraphs) {
-      const text = extractParagraphText(node);
-      units.push({
-        hash: hashString(text),
-        node: cloneNode(node),
-        text,
-      });
+    // Find top-level elements (paragraphs and table rows)
+    const elements = findTopLevelElements(body);
+    for (const element of elements) {
+      if (element.type === 'tableRow') {
+        // Table row - combine all paragraph texts for hashing
+        const texts = element.paragraphs.map((p) => extractParagraphText(p));
+        const combinedText = texts.join(' ');
+        units.push({
+          hash: hashString(combinedText),
+          node: cloneNode(element.node),
+          text: combinedText,
+          isTableRow: true,
+          rowParagraphs: element.paragraphs.map(cloneNode),
+          rowCells: element.cells?.map((cell) => cell.map(cloneNode)),
+        });
+      } else {
+        // Regular paragraph
+        const text = extractParagraphText(element.node);
+        units.push({
+          hash: hashString(text),
+          node: cloneNode(element.node),
+          text,
+        });
+      }
     }
   }
 
@@ -547,10 +633,17 @@ function compareAlignedParagraphs(
             continue;
           }
 
-          // Compare at word level
-          const wordRevs = countWordRevisions(para1.text, para2.text);
-          insertions += wordRevs.insertions;
-          deletions += wordRevs.deletions;
+          // For table rows, compare each cell paragraph separately
+          if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
+            const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
+            insertions += revs.insertions;
+            deletions += revs.deletions;
+          } else {
+            // Compare at word level for regular paragraphs
+            const wordRevs = countWordRevisions(para1.text, para2.text);
+            insertions += wordRevs.insertions;
+            deletions += wordRevs.deletions;
+          }
         }
         // Skip the next sequence since we processed it
         i++;
@@ -570,15 +663,81 @@ function compareAlignedParagraphs(
         const para2 = seq.items2[j];
 
         if (para1.text !== para2.text) {
-          const wordRevs = countWordRevisions(para1.text, para2.text);
-          insertions += wordRevs.insertions;
-          deletions += wordRevs.deletions;
+          // For table rows, compare each cell paragraph separately
+          if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
+            const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
+            insertions += revs.insertions;
+            deletions += revs.deletions;
+          } else {
+            const wordRevs = countWordRevisions(para1.text, para2.text);
+            insertions += wordRevs.insertions;
+            deletions += wordRevs.deletions;
+          }
         }
       }
     }
   }
 
   return { insertions, deletions, total: insertions + deletions };
+}
+
+/**
+ * Compare content within table row cells.
+ * For each cell, changes are grouped:
+ * - All deletions within a cell = 1 revision
+ * - All insertions within a cell = 1 revision
+ * This allows multi-cell rows to count changes separately per cell.
+ */
+function compareTableRowContent(
+  cells1: XmlNode[][],
+  cells2: XmlNode[][]
+): { insertions: number; deletions: number } {
+  let insertions = 0;
+  let deletions = 0;
+
+  // Compare corresponding cells
+  const maxCells = Math.max(cells1.length, cells2.length);
+  for (let i = 0; i < maxCells; i++) {
+    const cell1Paras = cells1[i] || [];
+    const cell2Paras = cells2[i] || [];
+
+    // Combine all text from each cell for comparison
+    const text1 = cell1Paras.map((p) => extractParagraphText(p)).join(' ');
+    const text2 = cell2Paras.map((p) => extractParagraphText(p)).join(' ');
+
+    if (text1 === text2) {
+      continue;
+    }
+
+    if (!text1.trim() && text2.trim()) {
+      // Cell was empty, now has content
+      insertions++;
+    } else if (text1.trim() && !text2.trim()) {
+      // Cell had content, now empty
+      deletions++;
+    } else {
+      // Cell content changed - compare at word level and group by type
+      const words1 = tokenize(text1);
+      const words2 = tokenize(text2);
+      const wordCorr = computeCorrelation(words1, words2);
+
+      let hasInsertions = false;
+      let hasDeletions = false;
+
+      for (const wseq of wordCorr) {
+        if (wseq.status === CorrelationStatus.Deleted) {
+          hasDeletions = true;
+        } else if (wseq.status === CorrelationStatus.Inserted) {
+          hasInsertions = true;
+        }
+      }
+
+      if (hasDeletions) deletions++;
+      if (hasInsertions) insertions++;
+    }
+  }
+
+  return { insertions, deletions };
 }
 
 /**
