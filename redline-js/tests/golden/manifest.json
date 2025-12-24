@@ -1,0 +1,3236 @@
+{
+  "GeneratedAt": "2025-12-24T01:46:58.2362944Z",
+  "WmlTests": [
+    {
+      "TestId": "WC-1000",
+      "Source1": "CA/CA001-Plain.docx",
+      "Source2": "CA/CA001-Plain-Mod.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " provides",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1000.docx",
+      "DocumentXmlFile": "wml/WC-1000.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1010",
+      "Source1": "WC/WC001-Digits.docx",
+      "Source2": "WC/WC001-Digits-Mod.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "12,34",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "12,4",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Test",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "st",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1010.docx",
+      "DocumentXmlFile": "wml/WC-1010.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1020",
+      "Source1": "WC/WC001-Digits.docx",
+      "Source2": "WC/WC001-Digits-Deleted-Paragraph.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "12,34\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1020.docx",
+      "DocumentXmlFile": "wml/WC-1020.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1030",
+      "Source1": "WC/WC001-Digits-Deleted-Paragraph.docx",
+      "Source2": "WC/WC001-Digits.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "12,34\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1030.docx",
+      "DocumentXmlFile": "wml/WC-1030.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1040",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-DiffInMiddle.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "is",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "was",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1040.docx",
+      "DocumentXmlFile": "wml/WC-1040.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1050",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-DiffAtBeginning.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "This",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "That",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1050.docx",
+      "DocumentXmlFile": "wml/WC-1050.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1060",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-DeleteAtBeginning.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "This ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1060.docx",
+      "DocumentXmlFile": "wml/WC-1060.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1070",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-InsertAtBeginning.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "Yes, ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1070.docx",
+      "DocumentXmlFile": "wml/WC-1070.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1080",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-InsertAtEnd.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " Isn\u2019t it?",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1080.docx",
+      "DocumentXmlFile": "wml/WC-1080.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1090",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-DeleteAtEnd.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " test.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1090.docx",
+      "DocumentXmlFile": "wml/WC-1090.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1100",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-DeleteInMiddle.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " is a test",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1100.docx",
+      "DocumentXmlFile": "wml/WC-1100.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1110",
+      "Source1": "WC/WC002-Unmodified.docx",
+      "Source2": "WC/WC002-InsertInMiddle.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "very long, important, and interesting ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1110.docx",
+      "DocumentXmlFile": "wml/WC-1110.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1120",
+      "Source1": "WC/WC002-DeleteInMiddle.docx",
+      "Source2": "WC/WC002-Unmodified.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " is a test",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1120.docx",
+      "DocumentXmlFile": "wml/WC-1120.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1140",
+      "Source1": "WC/WC006-Table.docx",
+      "Source2": "WC/WC006-Table-Delete-Row.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "333\n444\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1140.docx",
+      "DocumentXmlFile": "wml/WC-1140.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1150",
+      "Source1": "WC/WC006-Table-Delete-Row.docx",
+      "Source2": "WC/WC006-Table.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "333\n444\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1150.docx",
+      "DocumentXmlFile": "wml/WC-1150.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1160",
+      "Source1": "WC/WC006-Table.docx",
+      "Source2": "WC/WC006-Table-Delete-Contests-of-Row.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "333",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "444",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1160.docx",
+      "DocumentXmlFile": "wml/WC-1160.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1170",
+      "Source1": "WC/WC007-Unmodified.docx",
+      "Source2": "WC/WC007-Longest-At-End.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video provides.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "When you click Online Video, you can paste in the embed code for the video you want to add. You can also type a keyword to search online for the video that best fits your document.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1170.docx",
+      "DocumentXmlFile": "wml/WC-1170.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1180",
+      "Source1": "WC/WC007-Unmodified.docx",
+      "Source2": "WC/WC007-Deleted-at-Beginning-of-Para.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " a powerful way to help you prove your point. When you click Online Video, you can paste in the embed code for the video you want to add. You can also type a keyword to search online for the video that best fits your document",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1180.docx",
+      "DocumentXmlFile": "wml/WC-1180.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1190",
+      "Source1": "WC/WC007-Unmodified.docx",
+      "Source2": "WC/WC007-Moved-into-Table.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "Video provides.\n\n\n\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Video provides.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1190.docx",
+      "DocumentXmlFile": "wml/WC-1190.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1200",
+      "Source1": "WC/WC009-Table-Unmodified.docx",
+      "Source2": "WC/WC009-Table-Cell-1-1-Mod.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "This is a ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1200.docx",
+      "DocumentXmlFile": "wml/WC-1200.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1210",
+      "Source1": "WC/WC010-Para-Before-Table-Unmodified.docx",
+      "Source2": "WC/WC010-Para-Before-Table-Mod.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "1b34efghijklmnopqrstuvwxyz",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Abcde",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "\n\nfghijklmnopqrstuvwxyz\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1210.docx",
+      "DocumentXmlFile": "wml/WC-1210.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1220",
+      "Source1": "WC/WC011-Before.docx",
+      "Source2": "WC/WC011-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "now foo bar baz",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "what are the chances",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1220.docx",
+      "DocumentXmlFile": "wml/WC-1220.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1230",
+      "Source1": "WC/WC012-Math-Before.docx",
+      "Source2": "WC/WC012-Math-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1230.docx",
+      "DocumentXmlFile": "wml/WC-1230.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1240",
+      "Source1": "WC/WC013-Image-Before.docx",
+      "Source2": "WC/WC013-Image-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1240.docx",
+      "DocumentXmlFile": "wml/WC-1240.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1250",
+      "Source1": "WC/WC013-Image-Before.docx",
+      "Source2": "WC/WC013-Image-After2.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "Content before a special paragraph.\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "This is test.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1250.docx",
+      "DocumentXmlFile": "wml/WC-1250.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1260",
+      "Source1": "WC/WC013-Image-Before2.docx",
+      "Source2": "WC/WC013-Image-After2.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "a special ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "a ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1260.docx",
+      "DocumentXmlFile": "wml/WC-1260.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1270",
+      "Source1": "WC/WC014-SmartArt-Before.docx",
+      "Source2": "WC/WC014-SmartArt-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " the smart art",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " it",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1270.docx",
+      "DocumentXmlFile": "wml/WC-1270.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1280",
+      "Source1": "WC/WC014-SmartArt-With-Image-Before.docx",
+      "Source2": "WC/WC014-SmartArt-With-Image-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " too",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " it",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1280.docx",
+      "DocumentXmlFile": "wml/WC-1280.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1310",
+      "Source1": "WC/WC014-SmartArt-With-Image-Before.docx",
+      "Source2": "WC/WC014-SmartArt-With-Image-Deleted-After.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " too",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " it",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1310.docx",
+      "DocumentXmlFile": "wml/WC-1310.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1320",
+      "Source1": "WC/WC014-SmartArt-With-Image-Before.docx",
+      "Source2": "WC/WC014-SmartArt-With-Image-Deleted-After2.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1320.docx",
+      "DocumentXmlFile": "wml/WC-1320.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1330",
+      "Source1": "WC/WC015-Three-Paragraphs.docx",
+      "Source2": "WC/WC015-Three-Paragraphs-After.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "very interesting test that includes lots of stuff.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "much longer sequence that will be found first in the LCS algorithm.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "This is a much longer sequence that will be found first in the LCS algorithms.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1330.docx",
+      "DocumentXmlFile": "wml/WC-1330.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1340",
+      "Source1": "WC/WC016-Para-Image-Para.docx",
+      "Source2": "WC/WC016-Para-Image-Para-w-Deleted-Image.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1340.docx",
+      "DocumentXmlFile": "wml/WC-1340.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1350",
+      "Source1": "WC/WC017-Image.docx",
+      "Source2": "WC/WC017-Image-After.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " too",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " too",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1350.docx",
+      "DocumentXmlFile": "wml/WC-1350.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1360",
+      "Source1": "WC/WC018-Field-Simple-Before.docx",
+      "Source2": "WC/WC018-Field-Simple-After-1.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "nice ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " elit",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1360.docx",
+      "DocumentXmlFile": "wml/WC-1360.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1370",
+      "Source1": "WC/WC018-Field-Simple-Before.docx",
+      "Source2": "WC/WC018-Field-Simple-After-2.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "nice ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Saturday, April 23, 2016\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " elit",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1370.docx",
+      "DocumentXmlFile": "wml/WC-1370.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1380",
+      "Source1": "WC/WC019-Hyperlink-Before.docx",
+      "Source2": "WC/WC019-Hyperlink-After-1.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "provides",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "gives",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "dolor ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1380.docx",
+      "DocumentXmlFile": "wml/WC-1380.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1390",
+      "Source1": "WC/WC019-Hyperlink-Before.docx",
+      "Source2": "WC/WC019-Hyperlink-After-2.docx",
+      "ExpectedRevisions": 5,
+      "ActualRevisions": 5,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "provides",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "gives",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "ericwhite.com",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "ericwhite2.com",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " dolor",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1390.docx",
+      "DocumentXmlFile": "wml/WC-1390.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1400",
+      "Source1": "WC/WC020-FootNote-Before.docx",
+      "Source2": "WC/WC020-FootNote-After-1.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "It",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "different ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1400.docx",
+      "DocumentXmlFile": "wml/WC-1400.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1410",
+      "Source1": "WC/WC020-FootNote-Before.docx",
+      "Source2": "WC/WC020-FootNote-After-2.docx",
+      "ExpectedRevisions": 5,
+      "ActualRevisions": 5,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "It",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "different ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " This is a footnote\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1410.docx",
+      "DocumentXmlFile": "wml/WC-1410.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1420",
+      "Source1": "WC/WC021-Math-Before-1.docx",
+      "Source2": "WC/WC021-Math-After-1.docx",
+      "ExpectedRevisions": 9,
+      "ActualRevisions": 9,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " add",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "make ",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "testing",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "test",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Video provides",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Provides",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Demo testing. Too\ntesting\n",
+          "Author": "Windows User"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1420.docx",
+      "DocumentXmlFile": "wml/WC-1420.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1430",
+      "Source1": "WC/WC021-Math-Before-2.docx",
+      "Source2": "WC/WC021-Math-After-2.docx",
+      "ExpectedRevisions": 6,
+      "ActualRevisions": 6,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "test",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Video provides",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Provides",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Demo testing. Too\ntesting\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1430.docx",
+      "DocumentXmlFile": "wml/WC-1430.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1440",
+      "Source1": "WC/WC022-Image-Math-Para-Before.docx",
+      "Source2": "WC/WC022-Image-Math-Para-After.docx",
+      "ExpectedRevisions": 10,
+      "ActualRevisions": 10,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " have",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "In",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "in",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Video provides a powerful way to help you prove your point. When you click Online Video, you can paste in the embed code for the video you want to add.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Jean-Antoine Watteau (French: [\u0292an\u203F\u0251\u0303twan vato]; baptised October 10, 1684 \u2013 died July 18, 1721),[2] better known as Antoine Watteau, was a French painter whose brief career spurred the revival of interest in colour and movement, as seen in the tradition of Correggio and Rubens. He revitalized the waning Baroque style, shifting it to the less severe, more naturalistic, less formally classical Rococo.\nWatteau is credited with inventing the genre of f\u00EAtes galantes, scenes of bucolic and idyllic charm, suffused with a theatrical air. Some of his best known subjects were drawn from the world of Italian comedy and ballet.\nex=1\u002Bx1!\u002Bx22!\u002Bx33!\u002B\u2026,  -\u221E\u003Cx\u003C\u221E\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "End\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1440.docx",
+      "DocumentXmlFile": "wml/WC-1440.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1450",
+      "Source1": "WC/WC023-Table-4-Row-Image-Before.docx",
+      "Source2": "WC/WC023-Table-4-Row-Image-After-Delete-1-Row.docx",
+      "ExpectedRevisions": 7,
+      "ActualRevisions": 7,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "Second ",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "When you click Online Video, you can paste in the embed code for the video you want to add.\n",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " When you click Online Video, you can paste in the embed code for the video you want to add.\nYou can also type a keyword to search online for the video that best fits your document. To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.\n",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "\nA=\u03C0r2\nWhen you click Online Video, you can paste in the embed code for the video you want to add.\n",
+          "Author": "Windows User"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Video provides a powerful way to help you prove your point.\nWhen you click Online Video, you can paste in the embed code for the video you want to add.\n\nx\u002Ban=k=0nnkxkan-k\nVideo provides a powerful way to help you prove your point.\nA=\u03C0r2\nWhen you click Online Video, you can paste in the embed code for the video you want to add.\n\n",
+          "Author": "Windows User"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1450.docx",
+      "DocumentXmlFile": "wml/WC-1450.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1460",
+      "Source1": "WC/WC024-Table-Before.docx",
+      "Source2": "WC/WC024-Table-After.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "4\nLorem.\n6\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1460.docx",
+      "DocumentXmlFile": "wml/WC-1460.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1470",
+      "Source1": "WC/WC024-Table-Before.docx",
+      "Source2": "WC/WC024-Table-After2.docx",
+      "ExpectedRevisions": 7,
+      "ActualRevisions": 7,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "4",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Lorem.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Lorem.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "8",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "6",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "9",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "7\n8\n9\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1470.docx",
+      "DocumentXmlFile": "wml/WC-1470.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1480",
+      "Source1": "WC/WC025-Simple-Table-Before.docx",
+      "Source2": "WC/WC025-Simple-Table-After.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Test1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Test2",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Test2",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Test1",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1480.docx",
+      "DocumentXmlFile": "wml/WC-1480.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1500",
+      "Source1": "WC/WC026-Long-Table-Before.docx",
+      "Source2": "WC/WC026-Long-Table-After-1.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "1a\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "666\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1500.docx",
+      "DocumentXmlFile": "wml/WC-1500.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1510",
+      "Source1": "WC/WC027-Twenty-Paras-Before.docx",
+      "Source2": "WC/WC027-Twenty-Paras-After-1.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Three\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "19.5\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1510.docx",
+      "DocumentXmlFile": "wml/WC-1510.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1520",
+      "Source1": "WC/WC027-Twenty-Paras-After-1.docx",
+      "Source2": "WC/WC027-Twenty-Paras-Before.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "Three\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "19.5\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1520.docx",
+      "DocumentXmlFile": "wml/WC-1520.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1530",
+      "Source1": "WC/WC027-Twenty-Paras-Before.docx",
+      "Source2": "WC/WC027-Twenty-Paras-After-2.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Three",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "THree",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Nineteen",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "NIneteen",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1530.docx",
+      "DocumentXmlFile": "wml/WC-1530.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1540",
+      "Source1": "WC/WC030-Image-Math-Before.docx",
+      "Source2": "WC/WC030-Image-Math-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1540.docx",
+      "DocumentXmlFile": "wml/WC-1540.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1550",
+      "Source1": "WC/WC031-Two-Maths-Before.docx",
+      "Source2": "WC/WC031-Two-Maths-After.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": null,
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1550.docx",
+      "DocumentXmlFile": "wml/WC-1550.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1560",
+      "Source1": "WC/WC032-Para-with-Para-Props.docx",
+      "Source2": "WC/WC032-Para-with-Para-Props-After.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "a",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "another",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "And more\u2026",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1560.docx",
+      "DocumentXmlFile": "wml/WC-1560.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1570",
+      "Source1": "WC/WC033-Merged-Cells-Before.docx",
+      "Source2": "WC/WC033-Merged-Cells-After1.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "aaa",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Aaa1",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1570.docx",
+      "DocumentXmlFile": "wml/WC-1570.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1580",
+      "Source1": "WC/WC033-Merged-Cells-Before.docx",
+      "Source2": "WC/WC033-Merged-Cells-After2.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "a",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "foo",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "another",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "a bar",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1580.docx",
+      "DocumentXmlFile": "wml/WC-1580.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1600",
+      "Source1": "WC/WC034-Footnotes-Before.docx",
+      "Source2": "WC/WC034-Footnotes-After1.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "new ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1600.docx",
+      "DocumentXmlFile": "wml/WC-1600.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1610",
+      "Source1": "WC/WC034-Footnotes-Before.docx",
+      "Source2": "WC/WC034-Footnotes-After2.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Publishing",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "a powerful",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "an interesting",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1610.docx",
+      "DocumentXmlFile": "wml/WC-1610.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1620",
+      "Source1": "WC/WC034-Footnotes-Before.docx",
+      "Source2": "WC/WC034-Footnotes-After3.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " Foo\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1620.docx",
+      "DocumentXmlFile": "wml/WC-1620.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1630",
+      "Source1": "WC/WC034-Footnotes-After3.docx",
+      "Source2": "WC/WC034-Footnotes-Before.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " Foo\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1630.docx",
+      "DocumentXmlFile": "wml/WC-1630.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1640",
+      "Source1": "WC/WC035-Footnote-Before.docx",
+      "Source2": "WC/WC035-Footnote-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " This is a test.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1640.docx",
+      "DocumentXmlFile": "wml/WC-1640.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1650",
+      "Source1": "WC/WC035-Footnote-After.docx",
+      "Source2": "WC/WC035-Footnote-Before.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " This is a test.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1650.docx",
+      "DocumentXmlFile": "wml/WC-1650.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1660",
+      "Source1": "WC/WC036-Footnote-With-Table-Before.docx",
+      "Source2": "WC/WC036-Footnote-With-Table-After.docx",
+      "ExpectedRevisions": 5,
+      "ActualRevisions": 5,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Aaa",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Aaa1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Eee",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Eee1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Ggg\nHhh\nIii\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1660.docx",
+      "DocumentXmlFile": "wml/WC-1660.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1670",
+      "Source1": "WC/WC036-Footnote-With-Table-After.docx",
+      "Source2": "WC/WC036-Footnote-With-Table-Before.docx",
+      "ExpectedRevisions": 5,
+      "ActualRevisions": 5,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Aaa1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Aaa",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Eee1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Eee",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Ggg\nHhh\nIii\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1670.docx",
+      "DocumentXmlFile": "wml/WC-1670.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1680",
+      "Source1": "WC/WC034-Endnotes-Before.docx",
+      "Source2": "WC/WC034-Endnotes-After1.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "interesting ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1680.docx",
+      "DocumentXmlFile": "wml/WC-1680.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1700",
+      "Source1": "WC/WC034-Endnotes-Before.docx",
+      "Source2": "WC/WC034-Endnotes-After2.docx",
+      "ExpectedRevisions": 4,
+      "ActualRevisions": 4,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "a powerful",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "an interesting",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "an",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "the",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1700.docx",
+      "DocumentXmlFile": "wml/WC-1700.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1710",
+      "Source1": "WC/WC034-Endnotes-Before.docx",
+      "Source2": "WC/WC034-Endnotes-After3.docx",
+      "ExpectedRevisions": 7,
+      "ActualRevisions": 7,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " New endnote.\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " with a change",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "This endnote has multiple paragraphs.\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " Yet another endnote.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1710.docx",
+      "DocumentXmlFile": "wml/WC-1710.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1720",
+      "Source1": "WC/WC034-Endnotes-After3.docx",
+      "Source2": "WC/WC034-Endnotes-Before.docx",
+      "ExpectedRevisions": 7,
+      "ActualRevisions": 7,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " New endnote.\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " with a change",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "This endnote has multiple paragraphs.\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " Yet another endnote.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1720.docx",
+      "DocumentXmlFile": "wml/WC-1720.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1730",
+      "Source1": "WC/WC035-Endnote-Before.docx",
+      "Source2": "WC/WC035-Endnote-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " This is a test.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1730.docx",
+      "DocumentXmlFile": "wml/WC-1730.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1740",
+      "Source1": "WC/WC035-Endnote-After.docx",
+      "Source2": "WC/WC035-Endnote-Before.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " This is a test.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1740.docx",
+      "DocumentXmlFile": "wml/WC-1740.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1750",
+      "Source1": "WC/WC036-Endnote-With-Table-Before.docx",
+      "Source2": "WC/WC036-Endnote-With-Table-After.docx",
+      "ExpectedRevisions": 6,
+      "ActualRevisions": 6,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Aaa",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Aaa1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Eee",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Eee1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Ggg\nHhh\nIii\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1750.docx",
+      "DocumentXmlFile": "wml/WC-1750.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1760",
+      "Source1": "WC/WC036-Endnote-With-Table-After.docx",
+      "Source2": "WC/WC036-Endnote-With-Table-Before.docx",
+      "ExpectedRevisions": 6,
+      "ActualRevisions": 6,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Aaa1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Aaa",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Eee1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Eee",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Ggg\nHhh\nIii\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1760.docx",
+      "DocumentXmlFile": "wml/WC-1760.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1770",
+      "Source1": "WC/WC037-Textbox-Before.docx",
+      "Source2": "WC/WC037-Textbox-After1.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "In1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "In",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1770.docx",
+      "DocumentXmlFile": "wml/WC-1770.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1780",
+      "Source1": "WC/WC038-Document-With-BR-Before.docx",
+      "Source2": "WC/WC038-Document-With-BR-After.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Video",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Text",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1780.docx",
+      "DocumentXmlFile": "wml/WC-1780.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1800",
+      "Source1": "RC/RC001-Before.docx",
+      "Source2": "RC/RC001-After1.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Two",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Two1",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1800.docx",
+      "DocumentXmlFile": "wml/WC-1800.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1810",
+      "Source1": "RC/RC002-Image.docx",
+      "Source2": "RC/RC002-Image-After1.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1810.docx",
+      "DocumentXmlFile": "wml/WC-1810.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1820",
+      "Source1": "WC/WC039-Break-In-Row.docx",
+      "Source2": "WC/WC039-Break-In-Row-After1.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "This isRow 1\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1820.docx",
+      "DocumentXmlFile": "wml/WC-1820.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1830",
+      "Source1": "WC/WC041-Table-5.docx",
+      "Source2": "WC/WC041-Table-5-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "When you click Online Video, you can paste in the embed code for the video you want to add.\nYou can also type a keyword to search online for the video that best fits your document. To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.\n",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "\nA=\u03C0r2\nWhen you click Online Video, you can paste in the embed code for the video you want to add.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1830.docx",
+      "DocumentXmlFile": "wml/WC-1830.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1840",
+      "Source1": "WC/WC042-Table-5.docx",
+      "Source2": "WC/WC042-Table-5-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " Click.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": null,
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1840.docx",
+      "DocumentXmlFile": "wml/WC-1840.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1850",
+      "Source1": "WC/WC043-Nested-Table.docx",
+      "Source2": "WC/WC043-Nested-Table-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Nested",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Nexted",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1850.docx",
+      "DocumentXmlFile": "wml/WC-1850.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1860",
+      "Source1": "WC/WC044-Text-Box.docx",
+      "Source2": "WC/WC044-Text-Box-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Textbox.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox2.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1860.docx",
+      "DocumentXmlFile": "wml/WC-1860.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1870",
+      "Source1": "WC/WC045-Text-Box.docx",
+      "Source2": "WC/WC045-Text-Box-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Textbox.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox2.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1870.docx",
+      "DocumentXmlFile": "wml/WC-1870.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1880",
+      "Source1": "WC/WC046-Two-Text-Box.docx",
+      "Source2": "WC/WC046-Two-Text-Box-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Textbox1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox1a",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1880.docx",
+      "DocumentXmlFile": "wml/WC-1880.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1890",
+      "Source1": "WC/WC047-Two-Text-Box.docx",
+      "Source2": "WC/WC047-Two-Text-Box-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Textbox1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox1a",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1890.docx",
+      "DocumentXmlFile": "wml/WC-1890.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1900",
+      "Source1": "WC/WC048-Text-Box-in-Cell.docx",
+      "Source2": "WC/WC048-Text-Box-in-Cell-Mod.docx",
+      "ExpectedRevisions": 6,
+      "ActualRevisions": 6,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Textbox1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox1a",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Textbox2",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox2a",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Textbox3",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Textbox3a",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1900.docx",
+      "DocumentXmlFile": "wml/WC-1900.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1910",
+      "Source1": "WC/WC049-Text-Box-in-Cell.docx",
+      "Source2": "WC/WC049-Text-Box-in-Cell-Mod.docx",
+      "ExpectedRevisions": 5,
+      "ActualRevisions": 5,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "very ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Happy ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "a",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "an interesting",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "nice ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1910.docx",
+      "DocumentXmlFile": "wml/WC-1910.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1920",
+      "Source1": "WC/WC050-Table-in-Text-Box.docx",
+      "Source2": "WC/WC050-Table-in-Text-Box-Mod.docx",
+      "ExpectedRevisions": 8,
+      "ActualRevisions": 8,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "very ",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "test",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "test!",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "designs",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Designs",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "compleme",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "complement.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "very ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1920.docx",
+      "DocumentXmlFile": "wml/WC-1920.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1930",
+      "Source1": "WC/WC051-Table-in-Text-Box.docx",
+      "Source2": "WC/WC051-Table-in-Text-Box-Mod.docx",
+      "ExpectedRevisions": 9,
+      "ActualRevisions": 9,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "point.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "point!!!",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "designs",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Designs",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "compleme",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "complement.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": ", so that is the story",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Test123",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Test456",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1930.docx",
+      "DocumentXmlFile": "wml/WC-1930.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1940",
+      "Source1": "WC/WC052-SmartArt-Same.docx",
+      "Source2": "WC/WC052-SmartArt-Same-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " too",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": " it",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1940.docx",
+      "DocumentXmlFile": "wml/WC-1940.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1950",
+      "Source1": "WC/WC053-Text-in-Cell.docx",
+      "Source2": "WC/WC053-Text-in-Cell-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "from the beginning of the fourth month of each financial year.",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "in accordance with the procedure, rules, and regulations established by the governing body.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1950.docx",
+      "DocumentXmlFile": "wml/WC-1950.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1960",
+      "Source1": "WC/WC054-Text-in-Cell.docx",
+      "Source2": "WC/WC054-Text-in-Cell-Mod.docx",
+      "ExpectedRevisions": 0,
+      "ActualRevisions": 0,
+      "Revisions": [],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1960.docx",
+      "DocumentXmlFile": "wml/WC-1960.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1970",
+      "Source1": "WC/WC055-French.docx",
+      "Source2": "WC/WC055-French-Mod.docx",
+      "ExpectedRevisions": 0,
+      "ActualRevisions": 0,
+      "Revisions": [],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1970.docx",
+      "DocumentXmlFile": "wml/WC-1970.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-1980",
+      "Source1": "WC/WC056-French.docx",
+      "Source2": "WC/WC056-French-Mod.docx",
+      "ExpectedRevisions": 0,
+      "ActualRevisions": 0,
+      "Revisions": [],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-1980.docx",
+      "DocumentXmlFile": "wml/WC-1980.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2000",
+      "Source1": "WC/WC058-Table-Merged-Cell.docx",
+      "Source2": "WC/WC058-Table-Merged-Cell-Mod.docx",
+      "ExpectedRevisions": 6,
+      "ActualRevisions": 6,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Title",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Title1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Two",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Two2",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Six",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Six6",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2000.docx",
+      "DocumentXmlFile": "wml/WC-2000.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2010",
+      "Source1": "WC/WC059-Footnote.docx",
+      "Source2": "WC/WC059-Footnote-Mod.docx",
+      "ExpectedRevisions": 5,
+      "ActualRevisions": 5,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Two",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Two1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Deleted",
+          "Text": "Nine",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "NINE",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " Test footnote\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2010.docx",
+      "DocumentXmlFile": "wml/WC-2010.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2020",
+      "Source1": "WC/WC060-Endnote.docx",
+      "Source2": "WC/WC060-Endnote-Mod.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "Two",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Two1",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": " My Endnote\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2020.docx",
+      "DocumentXmlFile": "wml/WC-2020.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2030",
+      "Source1": "WC/WC061-Style-Added.docx",
+      "Source2": "WC/WC061-Style-Added-Mod.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "New paragraph with new style.\n",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2030.docx",
+      "DocumentXmlFile": "wml/WC-2030.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2040",
+      "Source1": "WC/WC062-New-Char-Style-Added.docx",
+      "Source2": "WC/WC062-New-Char-Style-Added-Mod.docx",
+      "ExpectedRevisions": 3,
+      "ActualRevisions": 3,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "powerful",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "powerish",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "FormatChanged",
+          "Text": " ",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2040.docx",
+      "DocumentXmlFile": "wml/WC-2040.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2050",
+      "Source1": "WC/WC063-Footnote.docx",
+      "Source2": "WC/WC063-Footnote-Mod.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": " Test",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2050.docx",
+      "DocumentXmlFile": "wml/WC-2050.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2060",
+      "Source1": "WC/WC063-Footnote-Mod.docx",
+      "Source2": "WC/WC063-Footnote.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": " Test",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2060.docx",
+      "DocumentXmlFile": "wml/WC-2060.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2070",
+      "Source1": "WC/WC064-Footnote.docx",
+      "Source2": "WC/WC064-Footnote-Mod.docx",
+      "ExpectedRevisions": 0,
+      "ActualRevisions": 0,
+      "Revisions": [],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2070.docx",
+      "DocumentXmlFile": "wml/WC-2070.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2080",
+      "Source1": "WC/WC065-Textbox.docx",
+      "Source2": "WC/WC065-Textbox-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "In",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Inside",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2080.docx",
+      "DocumentXmlFile": "wml/WC-2080.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2090",
+      "Source1": "WC/WC066-Textbox-Before-Ins.docx",
+      "Source2": "WC/WC066-Textbox-Before-Ins-Mod.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Inserted",
+          "Text": "This is a test.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2090.docx",
+      "DocumentXmlFile": "wml/WC-2090.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2092",
+      "Source1": "WC/WC066-Textbox-Before-Ins-Mod.docx",
+      "Source2": "WC/WC066-Textbox-Before-Ins.docx",
+      "ExpectedRevisions": 1,
+      "ActualRevisions": 1,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "This is a test.",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2092.docx",
+      "DocumentXmlFile": "wml/WC-2092.document.xml",
+      "Error": null
+    },
+    {
+      "TestId": "WC-2100",
+      "Source1": "WC/WC067-Textbox-Image.docx",
+      "Source2": "WC/WC067-Textbox-Image-Mod.docx",
+      "ExpectedRevisions": 2,
+      "ActualRevisions": 2,
+      "Revisions": [
+        {
+          "Type": "Deleted",
+          "Text": "In",
+          "Author": "Eric White"
+        },
+        {
+          "Type": "Inserted",
+          "Text": "Inside",
+          "Author": "Eric White"
+        }
+      ],
+      "SanityCheck1Pass": true,
+      "SanityCheck1Error": null,
+      "SanityCheck2Pass": true,
+      "SanityCheck2Error": null,
+      "OutputFile": "wml/WC-2100.docx",
+      "DocumentXmlFile": "wml/WC-2100.document.xml",
+      "Error": null
+    }
+  ],
+  "SmlTests": [
+    {
+      "TestId": "SC-INFO",
+      "Description": "SML tests use programmatically generated workbooks - see TypeScript test setup",
+      "Source1": null,
+      "Source2": null,
+      "TotalChanges": 0,
+      "OutputFile": null,
+      "Error": null
+    }
+  ],
+  "PmlTests": [
+    {
+      "TestId": "PC-001",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-Identical.pptx",
+      "Description": "Identical presentations",
+      "TotalChanges": 0,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 0,
+      "ShapesResized": 0,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-001.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-003",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-SlideAdded.pptx",
+      "Description": "Slide added",
+      "TotalChanges": 1,
+      "SlidesInserted": 1,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 0,
+      "ShapesResized": 0,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-003.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-004",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-SlideDeleted.pptx",
+      "Description": "Slide deleted",
+      "TotalChanges": 1,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 1,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 0,
+      "ShapesResized": 0,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-004.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-005",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-ShapeAdded.pptx",
+      "Description": "Shape added",
+      "TotalChanges": 1,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 1,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 0,
+      "ShapesResized": 0,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-005.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-006",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-ShapeDeleted.pptx",
+      "Description": "Shape deleted",
+      "TotalChanges": 1,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 1,
+      "ShapesMoved": 0,
+      "ShapesResized": 0,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-006.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-007",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-ShapeMoved.pptx",
+      "Description": "Shape moved",
+      "TotalChanges": 1,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 1,
+      "ShapesResized": 0,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-007.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-008",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-ShapeResized.pptx",
+      "Description": "Shape resized",
+      "TotalChanges": 1,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 0,
+      "ShapesResized": 1,
+      "TextChanges": 0,
+      "OutputFile": "pml/PC-008.json",
+      "Error": null
+    },
+    {
+      "TestId": "PC-009",
+      "Source1": "PmlComparer-Base.pptx",
+      "Source2": "PmlComparer-TextChanged.pptx",
+      "Description": "Text changed",
+      "TotalChanges": 1,
+      "SlidesInserted": 0,
+      "SlidesDeleted": 0,
+      "ShapesInserted": 0,
+      "ShapesDeleted": 0,
+      "ShapesMoved": 0,
+      "ShapesResized": 0,
+      "TextChanges": 1,
+      "OutputFile": "pml/PC-009.json",
+      "Error": null
+    }
+  ]
+}

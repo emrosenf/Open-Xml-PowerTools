@@ -1,0 +1,166 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="ab13163853cc4c4f8a278cf5de55024f">
+      <w:pPr />
+      <w:r>
+        <w:t>Before</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl pt14:Unid="af10b64f091e464f91beabd3237d31af" pt14:CorrelatedSHA1Hash="2e9f948f882a276db64ade68b095c1cc3d57034c" pt14:SHA1Hash="2e9f948f882a276db64ade68b095c1cc3d57034c" pt14:StructureSHA1Hash="306fec79842ee5af75ff689ef1593c8bb85c4191">
+      <w:tblPr pt14:Unid="b011acc7ee7a4f20ae6fb65b521e49bd">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="5e22ddfb514a41ff8b04688ee8fedaac" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="045876a2dff64744b3f96ec603870983" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="be09b1d1607a45358da921e9bc8e85ca" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="cb219c4e6b7f40c089df128250df97c1">
+        <w:gridCol w:w="4675" pt14:Unid="af9f099be3bb4021b71ff2181a17998f" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="4b8ef5ab94bc4b08bda398b31084fd79" pt14:CorrelatedSHA1Hash="36efb2ade68f7d5fc25bc42ced626ba18ba163c2" pt14:SHA1Hash="36efb2ade68f7d5fc25bc42ced626ba18ba163c2" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="a85bc38add9547aca89829463eb2fd26" pt14:SHA1Hash="b61eafdce10da0a7da4f8432e8e58bf95f094837">
+          <w:tcPr pt14:Unid="fcfc91a5187e4472ace2f7dfbda48f96">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="dfd7ad554c0f4c41ad136bef6cbfb798" />
+          </w:tcPr>
+          <w:p pt14:Unid="ad4d206bf9cf4e6c93410ca2650c4ef2">
+            <w:pPr />
+            <w:r>
+              <w:t>111</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="792493760a014f43a497160b62672f91" pt14:CorrelatedSHA1Hash="62c4866186a4d2fd129f853c0cc5516f8af8364d" pt14:SHA1Hash="62c4866186a4d2fd129f853c0cc5516f8af8364d" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:trPr>
+          <w:ins w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:07.6110762+00:00" />
+        </w:trPr>
+        <w:tc pt14:Unid="d8b39ec5cbfa4c018a4c917dd3764a90" pt14:SHA1Hash="6a489e6caaa805b8660394d3cc56accf31c47d4c">
+          <w:tcPr pt14:Unid="ff36a0b1bd934a068d2a050596b18424">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="6e1d12e16fbe4bb3a9afeb9d03590850" />
+          </w:tcPr>
+          <w:p pt14:Unid="0029360ded0c43f8aebf150f5aa6f65e">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:07.6110762+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:07.6110762+00:00">
+              <w:r>
+                <w:t>1a</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="8d7b384eea9c4de0a869d9d621af853e" pt14:CorrelatedSHA1Hash="2feb9d2adf41c4e87ec322e5b92bf7fe330b3d52" pt14:SHA1Hash="2feb9d2adf41c4e87ec322e5b92bf7fe330b3d52" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="83fa08039f2e497b9c73e082de976069" pt14:SHA1Hash="bcebb4e79e398a8f311d414929a338ca59ca796f">
+          <w:tcPr pt14:Unid="2f23cafb778a462d8ebbb9fa4496d708">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="2d68c5c64c064b828f6e26d83ccafc26" />
+          </w:tcPr>
+          <w:p pt14:Unid="91a0162b9d624a9882970d0b68a892e5">
+            <w:pPr />
+            <w:r>
+              <w:t>222</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="60d92a00a2c64df99229c0047ca6d8ff" pt14:CorrelatedSHA1Hash="c2dff4eb099ea7d8acb71183ec3e95effa10b7f3" pt14:SHA1Hash="c2dff4eb099ea7d8acb71183ec3e95effa10b7f3" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="cdb973623d704b61a33b463bbf8d36ae" pt14:SHA1Hash="127db13f5b2e855a123d9b947f3c45779ffca91b">
+          <w:tcPr pt14:Unid="207857ff9b8c48388d8b3f7fe7786cfc">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="41e2ce9d36004297bfedefb9fc2a70c5" />
+          </w:tcPr>
+          <w:p pt14:Unid="042ffbc7e49f4bcea5fa37eebf9c8c2c">
+            <w:pPr />
+            <w:r>
+              <w:t>333</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="8f0f776c6dd3455da7641f404fb7af83" pt14:CorrelatedSHA1Hash="154cb98ddc4cb1edebca95f5cd63b18f409cba84" pt14:SHA1Hash="154cb98ddc4cb1edebca95f5cd63b18f409cba84" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="6c214d957c8e45f99abd3801eb9236d2" pt14:SHA1Hash="b049b2d1e94bda7aba504e3523ddd6f3f4871602">
+          <w:tcPr pt14:Unid="998a7a40fb634eb1add3b58b25d91a81">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="cb08010927a7463d93d77cf3e53dee34" />
+          </w:tcPr>
+          <w:p pt14:Unid="db4d1cadb1544c37bd8b6a6332246bf5">
+            <w:pPr />
+            <w:r>
+              <w:t>444</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="6c1dfdf8b68c4b6f80de42820da0a083" pt14:CorrelatedSHA1Hash="ee472963c6de5e55da57fc03dbd0538ec0086712" pt14:SHA1Hash="ee472963c6de5e55da57fc03dbd0538ec0086712" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="0bf81a8582d04e2eb720da5e8db05a22" pt14:SHA1Hash="6b088ae40b3f10134ff6190c9095418e080ecfe0">
+          <w:tcPr pt14:Unid="83f159ecbcb545b2918e90e0941370fa">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="42e9a582b9bf4e839b2d20bfe9d4755d" />
+          </w:tcPr>
+          <w:p pt14:Unid="f1a2d87bda474199878f227312d7636f">
+            <w:pPr />
+            <w:r>
+              <w:t>555</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="6376016aa0de47f1a1856af34acf7bf3" pt14:CorrelatedSHA1Hash="c3f65186b69a4c388df7258e506086e8b86bc200" pt14:SHA1Hash="c3f65186b69a4c388df7258e506086e8b86bc200" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:trPr>
+          <w:del w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:07.6110762+00:00" />
+        </w:trPr>
+        <w:tc pt14:Unid="a4769676d40143f19253536eb8fe2e96" pt14:SHA1Hash="391f07afc2679d45b6363160c471248844e4ec08">
+          <w:tcPr pt14:Unid="67c9badea5324e75a82b43b01b14a146">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="790ef8da245241f0a8da5f544b843031" />
+          </w:tcPr>
+          <w:p pt14:Unid="ac50176b3ad444929bec82bded31fc90">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:07.6110762+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Eric White" w:id="5" w:date="2025-12-24T01:47:07.6110762+00:00">
+              <w:r>
+                <w:delText>666</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="bd444653dadf41529d12285303e62006" pt14:CorrelatedSHA1Hash="05739433705b7b49465e95df36b495486f5e8ed9" pt14:SHA1Hash="05739433705b7b49465e95df36b495486f5e8ed9" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="5b60edc8242f4dcb8d5fcaedeee1a2dd" pt14:SHA1Hash="b48fdc16ac826faa7c33ab516c5c8c0e7ac3a6c7">
+          <w:tcPr pt14:Unid="de30cbc5237c4962828892032c9e7a91">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="a2cbe7f7acae4a5ba04d4e2cd4125e86" />
+          </w:tcPr>
+          <w:p pt14:Unid="b6aba318ad904d2aa99db8bcd3dbf1e0">
+            <w:pPr />
+            <w:r>
+              <w:t>777</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="44acf4fb6252409b8c94972b80bd2ef4" pt14:CorrelatedSHA1Hash="006eac70e4dc74bed2f091ca30197e75366d6455" pt14:SHA1Hash="006eac70e4dc74bed2f091ca30197e75366d6455" pt14:StructureSHA1Hash="2ead17052051b3c267de27d12573ecdd392d866e">
+        <w:tc pt14:Unid="be119d381b2e42c9881ea71485a10d36" pt14:SHA1Hash="7a03eb8634ade2469888602a12816e73bf0e8e7c">
+          <w:tcPr pt14:Unid="854c5b00e11a4bdd955693d1ff92b75c">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="6b460624d0f848ce9fb1e8ce7fe659fc" />
+          </w:tcPr>
+          <w:p pt14:Unid="4e1a400f82a94edaad21d85684f8ea87">
+            <w:pPr />
+            <w:r>
+              <w:t>888</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="c1a80548882a49e6bc9d19eeed2796d6">
+      <w:pPr />
+      <w:r>
+        <w:t>After</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="35a2c53ce58d4907a74cc6745a2d5f79">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="4ac00c8b098e42d88fc06eb71a4ecfae" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="95b68a1fe6a54d8eab06d13665277a3b" />
+      <w:cols w:space="720" pt14:Unid="8cb2b1f3939646958b1d32777b0f1a78" />
+    </w:sectPr>
+  </w:body>
+</w:document>

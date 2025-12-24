@@ -1,0 +1,24 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="3d6adeab5eaf4597961f4d672a2a3257">
+      <w:pPr />
+      <w:r>
+        <w:t xml:space="preserve">Video </w:t>
+      </w:r>
+      <w:r>
+        <w:rPr pt14:Unid="5c3b3881bbc3411582676735465b8477">
+          <w:rStyle w:val="FootnoteReference" pt14:Unid="aa28f0a099f24be0b5313f3cc98c38de" />
+        </w:rPr>
+        <w:footnoteReference w:id="1" pt14:Unid="89b98239c4c4493aab5e65390af3f88d" />
+      </w:r>
+      <w:r>
+        <w:t>provides a powerful way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="7c7bc47114e5477491b36cc7b04c6225">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="d1f5591a695248d59be92cfb3a6dc9e5" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="844083aacf95423e81729ee38453d050" />
+      <w:cols w:space="720" pt14:Unid="988d1382d6c745428408cac39caa78bf" />
+    </w:sectPr>
+  </w:body>
+</w:document>

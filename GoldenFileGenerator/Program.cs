@@ -9,8 +9,9 @@ using OpenXmlPowerTools;
 
 class Program
 {
-    static readonly string TestFilesDir = "../TestFiles";
-    static readonly string OutputDir = "../redline-js/tests/golden";
+    // Paths work both locally (from GoldenFileGenerator dir) and in Docker (from /app)
+    static readonly string TestFilesDir = Directory.Exists("TestFiles") ? "TestFiles" : "../TestFiles";
+    static readonly string OutputDir = Directory.Exists("redline-js") ? "redline-js/tests/golden" : "../redline-js/tests/golden";
     static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
     static async Task Main(string[] args)

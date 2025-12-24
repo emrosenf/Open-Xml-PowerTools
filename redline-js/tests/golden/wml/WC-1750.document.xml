@@ -1,0 +1,78 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="dc3cd4fe81b3471f818948c9e3478024">
+      <w:pPr />
+      <w:r>
+        <w:t>Video provides a powerful way to help you prove your point. When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="cc909a6f477e44bcad72f4f495983c83">
+      <w:pPr />
+      <w:r>
+        <w:t>You can also type a keyword to search online for the video that best fits your document. To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="bda0ce141b2e40038d62f553482bd8e9">
+      <w:pPr />
+      <w:r>
+        <w:t>For example, you can add a matching cover page, header, and sidebar. Click Insert and then choose the elements you want from the different galleries.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="1b519645b7344eab9bb27bc43ce4ae1b">
+      <w:pPr />
+      <w:r>
+        <w:t>Themes and styles also help keep your document coordinated. When you click Design and choose a new Theme, the pictures, charts, and SmartArt graphics change to match your new theme.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="56e7e4eb6149469ca22f5eaad2504219">
+      <w:pPr />
+      <w:r>
+        <w:t>When you apply styles, your headings change to match the new theme. Save time in Word with new buttons that show up where you need them.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="b3392077e4bc4254a3771daee9e94716">
+      <w:pPr />
+      <w:r>
+        <w:rPr pt14:Unid="74c060c4b509416a8fad2f4c5b922143">
+          <w:rStyle w:val="EndnoteReference" pt14:Unid="c9c771e17f4542a8ab7fd07a7b90403b" />
+        </w:rPr>
+        <w:endnoteReference w:id="1" pt14:Unid="1283afaf27684baf98b5b542171d70f8" />
+      </w:r>
+      <w:r>
+        <w:t>To change the way a picture fits in your document, click it and a button for layout options appears next to it. When you work on a table, click where you want to add a row or a column, and then click the plus sign.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="5838f97354294ace8e3acad5fcfb3f21">
+      <w:pPr />
+      <w:r>
+        <w:t>Reading is easier, too, in the new Reading view. You can collapse parts of the document and focus on the text you want.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="f2f98f37813e48b483ce431af4275d14">
+      <w:pPr />
+      <w:r>
+        <w:t>If you need to stop reading before you reach the end, Word remembers where you left off - even on another device. Video provides a powerful way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="6c42993644a64f99b8cf47696e515655">
+      <w:pPr />
+      <w:r>
+        <w:t>When you click Online Video, you can paste in the embed code for the video you want to add. You can also type a keyword to search online for the video that best fits your document.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="ea23946cdda744958a4ce9f115fecd49">
+      <w:pPr />
+      <w:r>
+        <w:t>To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other. For example, you can add a matching cover page, header, and sidebar.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="af0ac9377aeb454abc45954bcb9d82f0">
+      <w:pPr />
+    </w:p>
+    <w:sectPr pt14:Unid="37c28dd3901443cd80e39b6b05c3c5dc">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="25b0a478bb0a4860bad4b87531c01433" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="c648b93fe8fe49879bfa053f096dbb8c" />
+      <w:cols w:space="720" pt14:Unid="17c46f0c98dd42f89ee4c20f2de793f4" />
+    </w:sectPr>
+  </w:body>
+</w:document>

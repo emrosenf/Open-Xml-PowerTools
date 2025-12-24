@@ -1,0 +1,26 @@
+{
+  "Summary": {
+    "TotalChanges": 1,
+    "SlidesInserted": 0,
+    "SlidesDeleted": 1,
+    "SlidesMoved": 0,
+    "ShapesInserted": 0,
+    "ShapesDeleted": 0,
+    "ShapesMoved": 0,
+    "ShapesResized": 0,
+    "TextChanges": 0,
+    "FormattingChanges": 0,
+    "ImagesReplaced": 0
+  },
+  "Changes": [
+    {
+      "ChangeType": 3,
+      "SlideIndex": null,
+      "OldSlideIndex": 2,
+      "ShapeName": null,
+      "OldValue": null,
+      "NewValue": null,
+      "Description": "Slide 2 deleted"
+    }
+  ]
+}

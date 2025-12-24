@@ -1,0 +1,110 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="dcb1a954cc3b46dca052f2e2b71d4e52">
+      <w:pPr />
+      <w:r>
+        <w:t>Video provides a powerful way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="92525700ac02418984541c3c526ad024">
+      <w:pPr />
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:02.6192029+00:00">
+        <m:oMathPara pt14:Unid="11dcfd736d4043f3b83a335c9f49b9f3">
+          <m:oMath pt14:Unid="8c6a8fa30a264ab8b6e6ebd35578feb2">
+            <m:r pt14:Unid="fba764e532094ce6aebb3c3cfdb99366">
+              <w:rPr pt14:Unid="7aad20b2775c43ee8e42a48d24f4be95">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="8b99c3cb74b54132b0127115b532d6c9" />
+              </w:rPr>
+              <m:t pt14:Unid="ec9bf7fd717441d89ef159f21a906b85">A=π</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="b39355a260914695b6b335cfa6b14128">
+              <m:sSupPr pt14:Unid="f4727fc25c8041f0adc16c7e5937c530">
+                <m:ctrlPr pt14:Unid="aac6086e23b34bc793944a432a205f7a">
+                  <w:rPr pt14:Unid="4f4e113c1abf43d1a2d7e114fa52e726">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="e756e0f3da1449d69e315f669d95f9ec" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="5bb5d9b20e73450a90b51d55d0c761d2">
+                <m:r pt14:Unid="660f01ab076c4714a63218e4c5bc4525">
+                  <w:rPr pt14:Unid="4d16c143a30343f099cbec44e82d9a05">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="e76cd8616b24471b876e99645387c6fc" />
+                  </w:rPr>
+                  <m:t pt14:Unid="3725cb6345254f2493453e723dd1716d">r</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="e38e01c00665464e8042a7ae28621f0b">
+                <m:r pt14:Unid="ab5e86b229a54f769177882bd2a31664">
+                  <w:rPr pt14:Unid="3ccb857df80d40bb85a23ab19873e664">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="31f4cc304e254b83b594fb3bd46f2872" />
+                  </w:rPr>
+                  <m:t pt14:Unid="e8d090091cde434f83c48a06e9b4bee4">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+          </m:oMath>
+        </m:oMathPara>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:02.6192029+00:00">
+        <m:oMathPara pt14:Unid="40c073c3eb694a57b5a4ef11f09b9287">
+          <m:oMath pt14:Unid="a88ebdbaf46644f7a0ef8401cd0af408">
+            <m:r pt14:Unid="10e4a2148b40403f9aee4dccb16d3673">
+              <w:rPr pt14:Unid="c74d90cac6104250be93a3e841f38ab3">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="d3511c5d20f04e14b4107095b8b51517" />
+              </w:rPr>
+              <m:t pt14:Unid="be33da41bc394216a188e9bbf15d847f">A=</m:t>
+            </m:r>
+            <m:r pt14:Unid="0980b0dbf00c4663bebb3f84eaf7c746">
+              <w:rPr pt14:Unid="050765b0e2764ac3ba82257979ed3fe4">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="961d2d98e7194666b073e58e7f0503d1" />
+              </w:rPr>
+              <m:t pt14:Unid="6f6d2f54edd7435fa0c25ac9cf13a535">2</m:t>
+            </m:r>
+            <m:r pt14:Unid="1eb12166d2964c69a196f6a19bdfabb8">
+              <w:rPr pt14:Unid="9b687256bd35473aaa5fd46d6864f8b3">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="fddfad8d844a4858b550e3e5836192ef" />
+              </w:rPr>
+              <m:t pt14:Unid="470a959d573f486ba2d09f38fb2a7040">π</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="44e5f831703542edae14f660246a055b">
+              <m:sSupPr pt14:Unid="cafeee0712954460b4fae631a88e8345">
+                <m:ctrlPr pt14:Unid="db68fa5d667f4aada6276f6b6dd17e94">
+                  <w:rPr pt14:Unid="5ace7d65ac4e4be391ed2fe395894eac">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="6719e48bf134422abf20d46843c7def8" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="f43766c6f6a04a4c967a8c9c8ab2393f">
+                <m:r pt14:Unid="bb0b53e761934be69d5392eff406815e">
+                  <w:rPr pt14:Unid="4d5450303eb04b4981a33ab1bb97a508">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="c66395426cad46ef816d8228f88bf6c2" />
+                  </w:rPr>
+                  <m:t pt14:Unid="78b2ec98816d47c0a08320407b21b7ff">r</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="abc0f07346054c78bfd1eb50b0a19d81">
+                <m:r pt14:Unid="5eef0c0302bc408b90806677e32cf625">
+                  <w:rPr pt14:Unid="0c8becb8efd2445aae586f28fdf09fdf">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="bef8d509a9f043c3bbce2c87c886d262" />
+                  </w:rPr>
+                  <m:t pt14:Unid="cd927dd61c634dacb2c9c1d1646b59dc">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+          </m:oMath>
+        </m:oMathPara>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="49364af89125423ead8c7adf54d5ebd5">
+      <w:pPr />
+      <w:r>
+        <w:t>Video provides a powerful way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="f783bc56b8a0423dad3da489b141f737">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="35408800fd1d4874a6ba27ed16eaa1a3" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="87100265226d41bca29b1f01ed97b865" />
+      <w:cols w:space="720" pt14:Unid="2e36d9e289cc43de972f61eaad51005d" />
+    </w:sectPr>
+  </w:body>
+</w:document>

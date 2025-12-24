@@ -1,0 +1,301 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:tbl pt14:Unid="aaf420fa09574378b46530c338d3aa83" pt14:CorrelatedSHA1Hash="f2b7ac5440bbfa81027bc3288e550802ef20eda5" pt14:SHA1Hash="f2b7ac5440bbfa81027bc3288e550802ef20eda5" pt14:StructureSHA1Hash="7c1daf9e4390066df0abc6185abb87d088289777">
+      <w:tblPr pt14:Unid="f6a9a5caaab840bf8a804610e8b6120f">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="8abee3c8ab2a4abc8c074cc6fdcc1f88" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="97d3da99aa9148f6b4fe86c43735cbba" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="2098bee0eaba4906b8654d25b9d1eb61" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="4704d2f4b5fd4a7392bc7e47fb67030c">
+        <w:gridCol w:w="9016" pt14:Unid="aa3d59e65c8845eb9067f365a9f87b9a" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="d2dea3ac505842dca84b19d4e2a67b1c" pt14:CorrelatedSHA1Hash="a71c4ed6c97bcca84c2f3a883aef4540e24211f1" pt14:SHA1Hash="a71c4ed6c97bcca84c2f3a883aef4540e24211f1" pt14:StructureSHA1Hash="161e63ab5d06d352356d7cc43393b25addcab280">
+        <w:tc pt14:Unid="76cf5b4f7c344fcb800bac6b1201634f" pt14:SHA1Hash="3d950356bd59ccf6606f6f735de04e4ea7b394ff">
+          <w:tcPr pt14:Unid="1d217c0c764d45c5bdf6bd8ca51f3ec2">
+            <w:tcW w:w="9016" w:type="dxa" pt14:Unid="23d9840805f540c9a1209e5731346baa" />
+          </w:tcPr>
+          <w:p pt14:Unid="d6fe7c8c4eab4d8fa638df9c08ae6aeb">
+            <w:pPr pt14:Unid="6ee107ef3995444b9be823517d17058b">
+              <w:rPr pt14:Unid="4d5703ee40b944d888f6a6c95d613934">
+                <w:lang w:val="en-US" pt14:Unid="fa5eee4255064886bd278308b2abe51a" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="0f0d8e7477fe4d01b581309e9b13c2b1">
+                <w:lang w:val="en-US" pt14:Unid="c41c6dd592d8487f89002ef549d696a1" />
+              </w:rPr>
+              <w:t xml:space="preserve">Video provides a </w:t>
+            </w:r>
+            <w:ins w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:10.9559078+00:00">
+              <w:r>
+                <w:rPr pt14:Unid="0f0d8e7477fe4d01b581309e9b13c2b1">
+                  <w:lang w:val="en-US" pt14:Unid="c41c6dd592d8487f89002ef549d696a1" />
+                </w:rPr>
+                <w:t xml:space="preserve">very </w:t>
+              </w:r>
+            </w:ins>
+            <w:r>
+              <w:rPr pt14:Unid="0f0d8e7477fe4d01b581309e9b13c2b1">
+                <w:lang w:val="en-US" pt14:Unid="c41c6dd592d8487f89002ef549d696a1" />
+              </w:rPr>
+              <w:t>powerful way to help you prove your point.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="c0e5443388974c8d8e32167f76aed2cd" pt14:CorrelatedSHA1Hash="acf931b174955b87613e1d34ec3c188b9bf6048c" pt14:SHA1Hash="acf931b174955b87613e1d34ec3c188b9bf6048c" pt14:StructureSHA1Hash="161e63ab5d06d352356d7cc43393b25addcab280">
+        <w:tc pt14:Unid="39e152cf1cc2439ab2cc6683980c545f" pt14:SHA1Hash="de62452eb99774e06aa5c2280e1bc00c69e6358e">
+          <w:tcPr pt14:Unid="cc429e0e380848209e0007938dbedce0">
+            <w:tcW w:w="9016" w:type="dxa" pt14:Unid="9f1e68f57e824abfa03877f8816f22a5" />
+          </w:tcPr>
+          <w:p pt14:Unid="860772434172431bb5d63705bd98c721">
+            <w:pPr pt14:Unid="2de2e6fc57cf4fd199d46899675dbf57">
+              <w:rPr pt14:Unid="1372059e63de45b3b21856020297f1c2">
+                <w:lang w:val="en-US" pt14:Unid="3360b00819e045da8ff29853dc98920a" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="55b97ee25ece44cf81ff11d5149c2a4b">
+                <w:lang w:val="en-US" pt14:Unid="e78a3b18cdc949d7b7e915f7c6524d71" />
+              </w:rPr>
+              <w:t xml:space="preserve">When you click Online </w:t>
+            </w:r>
+            <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:10.9559078+00:00">
+              <w:r>
+                <w:rPr pt14:Unid="55b97ee25ece44cf81ff11d5149c2a4b">
+                  <w:lang w:val="en-US" pt14:Unid="e78a3b18cdc949d7b7e915f7c6524d71" />
+                </w:rPr>
+                <w:t xml:space="preserve">Happy </w:t>
+              </w:r>
+            </w:ins>
+            <w:r>
+              <w:rPr pt14:Unid="55b97ee25ece44cf81ff11d5149c2a4b">
+                <w:lang w:val="en-US" pt14:Unid="e78a3b18cdc949d7b7e915f7c6524d71" />
+              </w:rPr>
+              <w:t>Video, you can paste in the embed code for the video you want to add.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="5fdf8590f1fc488f87fa55a38ad55720" pt14:CorrelatedSHA1Hash="41f5ec4c00c3cbefb216ef891df7ab7e14bc85b8" pt14:SHA1Hash="41f5ec4c00c3cbefb216ef891df7ab7e14bc85b8" pt14:StructureSHA1Hash="119985bc136157540e112ee93e61bfc7973d1ee5">
+        <w:tc pt14:Unid="cdeafa337acd4922916ce7d2025151a1" pt14:SHA1Hash="90d86b090650504daa61e9cfadaa3878ce1f6458">
+          <w:tcPr pt14:Unid="044ea254fbae4285aa01b5360c8e6284">
+            <w:tcW w:w="9016" w:type="dxa" pt14:Unid="940b7279c6d04395a82aa5babc67d25f" />
+          </w:tcPr>
+          <w:p pt14:Unid="e1a5cb65ed964865a4d6b11084dcfaa0">
+            <w:pPr pt14:Unid="1fc65009f6d34780bfb64bd541e5dc1e">
+              <w:rPr pt14:Unid="7967f4128bd548128369392bd72f0813">
+                <w:lang w:val="en-US" pt14:Unid="4c499701b1b044b0b661065a36a23a1b" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="2fdc1f66ca2f46a3a823fc6545aedd51">
+                <w:lang w:eastAsia="fr-FR" pt14:Unid="eb63200a530447a3b48dc4692609631f" />
+              </w:rPr>
+              <w:pict pt14:Unid="60f13cd0b9fd436cac721be49e0bbe24" pt14:SHA1Hash="06744dd8cdade570254e79c7ebd37428810cc556">
+                <v:shapetype id="1" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe" pt14:Unid="15ed740903a34162ac5f2e835a347779">
+                  <v:stroke joinstyle="miter" pt14:Unid="458e661789c84c51834f92825b84b762" />
+                  <v:path gradientshapeok="t" o:connecttype="rect" pt14:Unid="9f5bb84fed2042609ce46a32b1980287" />
+                </v:shapetype>
+                <v:shape id="1" style="position:absolute;margin-left:0;margin-top:14.4pt;width:185.9pt;height:110.6pt;z-index:251659264;visibility:visible;mso-wrap-style:square;mso-width-percent:400;mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3.6pt;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:3.6pt;mso-position-horizontal:center;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:400;mso-height-percent:200;mso-width-relative:margin;mso-height-relative:margin;v-text-anchor:top" o:spid="_x0000_s1026" type="1" o:gfxdata="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&#xA;di54bWxQSwUGAAAAAAQABADzAAAAhwUAAAAA&#xA;" pt14:Unid="a64b0f5aa4514d4f8c23bd06fc822098">
+                  <w10:wrap type="square" pt14:Unid="c7be2a3d7ce4409a8d1bf6b3741a3658" />
+                  <v:textbox style="mso-fit-shape-to-text:t" pt14:Unid="c546bf95765e47aabb6238ad6148e29c">
+                    <w:txbxContent pt14:Unid="d69bc32e9dc64857a1f90593838455d8" pt14:SHA1Hash="430d9c9492b84202d518707adaeb0dd2f14d18f3">
+                      <w:p pt14:Unid="f24c43d461b1439f9a1f77967822a921">
+                        <w:r>
+                          <w:rPr pt14:Unid="c2f099bc6aa749eea23d71ce0635413c">
+                            <w:lang w:val="en-US" pt14:Unid="ab4209511d9742e18286536485d4c03f" />
+                          </w:rPr>
+                          <w:t xml:space="preserve">Textbox1 this is </w:t>
+                        </w:r>
+                      </w:p>
+                    </w:txbxContent>
+                  </v:textbox>
+                </v:shape>
+              </w:pict>
+            </w:r>
+            <w:r>
+              <w:rPr pt14:Unid="9087d29c02124b19bad846afac8f3808">
+                <w:lang w:eastAsia="fr-FR" pt14:Unid="e6a6e143594349d3b05d0b1efbd11656" />
+              </w:rPr>
+              <w:pict pt14:Unid="60f13cd0b9fd436cac721be49e0bbe24" pt14:SHA1Hash="06744dd8cdade570254e79c7ebd37428810cc556">
+                <v:shapetype id="2" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe" pt14:Unid="15ed740903a34162ac5f2e835a347779">
+                  <v:stroke joinstyle="miter" pt14:Unid="458e661789c84c51834f92825b84b762" />
+                  <v:path gradientshapeok="t" o:connecttype="rect" pt14:Unid="9f5bb84fed2042609ce46a32b1980287" />
+                </v:shapetype>
+                <v:shape id="2" style="position:absolute;margin-left:0;margin-top:14.4pt;width:185.9pt;height:110.6pt;z-index:251659264;visibility:visible;mso-wrap-style:square;mso-width-percent:400;mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3.6pt;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:3.6pt;mso-position-horizontal:center;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:400;mso-height-percent:200;mso-width-relative:margin;mso-height-relative:margin;v-text-anchor:top" o:spid="_x0000_s1026" type="2" o:gfxdata="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&#xA;di54bWxQSwUGAAAAAAQABADzAAAAhwUAAAAA&#xA;" pt14:Unid="a64b0f5aa4514d4f8c23bd06fc822098">
+                  <w10:wrap type="square" pt14:Unid="c7be2a3d7ce4409a8d1bf6b3741a3658" />
+                  <v:textbox style="mso-fit-shape-to-text:t" pt14:Unid="c546bf95765e47aabb6238ad6148e29c">
+                    <w:txbxContent pt14:Unid="d69bc32e9dc64857a1f90593838455d8" pt14:SHA1Hash="430d9c9492b84202d518707adaeb0dd2f14d18f3">
+                      <w:p pt14:Unid="f24c43d461b1439f9a1f77967822a921">
+                        <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:10.9559078+00:00">
+                          <w:r>
+                            <w:rPr pt14:Unid="c2f099bc6aa749eea23d71ce0635413c">
+                              <w:lang w:val="en-US" pt14:Unid="ab4209511d9742e18286536485d4c03f" />
+                            </w:rPr>
+                            <w:delText>a</w:delText>
+                          </w:r>
+                        </w:del>
+                      </w:p>
+                    </w:txbxContent>
+                  </v:textbox>
+                </v:shape>
+              </w:pict>
+            </w:r>
+            <w:r>
+              <w:rPr pt14:Unid="2fdc1f66ca2f46a3a823fc6545aedd51">
+                <w:lang w:eastAsia="fr-FR" pt14:Unid="eb63200a530447a3b48dc4692609631f" />
+              </w:rPr>
+              <w:pict pt14:Unid="60f13cd0b9fd436cac721be49e0bbe24" pt14:SHA1Hash="1225ebe3a5b282899b0dc6f0e6c4a0f439964e2b">
+                <v:shapetype id="3" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe" pt14:Unid="880987c6eef74efb863c49f77c5394f9">
+                  <v:stroke joinstyle="miter" pt14:Unid="6407b9043d4a41e7aa28b6e695bf9bb7" />
+                  <v:path gradientshapeok="t" o:connecttype="rect" pt14:Unid="8557c685fd7a4423b8fbcfc2d0d494f6" />
+                </v:shapetype>
+                <v:shape id="3" style="position:absolute;margin-left:0;margin-top:14.4pt;width:185.9pt;height:110.6pt;z-index:251659264;visibility:visible;mso-wrap-style:square;mso-width-percent:400;mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3.6pt;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:3.6pt;mso-position-horizontal:center;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:400;mso-height-percent:200;mso-width-relative:margin;mso-height-relative:margin;v-text-anchor:top" o:spid="_x0000_s1026" type="3" o:gfxdata="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&#xA;di54bWxQSwUGAAAAAAQABADzAAAAhwUAAAAA&#xA;" pt14:Unid="a64b0f5aa4514d4f8c23bd06fc822098">
+                  <w10:wrap type="square" pt14:Unid="bb62745a7bd84c1f938fc58cc7c7336e" />
+                  <v:textbox style="mso-fit-shape-to-text:t" pt14:Unid="c546bf95765e47aabb6238ad6148e29c">
+                    <w:txbxContent pt14:Unid="d69bc32e9dc64857a1f90593838455d8" pt14:SHA1Hash="63c5f821aba1e9d2f2b6b2f6f21cdffe71f6113a">
+                      <w:p pt14:Unid="f24c43d461b1439f9a1f77967822a921">
+                        <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:10.9559078+00:00">
+                          <w:r>
+                            <w:rPr pt14:Unid="1a68706bc20540a0bd1171aa4a726272">
+                              <w:lang w:val="en-US" pt14:Unid="c368b7cb43b8458ca4bc249ae8ec3943" />
+                            </w:rPr>
+                            <w:t>an interesting</w:t>
+                          </w:r>
+                        </w:ins>
+                      </w:p>
+                    </w:txbxContent>
+                  </v:textbox>
+                </v:shape>
+              </w:pict>
+            </w:r>
+            <w:r>
+              <w:rPr pt14:Unid="2fdc1f66ca2f46a3a823fc6545aedd51">
+                <w:lang w:eastAsia="fr-FR" pt14:Unid="eb63200a530447a3b48dc4692609631f" />
+              </w:rPr>
+              <w:pict pt14:Unid="60f13cd0b9fd436cac721be49e0bbe24" pt14:SHA1Hash="06744dd8cdade570254e79c7ebd37428810cc556">
+                <v:shapetype id="4" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe" pt14:Unid="15ed740903a34162ac5f2e835a347779">
+                  <v:stroke joinstyle="miter" pt14:Unid="458e661789c84c51834f92825b84b762" />
+                  <v:path gradientshapeok="t" o:connecttype="rect" pt14:Unid="9f5bb84fed2042609ce46a32b1980287" />
+                </v:shapetype>
+                <v:shape id="4" style="position:absolute;margin-left:0;margin-top:14.4pt;width:185.9pt;height:110.6pt;z-index:251659264;visibility:visible;mso-wrap-style:square;mso-width-percent:400;mso-height-percent:200;mso-wrap-distance-left:9pt;mso-wrap-distance-top:3.6pt;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:3.6pt;mso-position-horizontal:center;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:400;mso-height-percent:200;mso-width-relative:margin;mso-height-relative:margin;v-text-anchor:top" o:spid="_x0000_s1026" type="4" o:gfxdata="UEsDBBQABgAIAAAAIQC2gziS/gAAAOEBAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbJSRQU7DMBBF&#xA;90jcwfIWJU67QAgl6YK0S0CoHGBkTxKLZGx5TGhvj5O2G0SRWNoz/78nu9wcxkFMGNg6quQqL6RA&#xA;0s5Y6ir5vt9lD1JwBDIwOMJKHpHlpr69KfdHjyxSmriSfYz+USnWPY7AufNIadK6MEJMx9ApD/oD&#xA;OlTrorhX2lFEilmcO2RdNtjC5xDF9pCuTyYBB5bi6bQ4syoJ3g9WQ0ymaiLzg5KdCXlKLjvcW893&#xA;SUOqXwnz5DrgnHtJTxOsQfEKIT7DmDSUCaxw7Rqn8787ZsmRM9e2VmPeBN4uqYvTtW7jvijg9N/y&#xA;JsXecLq0q+WD6m8AAAD//wMAUEsDBBQABgAIAAAAIQA4/SH/1gAAAJQBAAALAAAAX3JlbHMvLnJl&#xA;bHOkkMFqwzAMhu+DvYPRfXGawxijTi+j0GvpHsDYimMaW0Yy2fr2M4PBMnrbUb/Q94l/f/hMi1qR&#xA;JVI2sOt6UJgd+ZiDgffL8ekFlFSbvV0oo4EbChzGx4f9GRdb25HMsYhqlCwG5lrLq9biZkxWOiqY&#xA;22YiTra2kYMu1l1tQD30/bPm3wwYN0x18gb45AdQl1tp5j/sFB2T0FQ7R0nTNEV3j6o9feQzro1i&#xA;OWA14Fm+Q8a1a8+Bvu/d/dMb2JY5uiPbhG/ktn4cqGU/er3pcvwCAAD//wMAUEsDBBQABgAIAAAA&#xA;IQAmy+1iJQIAAEcEAAAOAAAAZHJzL2Uyb0RvYy54bWysU9uO2yAQfa/Uf0C8N3a8SXZjxVlts01V&#xA;aXuRdvsBGOMYFRgKJHb69R1wNo227UtVHhDDDIeZc2ZWt4NW5CCcl2AqOp3klAjDoZFmV9GvT9s3&#xA;N5T4wEzDFBhR0aPw9Hb9+tWqt6UooAPVCEcQxPiytxXtQrBllnneCc38BKww6GzBaRbQdLuscaxH&#xA;dK2yIs8XWQ+usQ648B5v70cnXSf8thU8fG5bLwJRFcXcQtpd2uu4Z+sVK3eO2U7yUxrsH7LQTBr8&#xA;9Ax1zwIjeyd/g9KSO/DQhgkHnUHbSi5SDVjNNH9RzWPHrEi1IDnenmny/w+Wfzp8cUQ2FS2m15QY&#xA;plGkJzEE8hYGUkR+eutLDHu0GBgGvEadU63ePgD/5omBTcfMTtw5B30nWIP5TePL7OLpiOMjSN1/&#xA;hAa/YfsACWhonY7kIR0E0VGn41mbmArHy+JqkS+v0MXRN53ls0WR1MtY+fzcOh/eC9AkHirqUPwE&#xA;zw4PPsR0WPkcEn/zoGSzlUolw+3qjXLkwLBRtmmlCl6EKUP6ii7nxXxk4K8QeVp/gtAyYMcrqSt6&#xA;cw5iZeTtnWlSPwYm1XjGlJU5ERm5G1kMQz2chKmhOSKlDsbOxknEQwfuByU9dnVF/fc9c4IS9cGg&#xA;LMvpbBbHIBmz+TVySNylp770MMMRqqKBkvG4CWl0EmH2DuXbykRs1HnM5JQrdmvi+zRZcRwu7RT1&#xA;a/7XPwEAAP//AwBQSwMEFAAGAAgAAAAhAEhbJ3LbAAAABwEAAA8AAABkcnMvZG93bnJldi54bWxM&#xA;j0FPwzAMhe9I/IfISNxYsgJjKk2nqYLrpG1IXL0mtIXEKU3alX+PObGbn5/13udiM3snJjvELpCG&#xA;5UKBsFQH01Gj4e34ercGEROSQRfIavixETbl9VWBuQln2tvpkBrBIRRz1NCm1OdSxrq1HuMi9JbY&#xA;+wiDx8RyaKQZ8Mzh3slMqZX02BE3tNjbqrX112H0GsZjtZ32Vfb5Pu3Mw271gh7dt9a3N/P2GUSy&#xA;c/o/hj98RoeSmU5hJBOF08CPJA3ZmvnZvX9a8nDixaNSIMtCXvKXvwAAAP//AwBQSwECLQAUAAYA&#xA;CAAAACEAtoM4kv4AAADhAQAAEwAAAAAAAAAAAAAAAAAAAAAAW0NvbnRlbnRfVHlwZXNdLnhtbFBL&#xA;AQItABQABgAIAAAAIQA4/SH/1gAAAJQBAAALAAAAAAAAAAAAAAAAAC8BAABfcmVscy8ucmVsc1BL&#xA;AQItABQABgAIAAAAIQAmy+1iJQIAAEcEAAAOAAAAAAAAAAAAAAAAAC4CAABkcnMvZTJvRG9jLnht&#xA;bFBLAQItABQABgAIAAAAIQBIWydy2wAAAAcBAAAPAAAAAAAAAAAAAAAAAH8EAABkcnMvZG93bnJl&#xA;di54bWxQSwUGAAAAAAQABADzAAAAhwUAAAAA&#xA;" pt14:Unid="a64b0f5aa4514d4f8c23bd06fc822098">
+                  <w10:wrap type="square" pt14:Unid="c7be2a3d7ce4409a8d1bf6b3741a3658" />
+                  <v:textbox style="mso-fit-shape-to-text:t" pt14:Unid="c546bf95765e47aabb6238ad6148e29c">
+                    <w:txbxContent pt14:Unid="d69bc32e9dc64857a1f90593838455d8" pt14:SHA1Hash="430d9c9492b84202d518707adaeb0dd2f14d18f3">
+                      <w:p pt14:Unid="f24c43d461b1439f9a1f77967822a921">
+                        <w:pPr pt14:Unid="e6be9bd64f794ca19c19bf7ae1cac70c">
+                          <w:rPr pt14:Unid="c5fe56096a09421d9114a83ca7aa74d9">
+                            <w:lang w:val="en-US" pt14:Unid="23c1d6d3fa7e4720b9957ca741352aab" />
+                          </w:rPr>
+                        </w:pPr>
+                        <w:r>
+                          <w:rPr pt14:Unid="c2f099bc6aa749eea23d71ce0635413c">
+                            <w:lang w:val="en-US" pt14:Unid="ab4209511d9742e18286536485d4c03f" />
+                          </w:rPr>
+                          <w:t xml:space="preserve"> test.</w:t>
+                        </w:r>
+                      </w:p>
+                    </w:txbxContent>
+                  </v:textbox>
+                </v:shape>
+              </w:pict>
+            </w:r>
+            <w:r>
+              <w:rPr pt14:Unid="e62a82375fd24ac3acceaf1b147af38b">
+                <w:lang w:val="en-US" pt14:Unid="54cc0318d9774c0f935c1d162daba5b7" />
+              </w:rPr>
+              <w:t xml:space="preserve">You can also type a keyword to search online for the video that best fits your </w:t>
+            </w:r>
+            <w:ins w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:10.9559078+00:00">
+              <w:r>
+                <w:rPr pt14:Unid="e62a82375fd24ac3acceaf1b147af38b">
+                  <w:lang w:val="en-US" pt14:Unid="54cc0318d9774c0f935c1d162daba5b7" />
+                </w:rPr>
+                <w:t xml:space="preserve">nice </w:t>
+              </w:r>
+            </w:ins>
+            <w:r>
+              <w:rPr pt14:Unid="e62a82375fd24ac3acceaf1b147af38b">
+                <w:lang w:val="en-US" pt14:Unid="54cc0318d9774c0f935c1d162daba5b7" />
+              </w:rPr>
+              <w:t>document.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="dd71d82b0a284ba2809d8a4651daba22" pt14:CorrelatedSHA1Hash="9b20ffeb04b2d4209887d07935d963d8390073ed" pt14:SHA1Hash="9b20ffeb04b2d4209887d07935d963d8390073ed" pt14:StructureSHA1Hash="161e63ab5d06d352356d7cc43393b25addcab280">
+        <w:tc pt14:Unid="72e4fe14e98740b79db243810812bbfe" pt14:SHA1Hash="3a3ef52c52e135a97293bd0453b5c9eed7798471">
+          <w:tcPr pt14:Unid="15d59147a3224db0b6e3316a6387f017">
+            <w:tcW w:w="9016" w:type="dxa" pt14:Unid="663d42f5677b4208b8cc987fc07972c2" />
+          </w:tcPr>
+          <w:p pt14:Unid="3b8745f60c044730a2009318902fe304">
+            <w:pPr pt14:Unid="a452cf01bb4f4beaa8b7559678fa1939">
+              <w:rPr pt14:Unid="31ab43a1c447464189609971523f43ea">
+                <w:lang w:val="en-US" pt14:Unid="8a2b25f4724a4f3bb9e29f8163414742" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="27e52ae3bf504cb7adcb0a0ebceb4dee">
+                <w:lang w:val="en-US" pt14:Unid="11e59a8c5bc54b4fbefd9071f8999196" />
+              </w:rPr>
+              <w:t>To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="c44f4b481cce4e55923e134d2bc814b4" pt14:CorrelatedSHA1Hash="7731a60692e31b7fccf2ea9a98367cc18fb3aeca" pt14:SHA1Hash="7731a60692e31b7fccf2ea9a98367cc18fb3aeca" pt14:StructureSHA1Hash="161e63ab5d06d352356d7cc43393b25addcab280">
+        <w:tc pt14:Unid="95ef2cb2b20f4a41b0aa7db3b3c4644e" pt14:SHA1Hash="5499d1a9ccb25e26f182c5f24b5327de5ae3b1f4">
+          <w:tcPr pt14:Unid="6a298b6989d6422292f554bc5d436391">
+            <w:tcW w:w="9016" w:type="dxa" pt14:Unid="6415e30421594342b06f45485285bf8a" />
+          </w:tcPr>
+          <w:p pt14:Unid="92f7df997e084df69f30093d7be29c24">
+            <w:pPr pt14:Unid="2cb8b0ecd3fc40e8a28db7ee4167ce0d">
+              <w:rPr pt14:Unid="1250e4deb65d4744bf3788e796f6e8e7">
+                <w:lang w:val="en-US" pt14:Unid="406e779730344602bd8a66207a1384d5" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="f6c5051216144783885b89f530f61666">
+                <w:lang w:val="en-US" pt14:Unid="04f77d51a6f149cdb246174f0505ffa5" />
+              </w:rPr>
+              <w:t>For example, you can add a matching cover page, header, and sidebar.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="dfa2cd37e8144d48b67ddec9f4099d2e" pt14:CorrelatedSHA1Hash="ab3b6723fec7c78598abe6f5dec3734e5700ed05" pt14:SHA1Hash="ab3b6723fec7c78598abe6f5dec3734e5700ed05" pt14:StructureSHA1Hash="161e63ab5d06d352356d7cc43393b25addcab280">
+        <w:tc pt14:Unid="663d11ea7fcd4dacac343abcfa5e1c41" pt14:SHA1Hash="25dce3dcd56ef1b6c6055d13ba494e0b25c92555">
+          <w:tcPr pt14:Unid="b430a4cb9763470eba6788f8b14a46d7">
+            <w:tcW w:w="9016" w:type="dxa" pt14:Unid="e2234ccfdec84ac8ac5fe0d3b4d143ae" />
+          </w:tcPr>
+          <w:p pt14:Unid="fe3e6f4d11114d398718d28609dfee15">
+            <w:pPr pt14:Unid="9e2ce85a0cf14b03831d682a92a1efea">
+              <w:rPr pt14:Unid="4e3a01605b8e4214915014f89c0330ba">
+                <w:lang w:val="en-US" pt14:Unid="44fdb92b7de24230b9e9bd7d8d942eb9" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="3c4b8dd7734c4428b564e1ee6d87f3b3">
+                <w:lang w:val="en-US" pt14:Unid="a19301db68d2492fb348a1c0f83ee1de" />
+              </w:rPr>
+              <w:t>Click Insert and then choose the elements you want from the different galleries.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="026192ac550744518eda5a345a6497b7">
+      <w:pPr pt14:Unid="35dde9f6ce5e4361b3d932acb41d4283">
+        <w:rPr pt14:Unid="b6a1e159760e4fe7b9de8c33c9a713c1">
+          <w:lang w:val="en-US" pt14:Unid="edfcfaa44edb4027a05b411c28a4c17d" />
+        </w:rPr>
+      </w:pPr>
+    </w:p>
+    <w:sectPr pt14:Unid="fc8433f69ad7423bb2347e418d83c224">
+      <w:pgSz w:w="11906" w:h="16838" pt14:Unid="f655cd86cfea4c02a0784f53b7d9c053" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="3631ddde8eb64a45a1c64b6260eb5a98" />
+      <w:cols w:space="720" pt14:Unid="4c84e859be9e448abe305dff56b80701" />
+    </w:sectPr>
+  </w:body>
+</w:document>

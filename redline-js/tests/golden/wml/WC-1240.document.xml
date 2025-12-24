@@ -1,0 +1,102 @@
+<w:document xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="440e0e89254b4374bb0a4347348bf4c3">
+      <w:pPr />
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:02.8358485+00:00">
+        <w:r>
+          <w:drawing pt14:Unid="d6b61f4616c844d7b0a353f4f864e02f" pt14:SHA1Hash="1316ada712e3aa9ae7e7324b3fccea1355b20afc" pt14:Status="Deleted">
+            <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="9c2b5db3d820478194c79ab985363e6a">
+              <wp:extent cx="819264" cy="838317" pt14:Unid="037ad9d6bba1434987bc134a09353172" />
+              <wp:effectExtent l="0" t="0" r="0" b="0" pt14:Unid="71941d7ce26340899d040aa34c220d42" />
+              <wp:docPr id="1" name="Picture 1" pt14:Unid="53f5f72bf6134397a9b2bd259aa0181c" />
+              <wp:cNvGraphicFramePr pt14:Unid="c4a2937a289a459e8a6a428cef94d8be">
+                <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="f39b8e564e6b4b10bd21cbbe880993c5" />
+              </wp:cNvGraphicFramePr>
+              <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="ee41b2ece2c84c1ea740d3ad908b7e33">
+                <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="44809a67e8914774b82f770051903692">
+                  <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="37d2ecca8eae42f49e6905b233eb36cd">
+                    <pic:nvPicPr pt14:Unid="f5821502edf24c78910aa1a91cf39d46">
+                      <pic:cNvPr id="1" name="AA4FC2C.tmp" pt14:Unid="1329c5d199af4a6b8fa4ca233940dd16" />
+                      <pic:cNvPicPr pt14:Unid="29e69a03619f44df9491326a1930024d" />
+                    </pic:nvPicPr>
+                    <pic:blipFill pt14:Unid="3ba36dd3ffab4af1aa90de4ce9eccb0e">
+                      <a:blip r:embed="R3280dbe0d1f6492590d5881481f8cb3b" pt14:Unid="7692dddf6ee24dbfaeee2cda7d6086c4">
+                        <a:extLst pt14:Unid="62c62ec3126d426ba7f630b74c20eae4">
+                          <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="60e200f854644a268d5bc477aad0aa58">
+                            <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="2c615d8688e54fb4b4738b7ecd8138fb" />
+                          </a:ext>
+                        </a:extLst>
+                      </a:blip>
+                      <a:stretch pt14:Unid="c5ccc925f843496fbc1491a3a16350be">
+                        <a:fillRect pt14:Unid="d2bc8d4fd6384593a714925bca7ba298" />
+                      </a:stretch>
+                    </pic:blipFill>
+                    <pic:spPr pt14:Unid="cf6dcbde13be4619a96db5b813f7b440">
+                      <a:xfrm pt14:Unid="1fe6d19a3c684109a968f82e80ca5282">
+                        <a:off x="0" y="0" pt14:Unid="90665849f5df4ce9884f7a345973b6e1" />
+                        <a:ext cx="819264" cy="838317" pt14:Unid="8c984e53c6814e209e50ca68198d25f0" />
+                      </a:xfrm>
+                      <a:prstGeom prst="rect" pt14:Unid="8057718cc7fd48ca82850b14aa8e2bd9">
+                        <a:avLst pt14:Unid="c8e20204cab2487ba566f05239261de4" />
+                      </a:prstGeom>
+                    </pic:spPr>
+                  </pic:pic>
+                </a:graphicData>
+              </a:graphic>
+            </wp:inline>
+          </w:drawing>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:02.8358485+00:00">
+        <w:r>
+          <w:drawing pt14:Unid="9b26774bf561489b856fc853f47eacbb" pt14:SHA1Hash="89cf4c6a779d0750082369e868945404958afafd" pt14:Status="Inserted">
+            <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="4cb170539ab148ff879eebe9abd1187e">
+              <wp:extent cx="762106" cy="790685" pt14:Unid="204225db0efc497abf275f5f71565373" />
+              <wp:effectExtent l="0" t="0" r="0" b="9525" pt14:Unid="95f61a4f159b49dd8f0525dfcce2b030" />
+              <wp:docPr id="2" name="Picture 2" pt14:Unid="0c434a720d66499cb54333c6d1740fbe" />
+              <wp:cNvGraphicFramePr pt14:Unid="b2d51a2b797f4d66a9515c3d0492fa98">
+                <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="52ed798667a0472da2a5b7902ab8d5c6" />
+              </wp:cNvGraphicFramePr>
+              <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="1cf2843a81104befb64b8962e2841c49">
+                <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="5ad3c6c6185f479fb06223bbf32bb93a">
+                  <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="dab7546d7e834cb9b068dcd991f76a3c">
+                    <pic:nvPicPr pt14:Unid="b3cf457528a04ad6ad3b5e59fb8dc516">
+                      <pic:cNvPr id="2" name="0988E6A.tmp" pt14:Unid="8aa99da391f8424ab9843bc7cfdc388c" />
+                      <pic:cNvPicPr pt14:Unid="f229f8e7de0b4c058e4350ec59087ed1" />
+                    </pic:nvPicPr>
+                    <pic:blipFill pt14:Unid="e0fa7d6279174d15941f24589d15446c">
+                      <a:blip r:embed="Rffdf9c773c98412e911ee83f481082c8" pt14:Unid="8ac31aab01b94fe084d0fc9f8b6f41f6">
+                        <a:extLst pt14:Unid="01a65cef867444cfbc279d1224e5de16">
+                          <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="7495ca0d75bc4296a68ff47ecf93230b">
+                            <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="a047f3723fa1492b95dd7a44547967e0" />
+                          </a:ext>
+                        </a:extLst>
+                      </a:blip>
+                      <a:stretch pt14:Unid="3c87b47c0e1040b6b9dde271bf42f48e">
+                        <a:fillRect pt14:Unid="df0300c5b7cf4396a0ae472216fac87c" />
+                      </a:stretch>
+                    </pic:blipFill>
+                    <pic:spPr pt14:Unid="7b0e16194f6a4b56a0d57ff4028f4c9b">
+                      <a:xfrm pt14:Unid="b95d608267fc4d09aedaed66d7a6c19f">
+                        <a:off x="0" y="0" pt14:Unid="cbb552ade4ec48dd8d9c766a9152bd8e" />
+                        <a:ext cx="762106" cy="790685" pt14:Unid="c5ee9e42ee93417c9ea8e586a4a1c3d0" />
+                      </a:xfrm>
+                      <a:prstGeom prst="rect" pt14:Unid="31b34c2fd1024db0873b4457602fea0e">
+                        <a:avLst pt14:Unid="e89471dc0581401790559b0eb6489803" />
+                      </a:prstGeom>
+                    </pic:spPr>
+                  </pic:pic>
+                </a:graphicData>
+              </a:graphic>
+            </wp:inline>
+          </w:drawing>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:sectPr pt14:Unid="c30866ac53e44517aafb575ae5f0211e">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="bc363ef4b20c44279f4f2c7e18fd03da" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="70ef08274c2a456084c220d818b248ce" />
+      <w:cols w:space="720" pt14:Unid="1444cfcdc139451ea8e3374c7bc5cf5d" />
+    </w:sectPr>
+  </w:body>
+</w:document>

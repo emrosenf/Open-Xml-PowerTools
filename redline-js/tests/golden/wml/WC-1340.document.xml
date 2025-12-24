@@ -1,0 +1,73 @@
+<w:document xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="4748c3816c0b48ba85fda3902197d0e7">
+      <w:pPr />
+      <w:r>
+        <w:t>Hello.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="b2356dade76442c180791ef59d625224">
+      <w:pPr pt14:Status="Deleted">
+        <w:rPr>
+          <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:04.8536046+00:00" />
+        </w:rPr>
+      </w:pPr>
+      <w:del w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:04.8536046+00:00">
+        <w:r>
+          <w:drawing pt14:Unid="53d92d107c74474389324852dac02429" pt14:SHA1Hash="7fec0b91fe7ca9c9d146665db54233dd7cb83fd9" pt14:Status="Deleted">
+            <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="9e41fa0b1645485e96a68991c6389bf7">
+              <wp:extent cx="543001" cy="495369" pt14:Unid="94f95a03cdb24ac2a0a9a121cd73aa45" />
+              <wp:effectExtent l="0" t="0" r="9525" b="0" pt14:Unid="20dc4ae8e2be4d8cbf8d5e87b942e2ee" />
+              <wp:docPr id="1" name="Picture 1" pt14:Unid="0e44d1bf609947aea980583af17df02c" />
+              <wp:cNvGraphicFramePr pt14:Unid="e1fd9a524c8e4bbca8a7cf4df35c6f8e">
+                <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="5a9f08c3a7b343db9eb1e751b00d82a3" />
+              </wp:cNvGraphicFramePr>
+              <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="155283cf8e7448eabebbf212176406de">
+                <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="0fde87352fa9488cb3f2423565563e5b">
+                  <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="e46526f24ee54c11b14120713f1b5cf8">
+                    <pic:nvPicPr pt14:Unid="2e01f210fac847e8a49cb2d1dc14b1ae">
+                      <pic:cNvPr id="1" name="198BCA3.tmp" pt14:Unid="d4c9c1ad981a4df4adb58a1c2cbfeacd" />
+                      <pic:cNvPicPr pt14:Unid="8c6d3698e59f4b22926c3579cea4c692" />
+                    </pic:nvPicPr>
+                    <pic:blipFill pt14:Unid="feacd69f9a2347f18df52b228fc3d029">
+                      <a:blip r:embed="Rf946814f1fe747abb3a0794652489856" pt14:Unid="0703135eb5ae49ebab7f7e24b2ce9cb4">
+                        <a:extLst pt14:Unid="ec011f3e416549d1bc827819fe3ce5ad">
+                          <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="d304fb8b58034c9cba3229ebe4e08059">
+                            <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="f889eac468844523b6093fc7879d621b" />
+                          </a:ext>
+                        </a:extLst>
+                      </a:blip>
+                      <a:stretch pt14:Unid="00c3716c0efc48bf998d2de50f3b5324">
+                        <a:fillRect pt14:Unid="5214f66eceaf425da307a930c9b2adcf" />
+                      </a:stretch>
+                    </pic:blipFill>
+                    <pic:spPr pt14:Unid="67674e1a4d16450daf47488f52663d91">
+                      <a:xfrm pt14:Unid="58ff444b6cc9482e95dacad4a7e0f71e">
+                        <a:off x="0" y="0" pt14:Unid="e5039064db4a4d19bb71b5e37f9dfbcd" />
+                        <a:ext cx="543001" cy="495369" pt14:Unid="1b8e2c6a5cf240c4a9b7b52f19378ef4" />
+                      </a:xfrm>
+                      <a:prstGeom prst="rect" pt14:Unid="dd45e9d449154a45a96e473aa7b618c9">
+                        <a:avLst pt14:Unid="202fc9704e30432c97511a58782b9926" />
+                      </a:prstGeom>
+                    </pic:spPr>
+                  </pic:pic>
+                </a:graphicData>
+              </a:graphic>
+            </wp:inline>
+          </w:drawing>
+        </w:r>
+      </w:del>
+    </w:p>
+    <w:p pt14:Unid="8e65b0c6584d48408ca9d90c2c75fca1">
+      <w:pPr />
+      <w:r>
+        <w:t>This is a much longer sequence that will be found first in the LCS algorithm.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="41db357f5e684dad8d51baac616ad77f">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="37974d5dc0214498a538468751d3728e" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="968c9cf292e84bc5b58776eb10989ea1" />
+      <w:cols w:space="720" pt14:Unid="53da3892a53d439a82ad519df28ed575" />
+    </w:sectPr>
+  </w:body>
+</w:document>

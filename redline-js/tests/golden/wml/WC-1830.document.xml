@@ -1,0 +1,122 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:tbl pt14:Unid="06336fb6d4034c61abcf1c843f1071be" pt14:CorrelatedSHA1Hash="ae5682e55fad2d75f4264f667b06e27da6141c4f" pt14:SHA1Hash="ae5682e55fad2d75f4264f667b06e27da6141c4f" pt14:StructureSHA1Hash="9814801e309109d616846dd7adf85a409c472b30">
+      <w:tblPr pt14:Unid="fad847f0d80b4589a99b41f222cceb5c">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="d6a339314c9d47fe8fc0443ac2b2f4ee" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="5971b90a126448a79e090930e3045201" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="14a2cbb8c55d4816946af725c18f729f" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="77d52dc403fa4d5288f3f5e0dcc493ce">
+        <w:gridCol w:w="3619" pt14:Unid="f4cc677662794355a424c6fd32e3ad42" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="0b57d113cc7f4750819e474950a3c84f" pt14:CorrelatedSHA1Hash="948927485122eb74b0f342c2bd55fefc32d1c88a" pt14:SHA1Hash="948927485122eb74b0f342c2bd55fefc32d1c88a" pt14:StructureSHA1Hash="267dca4a4d60b71175753c89f5bef2264677a416">
+        <w:tc pt14:Unid="be4e36637e11411da3f8f506f53a3b9c" pt14:SHA1Hash="5a79e6afeb09af0b2eff4da9b1885d79652d6571">
+          <w:tcPr pt14:Unid="d909349138704f798d9c034ee8edda74">
+            <w:tcW w:w="3619" w:type="dxa" pt14:Unid="6959c5e9818f4215b2fad7b6ed8ecb85" />
+          </w:tcPr>
+          <w:p pt14:Unid="8feb0bff827b411886686dec67b9b5b1">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:10.3900422+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:t xml:space="preserve">Video provides a powerful way to help you prove your point. </w:t>
+            </w:r>
+            <w:del w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:10.3900422+00:00">
+              <w:r>
+                <w:delText>When you click Online Video, you can paste in the embed code for the video you want to add.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="8ed238493a0b4b119f03b4fc84a7dba9">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:10.3900422+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:10.3900422+00:00">
+              <w:r>
+                <w:delText>You can also type a keyword to search online for the video that best fits your document. To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="160e40c558314ccba92e1a996ccd7e00">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:10.3900422+00:00" />
+              </w:rPr>
+            </w:pPr>
+          </w:p>
+          <w:p pt14:Unid="f8ea3e9b6df5431caa78d5e8a08d2a84">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Eric White" w:id="5" w:date="2025-12-24T01:47:10.3900422+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Eric White" w:id="6" w:date="2025-12-24T01:47:10.3900422+00:00">
+              <m:oMathPara pt14:Unid="c533df68ef7044beb71bff7e12442f4a">
+                <m:oMath pt14:Unid="16d10ed7ea264ec1b4c7f72af9af25d6">
+                  <m:r pt14:Unid="ec49cae245ef4a318f65c0f5051941cf">
+                    <w:rPr pt14:Unid="664ab752a63b4a88ae86a40b0c08851b">
+                      <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="7c15054e1ee04ac3bbb6ec8dd309b398" />
+                    </w:rPr>
+                    <m:t pt14:Unid="7a61559c353742229530c830756a918e">A=π</m:t>
+                  </m:r>
+                  <m:sSup pt14:Unid="3ce5eb75d4774da4ad29e058467b515f">
+                    <m:sSupPr pt14:Unid="b3c1e362d08841ecbd4c7d1751e440e8">
+                      <m:ctrlPr pt14:Unid="e9c85d09280349e7bce7f620881024e3">
+                        <w:rPr pt14:Unid="66b2be6d6173462ab412f2ae9442aad6">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="d2e0cd76167c4e8fad35f45d170d789b" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:sSupPr>
+                    <m:e pt14:Unid="1aa949bea1c14b72af2c8e592748751c">
+                      <m:r pt14:Unid="f5acb3b1815246cfb839e97ff4f5072a">
+                        <w:rPr pt14:Unid="e3f346dbe9a74c838c0e140d2f3e7283">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="a45452d1504745b09a4952f982a94b7f" />
+                        </w:rPr>
+                        <m:t pt14:Unid="ebd9761c32aa4cb183945d98a6dde37b">r</m:t>
+                      </m:r>
+                    </m:e>
+                    <m:sup pt14:Unid="f12b12c5e00f4c7dbd0136a368f07913">
+                      <m:r pt14:Unid="84bd2a19f7654945bf8f47dccb84517c">
+                        <w:rPr pt14:Unid="cbe727bd67a34ef89148f17e86fec873">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="682d485cef2441d38042b48d4d048645" />
+                        </w:rPr>
+                        <m:t pt14:Unid="8a70d8a78cd7482ea0d76e6f2ffac3f9">2</m:t>
+                      </m:r>
+                    </m:sup>
+                  </m:sSup>
+                </m:oMath>
+              </m:oMathPara>
+            </w:ins>
+          </w:p>
+          <w:p pt14:Unid="0ddbacb937474c90b415be7035dd4613">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Eric White" w:id="7" w:date="2025-12-24T01:47:10.3900422+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Eric White" w:id="8" w:date="2025-12-24T01:47:10.3900422+00:00">
+              <w:r>
+                <w:t>When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+          <w:p pt14:Unid="744d9d1930434580864da7f3ba6156da">
+            <w:pPr />
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="b9fba9d126714f01a9de43b2fc89655b">
+      <w:pPr />
+    </w:p>
+    <w:sectPr pt14:Unid="5a481e40f30d498d9f03e3729e5049d5">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="f6fd03f8108c437698aa1d0122e2a9ac" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="5e01e994a4264017b38b3600a2c5e825" />
+      <w:cols w:space="720" pt14:Unid="27ef01e8ac10459b97435faefa3c3b20" />
+    </w:sectPr>
+  </w:body>
+</w:document>

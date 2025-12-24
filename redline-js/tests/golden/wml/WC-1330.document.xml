@@ -1,0 +1,43 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="65c9012925ab4bdc9d3f737715b85958">
+      <w:pPr />
+      <w:r>
+        <w:t>Sidebar.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="0e731ef08d6d4ea6ac7d822c559a1a6f">
+      <w:pPr />
+      <w:r>
+        <w:t xml:space="preserve">This is a </w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:04.7265853+00:00">
+        <w:r>
+          <w:delText>very interesting test that includes lots of stuff.</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:04.7265853+00:00">
+        <w:r>
+          <w:t>much longer sequence that will be found first in the LCS algorithm.</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="f34b2ff3c1ca4e95bd5b71a39ae61a5a">
+      <w:pPr pt14:Status="Deleted">
+        <w:rPr>
+          <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:04.7265853+00:00" />
+        </w:rPr>
+      </w:pPr>
+      <w:del w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:04.7265853+00:00">
+        <w:r>
+          <w:delText>This is a much longer sequence that will be found first in the LCS algorithms.</w:delText>
+        </w:r>
+      </w:del>
+    </w:p>
+    <w:sectPr pt14:Unid="ff76092c21e345518b1e6262ef5ac84e">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="f46b05e17abf4614b2c1b8d0f7741be5" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="ba2784a914e64be4b63593f46d8388d4" />
+      <w:cols w:space="720" pt14:Unid="35d4e5f7eb19409b96b1062cd0cc0f2c" />
+    </w:sectPr>
+  </w:body>
+</w:document>

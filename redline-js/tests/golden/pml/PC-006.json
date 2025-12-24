@@ -1,0 +1,26 @@
+{
+  "Summary": {
+    "TotalChanges": 1,
+    "SlidesInserted": 0,
+    "SlidesDeleted": 0,
+    "SlidesMoved": 0,
+    "ShapesInserted": 0,
+    "ShapesDeleted": 1,
+    "ShapesMoved": 0,
+    "ShapesResized": 0,
+    "TextChanges": 0,
+    "FormattingChanges": 0,
+    "ImagesReplaced": 0
+  },
+  "Changes": [
+    {
+      "ChangeType": 10,
+      "SlideIndex": 1,
+      "OldSlideIndex": null,
+      "ShapeName": "Content",
+      "OldValue": null,
+      "NewValue": null,
+      "Description": "Shape \u0027Content\u0027 deleted from slide 1"
+    }
+  ]
+}

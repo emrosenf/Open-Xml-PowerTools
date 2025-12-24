@@ -1,0 +1,49 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="d309c55bbc924cb5b097284193ab1118">
+      <w:pPr />
+      <w:r>
+        <w:t xml:space="preserve">Video provides a powerful way to help you prove your </w:t>
+      </w:r>
+      <w:ins w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:05.1828093+00:00">
+        <w:r>
+          <w:t xml:space="preserve">nice </w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:t>point.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="6323e830a5694f93914c5ef0629cc4df">
+      <w:pPr pt14:Status="Deleted">
+        <w:rPr>
+          <w:del w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:05.1828093+00:00" />
+        </w:rPr>
+      </w:pPr>
+      <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:05.1828093+00:00">
+        <w:r>
+          <w:delText>Saturday, April 23, 2016</w:delText>
+        </w:r>
+      </w:del>
+    </w:p>
+    <w:p pt14:Unid="74792d0c280241b199779f4c70dd8207">
+      <w:pPr />
+      <w:r>
+        <w:t>Lorem ipsum dolor sit amet, consectetuer adipiscing</w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:05.1828093+00:00">
+        <w:r>
+          <w:delText xml:space="preserve"> elit</w:delText>
+        </w:r>
+      </w:del>
+      <w:r>
+        <w:t>.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="254d119ccbec428fa9d29979ba4a2a95">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="6001f17d189b4c0fba1a8ccc1f9c4ce3" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="8d376bbd0b944a1bbfe190ef940de78c" />
+      <w:cols w:space="720" pt14:Unid="f5b052c6660e48b9aebcada821ef5a16" />
+    </w:sectPr>
+  </w:body>
+</w:document>

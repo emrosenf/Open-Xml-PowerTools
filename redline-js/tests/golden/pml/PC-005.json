@@ -1,0 +1,26 @@
+{
+  "Summary": {
+    "TotalChanges": 1,
+    "SlidesInserted": 0,
+    "SlidesDeleted": 0,
+    "SlidesMoved": 0,
+    "ShapesInserted": 1,
+    "ShapesDeleted": 0,
+    "ShapesMoved": 0,
+    "ShapesResized": 0,
+    "TextChanges": 0,
+    "FormattingChanges": 0,
+    "ImagesReplaced": 0
+  },
+  "Changes": [
+    {
+      "ChangeType": 9,
+      "SlideIndex": 1,
+      "OldSlideIndex": null,
+      "ShapeName": "Extra Shape",
+      "OldValue": null,
+      "NewValue": null,
+      "Description": "Shape \u0027Extra Shape\u0027 inserted on slide 1"
+    }
+  ]
+}

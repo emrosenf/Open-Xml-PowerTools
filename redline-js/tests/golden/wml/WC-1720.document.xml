@@ -1,0 +1,55 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="3de79365011f4d5e83c70d0bcaa5f2ae">
+      <w:pPr />
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:09.5212163+00:00">
+        <w:r>
+          <w:delText>Vi</w:delText>
+        </w:r>
+      </w:del>
+      <w:del w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:09.5212163+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="0d70d235999c47f38d375b8380becb7b">
+            <w:rStyle w:val="EndnoteReference" pt14:Unid="54482c6c23534da5869459d18a50f91d" />
+          </w:rPr>
+          <w:endnoteReference w:id="1" pt14:Status="Deleted" />
+        </w:r>
+      </w:del>
+      <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:09.5212163+00:00">
+        <w:r>
+          <w:delText>deo</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:09.5212163+00:00">
+        <w:r>
+          <w:t>Video</w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:t xml:space="preserve"> </w:t>
+      </w:r>
+      <w:r>
+        <w:rPr pt14:Unid="dd6c983128b64b7c9c8aabaa9804e88b">
+          <w:rStyle w:val="EndnoteReference" pt14:Unid="afc9bb80bd1f41ffad3c1561f02b0c9a" />
+        </w:rPr>
+        <w:endnoteReference w:id="2" pt14:Unid="bd8de5814df14b81b57bc05c7c455768" />
+      </w:r>
+      <w:r>
+        <w:t>provides a powerful way to help you prove your point.</w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:09.5212163+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="86313ea3ee19438fa055fa70bc6a049c">
+            <w:rStyle w:val="EndnoteReference" pt14:Unid="efaac5c02daf4b3885dc45d5ae23f606" />
+          </w:rPr>
+          <w:endnoteReference w:id="3" pt14:Status="Deleted" />
+        </w:r>
+      </w:del>
+    </w:p>
+    <w:sectPr pt14:Unid="28ad49481b0f408a806edaf7b2576594">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="8fb5441c1ffe42538800cbebc33c8d71" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="10b2c8eed2414a3a820ce7bc70a046a0" />
+      <w:cols w:space="720" pt14:Unid="9599c2ec3cc144f8befaf822d05497f0" />
+    </w:sectPr>
+  </w:body>
+</w:document>
