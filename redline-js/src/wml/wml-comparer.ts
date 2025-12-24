@@ -648,14 +648,36 @@ function compareAlignedParagraphs(
         // Skip the next sequence since we processed it
         i++;
       } else {
-        // True deletion - count each deleted paragraph as a revision
-        // The C# comparer counts individual paragraph changes
-        deletions += seq.items1.length;
+        // True deletion - check if it's table-related or regular paragraphs
+        const nonEmptyTableRows = seq.items1.filter((p) => p.isTableRow && p.text.trim() !== '');
+        const nonEmptyParas = seq.items1.filter((p) => !p.isTableRow && p.text.trim() !== '');
+
+        if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
+          // Only non-empty table rows (and possibly empty items) = 1 revision
+          deletions += 1;
+        } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
+          // Mix of non-empty table rows and non-empty paragraphs = count table as 1 + each paragraph
+          deletions += 1 + nonEmptyParas.length;
+        } else {
+          // Only regular paragraphs = count each non-empty
+          deletions += Math.max(1, nonEmptyParas.length);
+        }
       }
     } else if (seq.status === CorrelationStatus.Inserted && seq.items2) {
-      // True insertion (not preceded by matching deletion)
-      // Count each inserted paragraph as a revision
-      insertions += seq.items2.length;
+      // True insertion - check if it's table-related or regular paragraphs
+      const nonEmptyTableRows = seq.items2.filter((p) => p.isTableRow && p.text.trim() !== '');
+      const nonEmptyParas = seq.items2.filter((p) => !p.isTableRow && p.text.trim() !== '');
+
+      if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
+        // Only non-empty table rows (and possibly empty items) = 1 revision
+        insertions += 1;
+      } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
+        // Mix of non-empty table rows and non-empty paragraphs = count table as 1 + each paragraph
+        insertions += 1 + nonEmptyParas.length;
+      } else {
+        // Only regular paragraphs = count each non-empty
+        insertions += Math.max(1, nonEmptyParas.length);
+      }
     } else if (seq.status === CorrelationStatus.Equal && seq.items1 && seq.items2) {
       // Paragraphs matched at hash level - check for word differences
       for (let j = 0; j < seq.items1.length; j++) {

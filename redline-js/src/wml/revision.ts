@@ -247,22 +247,34 @@ export function isDeletion(node: XmlNode): boolean {
 }
 
 /**
+ * Check if a node is a format change (w:rPrChange or w:pPrChange)
+ */
+export function isFormatChange(node: XmlNode): boolean {
+  const tagName = getTagName(node);
+  return tagName === 'w:rPrChange' || tagName === 'w:pPrChange';
+}
+
+/**
  * Count revisions in a document tree
  */
 export function countRevisions(nodes: XmlNode | XmlNode[]): {
   insertions: number;
   deletions: number;
+  formatChanges: number;
   total: number;
 } {
   const nodeArray = Array.isArray(nodes) ? nodes : [nodes];
   let insertions = 0;
   let deletions = 0;
+  let formatChanges = 0;
 
   function walk(node: XmlNode) {
     if (isInsertion(node)) {
       insertions++;
     } else if (isDeletion(node)) {
       deletions++;
+    } else if (isFormatChange(node)) {
+      formatChanges++;
     }
 
     for (const child of getChildren(node)) {
@@ -277,6 +289,7 @@ export function countRevisions(nodes: XmlNode | XmlNode[]): {
   return {
     insertions,
     deletions,
-    total: insertions + deletions,
+    formatChanges,
+    total: insertions + deletions + formatChanges,
   };
 }
