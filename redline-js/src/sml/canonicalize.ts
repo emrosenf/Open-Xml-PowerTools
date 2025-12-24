@@ -517,11 +517,104 @@ async function canonicalizeWorksheet(
     }
   }
 
-  // Compute row and column signatures
+  await extractComments(pkg, worksheetPath, sheetSig);
+
   computeRowSignatures(sheetSig);
   computeColumnSignatures(sheetSig);
 
   return sheetSig;
+}
+
+async function extractComments(
+  pkg: OoxmlPackage,
+  worksheetPath: string,
+  sheetSig: WorksheetSignature
+): Promise<void> {
+  const rels = await getRelationships(pkg, worksheetPath);
+  const commentsRel = rels.find((r) =>
+    r.type.includes('comments') || r.type.includes('Comments')
+  );
+
+  if (!commentsRel) return;
+
+  const commentsPath = resolveRelativePath(worksheetPath, commentsRel.target);
+  const commentsXml = await getPartAsXml(pkg, commentsPath);
+  if (!commentsXml) return;
+
+  const authors: string[] = [];
+
+  for (const node of commentsXml) {
+    if (getTagName(node) !== 'comments') continue;
+
+    for (const child of getChildren(node)) {
+      const tagName = getTagName(child);
+
+      if (tagName === 'authors') {
+        for (const authorNode of getChildren(child)) {
+          if (getTagName(authorNode) === 'author') {
+            authors.push(getTextContent(authorNode));
+          }
+        }
+      } else if (tagName === 'commentList') {
+        for (const commentNode of getChildren(child)) {
+          if (getTagName(commentNode) !== 'comment') continue;
+
+          const attrs = commentNode[':@'] as Record<string, string> | undefined;
+          if (!attrs?.['ref']) continue;
+
+          const cellRef = attrs['ref'];
+          const authorId = parseInt(attrs['authorId'] || '0', 10);
+          const author = authors[authorId] || 'Unknown';
+
+          let text = '';
+          for (const textChild of getChildren(commentNode)) {
+            if (getTagName(textChild) === 'text') {
+              text = extractRichText(textChild);
+            }
+          }
+
+          sheetSig.comments.set(cellRef, {
+            cellAddress: cellRef,
+            author,
+            text,
+            hash: hashString(`${author}|${text}`),
+          });
+        }
+      }
+    }
+  }
+}
+
+function extractRichText(textNode: XmlNode): string {
+  let result = '';
+  for (const child of getChildren(textNode)) {
+    const tagName = getTagName(child);
+    if (tagName === 't') {
+      result += getTextContent(child);
+    } else if (tagName === 'r') {
+      for (const rChild of getChildren(child)) {
+        if (getTagName(rChild) === 't') {
+          result += getTextContent(rChild);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function resolveRelativePath(basePath: string, relativePath: string): string {
+  const parts = basePath.split('/');
+  parts.pop();
+
+  for (const segment of relativePath.split('/')) {
+    if (segment === '..') {
+      parts.pop();
+    } else if (segment !== '.') {
+      parts.push(segment);
+    }
+  }
+
+  return parts.join('/');
 }
 
 /**

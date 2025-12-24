@@ -9,13 +9,16 @@
  * This is a TypeScript port of C# SmlComparer from Open-Xml-PowerTools.
  */
 
-import type {
-  SmlChange,
+import {
   SmlChangeType,
-  SmlComparisonResult,
-  SmlComparerSettings,
-  WorkbookSignature,
-  WorksheetSignature,
+  type SmlChange,
+  type SmlComparisonResult,
+  type SmlComparerSettings,
+  type WorkbookSignature,
+  type WorksheetSignature,
+  type CommentSignature,
+  type DataValidationSignature,
+  type HyperlinkSignature,
 } from './types';
 
 import { openPackage } from '../core/package';
@@ -109,22 +112,33 @@ export async function compare(
   return result;
 }
 
-/**
- * Compare two worksheets and add detected changes to result.
- */
 function compareSheets(
   sheet1: WorksheetSignature,
   sheet2: WorksheetSignature,
   settings: SmlComparerSettings,
   result: SmlComparisonResult
 ): void {
-  // Compare rows (with LCS-based alignment if enabled)
   const rowChanges = compareRows(sheet1, sheet2, settings);
   result.changes.push(...rowChanges);
 
-  // Compare cell-level changes (values, formulas, formatting)
   const cellChanges = compareCells(sheet1.cells, sheet2.cells, settings);
   result.changes.push(...cellChanges);
+
+  if (settings.compareComments !== false) {
+    compareComments(sheet1.comments, sheet2.comments, sheet1.name, result);
+  }
+
+  if (settings.compareDataValidations !== false) {
+    compareDataValidations(sheet1.dataValidations, sheet2.dataValidations, sheet1.name, result);
+  }
+
+  if (settings.compareMergedCells !== false) {
+    compareMergedCells(sheet1.mergedCellRanges, sheet2.mergedCellRanges, sheet1.name, result);
+  }
+
+  if (settings.compareHyperlinks !== false) {
+    compareHyperlinks(sheet1.hyperlinks, sheet2.hyperlinks, sheet1.name, result);
+  }
 }
 
 /**
@@ -164,6 +178,150 @@ function compareNamedRanges(
         changeType: SmlChangeType.NamedRangeDeleted,
         namedRangeName: name,
         oldNamedRangeValue: value1,
+      });
+    }
+  }
+}
+
+function compareComments(
+  comments1: Map<string, CommentSignature>,
+  comments2: Map<string, CommentSignature>,
+  sheetName: string,
+  result: SmlComparisonResult
+): void {
+  const allAddresses = new Set([...comments1.keys(), ...comments2.keys()]);
+
+  for (const addr of allAddresses) {
+    const c1 = comments1.get(addr);
+    const c2 = comments2.get(addr);
+
+    if (!c1 && c2) {
+      result.changes.push({
+        changeType: SmlChangeType.CommentAdded,
+        cellAddress: addr,
+        newComment: c2.text,
+        commentAuthor: c2.author,
+      });
+    } else if (c1 && !c2) {
+      result.changes.push({
+        changeType: SmlChangeType.CommentDeleted,
+        cellAddress: addr,
+        oldComment: c1.text,
+        commentAuthor: c1.author,
+      });
+    } else if (c1 && c2 && (c1.text !== c2.text || c1.author !== c2.author)) {
+      result.changes.push({
+        changeType: SmlChangeType.CommentChanged,
+        cellAddress: addr,
+        oldComment: c1.text,
+        newComment: c2.text,
+        commentAuthor: c2.author,
+      });
+    }
+  }
+}
+
+function compareDataValidations(
+  dvs1: Map<string, DataValidationSignature>,
+  dvs2: Map<string, DataValidationSignature>,
+  sheetName: string,
+  result: SmlComparisonResult
+): void {
+  const allKeys = new Set([...dvs1.keys(), ...dvs2.keys()]);
+
+  for (const key of allKeys) {
+    const dv1 = dvs1.get(key);
+    const dv2 = dvs2.get(key);
+
+    if (!dv1 && dv2) {
+      result.changes.push({
+        changeType: SmlChangeType.DataValidationAdded,
+        cellAddress: key,
+        dataValidationType: dv2.type,
+        newDataValidation: formatDataValidation(dv2),
+      });
+    } else if (dv1 && !dv2) {
+      result.changes.push({
+        changeType: SmlChangeType.DataValidationDeleted,
+        cellAddress: key,
+        dataValidationType: dv1.type,
+        oldDataValidation: formatDataValidation(dv1),
+      });
+    } else if (dv1 && dv2 && dv1.hash !== dv2.hash) {
+      result.changes.push({
+        changeType: SmlChangeType.DataValidationChanged,
+        cellAddress: key,
+        dataValidationType: dv2.type,
+        oldDataValidation: formatDataValidation(dv1),
+        newDataValidation: formatDataValidation(dv2),
+      });
+    }
+  }
+}
+
+function formatDataValidation(dv: DataValidationSignature): string {
+  let s = `${dv.type}`;
+  if (dv.operator) s += ` ${dv.operator}`;
+  if (dv.formula1) s += ` ${dv.formula1}`;
+  if (dv.formula2) s += ` ${dv.formula2}`;
+  return s;
+}
+
+function compareMergedCells(
+  merged1: Set<string>,
+  merged2: Set<string>,
+  sheetName: string,
+  result: SmlComparisonResult
+): void {
+  for (const range of merged2) {
+    if (!merged1.has(range)) {
+      result.changes.push({
+        changeType: SmlChangeType.MergedCellAdded,
+        mergedCellRange: range,
+      });
+    }
+  }
+
+  for (const range of merged1) {
+    if (!merged2.has(range)) {
+      result.changes.push({
+        changeType: SmlChangeType.MergedCellDeleted,
+        mergedCellRange: range,
+      });
+    }
+  }
+}
+
+function compareHyperlinks(
+  hls1: Map<string, HyperlinkSignature>,
+  hls2: Map<string, HyperlinkSignature>,
+  sheetName: string,
+  result: SmlComparisonResult
+): void {
+  const allAddresses = new Set([...hls1.keys(), ...hls2.keys()]);
+
+  for (const addr of allAddresses) {
+    const hl1 = hls1.get(addr);
+    const hl2 = hls2.get(addr);
+
+    if (!hl1 && hl2) {
+      result.changes.push({
+        changeType: SmlChangeType.HyperlinkAdded,
+        cellAddress: addr,
+        newHyperlink: hl2.target,
+      });
+    } else if (hl1 && !hl2) {
+      result.changes.push({
+        changeType: SmlChangeType.HyperlinkDeleted,
+        cellAddress: addr,
+        oldHyperlink: hl1.target,
+      });
+    } else if (hl1 && hl2 && hl1.hash !== hl2.hash) {
+      result.changes.push({
+        changeType: SmlChangeType.HyperlinkChanged,
+        cellAddress: addr,
+        oldHyperlink: hl1.target,
+        newHyperlink: hl2.target,
       });
     }
   }

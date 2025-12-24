@@ -15,6 +15,10 @@ export interface SmlComparerSettings {
   compareFormulas?: boolean;
   compareFormatting?: boolean;
   compareSheetStructure?: boolean;
+  compareComments?: boolean;
+  compareDataValidations?: boolean;
+  compareMergedCells?: boolean;
+  compareHyperlinks?: boolean;
   caseInsensitiveValues?: boolean;
   numericTolerance?: number;
   enableRowAlignment?: boolean;
