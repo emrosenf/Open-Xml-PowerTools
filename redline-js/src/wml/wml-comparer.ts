@@ -385,15 +385,14 @@ function extractFootnoteEndnoteParagraphs(
                 });
               }
             } else {
-              // Regular paragraph
+              // Regular paragraph - include for structural comparison
+              // Empty paragraphs are still tracked for counting purposes
               const text = extractParagraphText(element.node);
-              if (text.trim()) {
-                units.push({
-                  hash: hashString(text),
-                  node: cloneNode(element.node),
-                  text,
-                });
-              }
+              units.push({
+                hash: hashString(text || '__EMPTY__'),
+                node: cloneNode(element.node),
+                text: text || '',
+              });
             }
           }
         }
