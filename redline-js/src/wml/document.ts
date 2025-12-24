@@ -264,9 +264,11 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
       return;
     }
 
-    // Math text (m:t) - include in text extraction for comparison
-    if (tagName === 'm:t') {
-      texts.push(getTextContent(node));
+    // Math elements (m:oMath, m:oMathPara) - treat as single atomic units like drawings
+    // The C# code treats these as single atoms, not extracting individual characters
+    if (tagName === 'm:oMath' || tagName === 'm:oMathPara') {
+      const mathHash = getMathHash(node);
+      texts.push(` MATH_${mathHash} `);
       return;
     }
 
@@ -319,12 +321,13 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
       }
     }
 
-    // Include text from textboxes (they are atomic elements within the paragraph)
-    // The textbox content is included in the paragraph's text for proper hashing
+    // Include text from textboxes with a separator to prevent change grouping
     if (tagName === 'w:txbxContent') {
+      texts.push(' TXBX_START ');
       for (const child of getChildren(node)) {
         walkNode(child);
       }
+      texts.push(' TXBX_END ');
       return;
     }
 
@@ -442,6 +445,25 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
     }
 
     return null;
+  }
+
+  function getMathHash(node: XmlNode): string {
+    const mathTexts: string[] = [];
+    function extractMathText(n: XmlNode): void {
+      if (getTagName(n) === 'm:t') {
+        mathTexts.push(getTextContent(n));
+      }
+      for (const child of getChildren(n)) {
+        extractMathText(child);
+      }
+    }
+    extractMathText(node);
+    const content = mathTexts.join('');
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      hash = ((hash << 5) - hash + content.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash).toString(16);
   }
 
   walkNode(paragraph);

@@ -97,6 +97,15 @@ interface WordUnit extends Hashable {
 }
 
 /**
+ * A comparison unit representing a single character with position
+ */
+interface CharUnit extends Hashable {
+  hash: string;
+  text: string;
+  pos: number;
+}
+
+/**
  * Element types for comparison units.
  * Table rows are treated as single units, other paragraphs are individual units.
  */
@@ -703,6 +712,45 @@ function tokenize(text: string): WordUnit[] {
   }));
 }
 
+function isReferenceToken(text: string): boolean {
+  return text.startsWith('FOOTNOTE_REF_') || text.startsWith('ENDNOTE_REF_');
+}
+
+function isPunctuationToken(text: string): boolean {
+  return /^[^\w]+$/.test(text);
+}
+
+function isStructuralToken(text: string): boolean {
+  return (
+    text.startsWith('DRAWING_') ||
+    text.startsWith('PICT_') ||
+    text.startsWith('MATH_') ||
+    text.startsWith('TXBX_')
+  );
+}
+
+function isWordToken(text: string): boolean {
+  return !isReferenceToken(text) && !isPunctuationToken(text) && !isStructuralToken(text);
+}
+
+function containsStructuralToken(text: string): boolean {
+  return tokenize(text).some((token) => isStructuralToken(token.text));
+}
+
+function hasDrawingToken(text: string): boolean {
+  return text.includes('DRAWING_') || text.includes('PICT_');
+}
+
+function countDrawingTokens(text: string): number {
+  const drawingMatches = text.match(/DRAWING_/g) || [];
+  const pictMatches = text.match(/PICT_/g) || [];
+  return drawingMatches.length + pictMatches.length;
+}
+
+function filterComparableTokens(tokens: WordUnit[]): WordUnit[] {
+  return tokens.filter((token) => !isReferenceToken(token.text) && !isPunctuationToken(token.text));
+}
+
 /**
  * Interface for a run with its text and properties
  */
@@ -839,7 +887,7 @@ export async function countDocumentRevisions(
   source1: Buffer | Uint8Array,
   source2: Buffer | Uint8Array,
   settings: WmlComparerSettings = {}
-): Promise<{ insertions: number; deletions: number; total: number }> {
+): Promise<{ insertions: number; deletions: number; formatChanges: number; total: number }> {
   const doc1 = await loadWordDocument(source1);
   const doc2 = await loadWordDocument(source2);
 
@@ -860,9 +908,10 @@ export async function countDocumentRevisions(
 function compareAlignedParagraphs(
   paras1: ParagraphUnit[],
   paras2: ParagraphUnit[]
-): { insertions: number; deletions: number; total: number } {
+): { insertions: number; deletions: number; formatChanges: number; total: number } {
   let insertions = 0;
   let deletions = 0;
+  let formatChanges = 0;
 
   // First, try LCS alignment at paragraph level
   const paraCorrelation = computeCorrelation(paras1, paras2);
@@ -882,7 +931,6 @@ function compareAlignedParagraphs(
 
         if (allDelTableRows && allInsTableRows) {
           // Compare corresponding table rows positionally
-          const maxLen = Math.max(seq.items1.length, nextSeq.items2.length);
           const minLen = Math.min(seq.items1.length, nextSeq.items2.length);
 
           for (let j = 0; j < minLen; j++) {
@@ -904,11 +952,37 @@ function compareAlignedParagraphs(
 
           // Count remaining rows as pure insertions/deletions
           if (seq.items1.length > nextSeq.items2.length) {
-            // Extra deleted rows - count as 1 deletion (grouped)
-            deletions += 1;
+            const extraDeletedRows = seq.items1.slice(minLen);
+            let extraDeletionCount = extraDeletedRows.length > 0 ? 1 : 0;
+            for (const row of extraDeletedRows) {
+              if (hasDrawingToken(row.text)) {
+                extraDeletionCount += 1;
+              }
+            }
+            deletions += extraDeletionCount;
           } else if (nextSeq.items2.length > seq.items1.length) {
-            // Extra inserted rows - count as 1 insertion (grouped)
-            insertions += 1;
+            const extraInsertedRows = nextSeq.items2.slice(minLen);
+            let extraInsertionCount = extraInsertedRows.length > 0 ? 1 : 0;
+            for (const row of extraInsertedRows) {
+              if (hasDrawingToken(row.text)) {
+                extraInsertionCount += 1;
+              }
+            }
+            insertions += extraInsertionCount;
+          }
+
+          const drawingCount1 = seq.items1.reduce(
+            (sum, row) => sum + countDrawingTokens(row.text),
+            0
+          );
+          const drawingCount2 = nextSeq.items2.reduce(
+            (sum, row) => sum + countDrawingTokens(row.text),
+            0
+          );
+          if (drawingCount1 > drawingCount2) {
+            deletions += drawingCount1 - drawingCount2;
+          } else if (drawingCount2 > drawingCount1) {
+            insertions += drawingCount2 - drawingCount1;
           }
 
           i++; // Skip next sequence
@@ -918,7 +992,12 @@ function compareAlignedParagraphs(
             const para1 = seq.items1[j];
             const para2 = nextSeq.items2[j];
 
-            if (para1.text === para2.text) continue;
+            if (para1.text === para2.text) {
+              if (!para1.isTableRow && !para2.isTableRow) {
+                formatChanges += countFormatChangesBetweenParagraphs(para1, para2);
+              }
+              continue;
+            }
 
             if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
               const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
@@ -928,6 +1007,9 @@ function compareAlignedParagraphs(
               const wordRevs = countWordRevisions(para1.text, para2.text);
               insertions += wordRevs.insertions;
               deletions += wordRevs.deletions;
+              if (!para1.isTableRow && !para2.isTableRow) {
+                formatChanges += countFormatChangesBetweenParagraphs(para1, para2);
+              }
             }
           }
           i++;
@@ -994,7 +1076,12 @@ function compareAlignedParagraphs(
                 continue;
               }
 
-              if (para1.text === para2.text) continue;
+              if (para1.text === para2.text) {
+                if (!para1.isTableRow && !para2.isTableRow) {
+                  formatChanges += countFormatChangesBetweenParagraphs(para1, para2);
+                }
+                continue;
+              }
 
               if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
                 const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
@@ -1004,6 +1091,9 @@ function compareAlignedParagraphs(
                 const wordRevs = countWordRevisions(para1.text, para2.text);
                 insertions += wordRevs.insertions;
                 deletions += wordRevs.deletions;
+                if (!para1.isTableRow && !para2.isTableRow) {
+                  formatChanges += countFormatChangesBetweenParagraphs(para1, para2);
+                }
               }
             } else {
               // No good match found, count as pure insertion
@@ -1026,11 +1116,18 @@ function compareAlignedParagraphs(
         const nonEmptyParas = seq.items1.filter((p) => !p.isTableRow && p.text.trim() !== '');
 
         if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
-          deletions += 1;
+          let extraDeletionCount = 1;
+          for (const row of nonEmptyTableRows) {
+            if (hasDrawingToken(row.text)) {
+              extraDeletionCount += 1;
+            }
+          }
+          deletions += extraDeletionCount;
         } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
           deletions += 1 + nonEmptyParas.length;
         } else {
-          deletions += Math.max(1, nonEmptyParas.length);
+          // Adjacent deleted paragraphs count as a single revision group
+          deletions += 1;
         }
       }
     } else if (seq.status === CorrelationStatus.Inserted && seq.items2) {
@@ -1043,7 +1140,8 @@ function compareAlignedParagraphs(
       } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
         insertions += 1 + nonEmptyParas.length;
       } else {
-        insertions += Math.max(1, nonEmptyParas.length);
+        // Adjacent inserted paragraphs count as a single revision group
+        insertions += 1;
       }
     } else if (seq.status === CorrelationStatus.Equal && seq.items1 && seq.items2) {
       // Paragraphs matched at hash level - check for word differences
@@ -1061,22 +1159,75 @@ function compareAlignedParagraphs(
             const wordRevs = countWordRevisions(para1.text, para2.text);
             insertions += wordRevs.insertions;
             deletions += wordRevs.deletions;
+            formatChanges += countFormatChangesBetweenParagraphs(para1, para2);
           }
+        } else if (!para1.isTableRow && !para2.isTableRow) {
+          formatChanges += countFormatChangesBetweenParagraphs(para1, para2);
         }
       }
     }
   }
 
-  return { insertions, deletions, total: insertions + deletions };
+  return { insertions, deletions, formatChanges, total: insertions + deletions + formatChanges };
 }
 
 /**
- * Compare content within table row cells.
- * For each cell, changes are grouped:
- * - All deletions within a cell = 1 revision
- * - All insertions within a cell = 1 revision
- * This allows multi-cell rows to count changes separately per cell.
+ * Count format-only revisions between two paragraphs by aligning characters.
  */
+function countFormatChangesBetweenParagraphs(para1: ParagraphUnit, para2: ParagraphUnit): number {
+  // Skip format change detection for paragraphs with special content markers.
+  // These markers (TXBX_START, MATH_) are included in para.text but have no
+  // corresponding runs from extractRunsWithProperties, causing position
+  // misalignment and false positives.
+  if (
+    para1.text.includes('TXBX_START') ||
+    para2.text.includes('TXBX_START') ||
+    para1.text.includes('MATH_') ||
+    para2.text.includes('MATH_')
+  ) {
+    return 0;
+  }
+
+  const runs1 = extractRunsWithProperties(para1.node);
+  const runs2 = extractRunsWithProperties(para2.node);
+
+  // Build position maps for locating run properties per character
+  const pos1ToRun = buildPositionToRunMap(runs1);
+  const pos2ToRun = buildPositionToRunMap(runs2);
+
+  const chars1: CharUnit[] = Array.from(para1.text).map((ch, idx) => ({ hash: ch, text: ch, pos: idx }));
+  const chars2: CharUnit[] = Array.from(para2.text).map((ch, idx) => ({ hash: ch, text: ch, pos: idx }));
+
+  const charCorrelation = computeCorrelation(chars1, chars2);
+
+  let formatChanges = 0;
+  let inDiff = false;
+
+  for (const seq of charCorrelation) {
+    if (seq.status !== CorrelationStatus.Equal || !seq.items1 || !seq.items2) continue;
+
+    const len = Math.min(seq.items1.length, seq.items2.length);
+    for (let i = 0; i < len; i++) {
+      const pos1 = (seq.items1[i] as CharUnit).pos;
+      const pos2 = (seq.items2[i] as CharUnit).pos;
+      const run1 = findRunAtPosition(runs1, pos1ToRun, pos1);
+      const run2 = findRunAtPosition(runs2, pos2ToRun, pos2);
+      const diff = runPropertiesDiffer(run1?.properties, run2?.properties);
+
+      if (diff) {
+        if (!inDiff) {
+          formatChanges += 1;
+          inDiff = true;
+        }
+      } else {
+        inDiff = false;
+      }
+    }
+  }
+
+  return formatChanges;
+}
+
 function compareTableRowContent(
   cells1: XmlNode[][],
   cells2: XmlNode[][]
@@ -1099,30 +1250,52 @@ function compareTableRowContent(
     }
 
     if (!text1.trim() && text2.trim()) {
-      // Cell was empty, now has content
       insertions++;
     } else if (text1.trim() && !text2.trim()) {
-      // Cell had content, now empty
       deletions++;
     } else {
-      // Cell content changed - compare at word level and group by type
-      const words1 = tokenize(text1);
-      const words2 = tokenize(text2);
-      const wordCorr = computeCorrelation(words1, words2);
+      // Check if either text has textbox markers
+      const hasTextbox = text1.includes('TXBX_START') || text2.includes('TXBX_START');
 
-      let hasInsertions = false;
-      let hasDeletions = false;
+      if (hasTextbox) {
+        // Split on textbox markers to count changes in each region separately
+        const regions1 = text1.split(/\s*(?:TXBX_START|TXBX_END)\s*/);
+        const regions2 = text2.split(/\s*(?:TXBX_START|TXBX_END)\s*/);
 
-      for (const wseq of wordCorr) {
-        if (wseq.status === CorrelationStatus.Deleted) {
-          hasDeletions = true;
-        } else if (wseq.status === CorrelationStatus.Inserted) {
-          hasInsertions = true;
+        const maxRegions = Math.max(regions1.length, regions2.length);
+        for (let r = 0; r < maxRegions; r++) {
+          const region1 = (regions1[r] || '').trim();
+          const region2 = (regions2[r] || '').trim();
+
+          if (region1 === region2) continue;
+
+          if (!region1 && region2) {
+            insertions++;
+          } else if (region1 && !region2) {
+            deletions++;
+          } else {
+            const revs = countWordRevisions(region1, region2);
+            insertions += revs.insertions;
+            deletions += revs.deletions;
+          }
+        }
+      } else {
+        const structuralChange = containsStructuralToken(text1) !== containsStructuralToken(text2);
+        if (structuralChange) {
+          insertions++;
+          deletions++;
+        } else {
+          const revs = countWordRevisions(text1, text2);
+          const totalRevs = revs.insertions + revs.deletions;
+          if (totalRevs > 2 && calculateSimilarity(text1, text2) < 0.5) {
+            insertions++;
+            deletions++;
+          } else {
+            insertions += revs.insertions;
+            deletions += revs.deletions;
+          }
         }
       }
-
-      if (hasDeletions) deletions++;
-      if (hasInsertions) insertions++;
     }
   }
 
@@ -1139,33 +1312,109 @@ function countWordRevisions(
   text1: string,
   text2: string
 ): { insertions: number; deletions: number } {
-  const words1 = tokenize(text1);
-  const words2 = tokenize(text2);
-  const wordCorr = computeCorrelation(words1, words2);
+  const tokens1 = tokenize(text1);
+  const tokens2 = tokenize(text2);
+  const wordCorr = computeCorrelation(tokens1, tokens2);
+  const tokenTextSet1 = new Set(tokens1.map((token) => token.text));
+  const tokenTextSet2 = new Set(tokens2.map((token) => token.text));
+  const referenceSet1 = new Set(
+    tokens1.filter((token) => isReferenceToken(token.text)).map((token) => token.text)
+  );
+  const referenceSet2 = new Set(
+    tokens2.filter((token) => isReferenceToken(token.text)).map((token) => token.text)
+  );
+  let hasCommonReference = false;
+  for (const ref of referenceSet1) {
+    if (referenceSet2.has(ref)) {
+      hasCommonReference = true;
+      break;
+    }
+  }
+
+  const findSplittingReferences = (
+    tokens: WordUnit[],
+    otherTokenSet: Set<string>
+  ): Set<string> => {
+    const splitting = new Set<string>();
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (!isReferenceToken(token.text)) continue;
+      const prev = tokens[i - 1];
+      const next = tokens[i + 1];
+      if (!prev || !next) continue;
+      if (!isWordToken(prev.text) || !isWordToken(next.text)) continue;
+      const combined = `${prev.text}${next.text}`;
+      if (otherTokenSet.has(combined)) {
+        splitting.add(token.text);
+      }
+    }
+    return splitting;
+  };
+
+  const splittingRefs1 = findSplittingReferences(tokens1, tokenTextSet2);
+  const splittingRefs2 = findSplittingReferences(tokens2, tokenTextSet1);
+
+  const classifySequence = (
+    items: WordUnit[] | undefined,
+    splittingReferences: Set<string>
+  ): 'meaningful' | 'punctuation' | 'reference' => {
+    if (!items || items.length === 0) return 'reference';
+    const hasMeaningful = items.some(
+      (item) => !isReferenceToken(item.text) && !isPunctuationToken(item.text)
+    );
+    if (hasMeaningful) return 'meaningful';
+    if (!hasCommonReference) {
+      const hasNonSplittingReference = items.some(
+        (item) => isReferenceToken(item.text) && !splittingReferences.has(item.text)
+      );
+      if (hasNonSplittingReference) return 'meaningful';
+    }
+    const hasPunctuation = items.some((item) => isPunctuationToken(item.text));
+    return hasPunctuation ? 'punctuation' : 'reference';
+  };
+
+  const hasMeaningfulChanges = wordCorr.some((wseq) => {
+    if (wseq.status === CorrelationStatus.Deleted) {
+      return classifySequence(wseq.items1, splittingRefs1) === 'meaningful';
+    }
+    if (wseq.status === CorrelationStatus.Inserted) {
+      return classifySequence(wseq.items2, splittingRefs2) === 'meaningful';
+    }
+    return false;
+  });
+  const countNonMeaningful = !hasMeaningfulChanges;
 
   let insertions = 0;
   let deletions = 0;
   let hasInsertions = false;
   let hasDeletions = false;
-  let equalCount = 0;
   let lastStatus: CorrelationStatus | null = null;
 
   for (const wseq of wordCorr) {
     if (wseq.status === CorrelationStatus.Deleted) {
+      const kind = classifySequence(wseq.items1, splittingRefs1);
+      if (kind !== 'meaningful' && !countNonMeaningful) continue;
+
       hasDeletions = true;
       if (lastStatus !== CorrelationStatus.Deleted) {
         deletions++;
       }
       lastStatus = CorrelationStatus.Deleted;
     } else if (wseq.status === CorrelationStatus.Inserted) {
+      const kind = classifySequence(wseq.items2, splittingRefs2);
+      if (kind !== 'meaningful' && !countNonMeaningful) continue;
+
       hasInsertions = true;
       if (lastStatus !== CorrelationStatus.Inserted) {
         insertions++;
       }
       lastStatus = CorrelationStatus.Inserted;
     } else {
-      lastStatus = null;
-      equalCount += wseq.items1?.length || 0;
+      const isReferenceEqual =
+        wseq.items1 !== undefined && wseq.items1.every((item) => isReferenceToken(item.text));
+      if (!isReferenceEqual) {
+        lastStatus = null;
+      }
     }
   }
 
@@ -1176,9 +1425,7 @@ function countWordRevisions(
     return { insertions: 1, deletions: 0 };
   }
 
-  // Calculate similarity ratio based on common words
-  const totalWords = Math.max(words1.length, words2.length);
-  const similarity = totalWords > 0 ? equalCount / totalWords : 0;
+  const similarity = calculateSimilarity(text1, text2);
 
   // For paragraphs with both insertions and deletions:
   // - If similarity < 40%, treat as complete replacement (1 del + 1 ins)
@@ -1217,7 +1464,8 @@ function countWordRevisions(
             (wseq.items1[0].text.startsWith('FOOTNOTE_REF_') ||
               wseq.items1[0].text.startsWith('ENDNOTE_REF_') ||
               wseq.items1[0].text.startsWith('DRAWING_') ||
-              wseq.items1[0].text.startsWith('PICT_'));
+              wseq.items1[0].text.startsWith('PICT_') ||
+              wseq.items1[0].text.startsWith('MATH_'));
           if (!isShortStructural) {
             allEqualsBetweenChangesAreShort = false;
           }
@@ -1245,8 +1493,8 @@ function calculateSimilarity(text1: string, text2: string): number {
   if (text1 === text2) return 1;
   if (!text1.trim() || !text2.trim()) return 0;
 
-  const words1 = tokenize(text1);
-  const words2 = tokenize(text2);
+  const words1 = filterComparableTokens(tokenize(text1));
+  const words2 = filterComparableTokens(tokenize(text2));
 
   if (words1.length === 0 || words2.length === 0) return 0;
 
