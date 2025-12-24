@@ -242,6 +242,8 @@ export function extractParagraphs(doc: WordDocument): string[] {
 /**
  * Extract text from a single paragraph.
  * Skips deleted text (w:del elements) when acceptRevisions is true.
+ * Includes text from textboxes (w:txbxContent) within the paragraph.
+ * Handles mc:AlternateContent by preferring mc:Fallback (VML) content.
  *
  * @param paragraph The paragraph node to extract text from
  * @param acceptRevisions If true, skips deleted text and includes inserted text
@@ -262,6 +264,12 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
       return;
     }
 
+    // Math text (m:t) - include in text extraction for comparison
+    if (tagName === 'm:t') {
+      texts.push(getTextContent(node));
+      return;
+    }
+
     // Skip w:delText (deleted text marker) - never include
     if (tagName === 'w:delText') {
       return;
@@ -277,9 +285,169 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
       return;
     }
 
+    // Include footnote/endnote references as markers for comparison
+    // This allows detecting when references are added/removed
+    // Add spaces around to make them separate tokens
+    if (tagName === 'w:footnoteReference') {
+      const attrs = node[':@'] as Record<string, string> | undefined;
+      const id = attrs?.['@_w:id'] || 'unknown';
+      texts.push(` FOOTNOTE_REF_${id} `);
+      return;
+    }
+
+    if (tagName === 'w:endnoteReference') {
+      const attrs = node[':@'] as Record<string, string> | undefined;
+      const id = attrs?.['@_w:id'] || 'unknown';
+      texts.push(` ENDNOTE_REF_${id} `);
+      return;
+    }
+
+    // Handle mc:AlternateContent - prefer mc:Fallback (VML) for textboxes
+    if (tagName === 'mc:AlternateContent') {
+      const children = getChildren(node);
+      // Look for mc:Fallback first (contains VML textbox)
+      const fallback = children.find((c) => getTagName(c) === 'mc:Fallback');
+      if (fallback) {
+        walkNode(fallback);
+        return;
+      }
+      // Otherwise use mc:Choice
+      const choice = children.find((c) => getTagName(c) === 'mc:Choice');
+      if (choice) {
+        walkNode(choice);
+        return;
+      }
+    }
+
+    // Include text from textboxes (they are atomic elements within the paragraph)
+    // The textbox content is included in the paragraph's text for proper hashing
+    if (tagName === 'w:txbxContent') {
+      for (const child of getChildren(node)) {
+        walkNode(child);
+      }
+      return;
+    }
+
+    // Handle drawings (DrawingML) - include content hash for comparison
+    // We use a combination of dimensions, docPr, and embed reference since
+    // we don't have easy access to compute SHA1 of image binary
+    if (tagName === 'w:drawing') {
+      const drawingInfo = getDrawingInfo(node);
+      texts.push(drawingInfo);
+      return;
+    }
+
+    // Handle w:pict - could be VML image or textbox
+    // Check if it contains a textbox (v:textbox) - if so, process content
+    // Otherwise treat as an image reference
+    if (tagName === 'w:pict') {
+      const hasTextbox = findNodes(node, (n) => getTagName(n) === 'v:textbox').length > 0;
+      if (hasTextbox) {
+        // Process textbox content (v:textbox > w:txbxContent)
+        for (const child of getChildren(node)) {
+          walkNode(child);
+        }
+        return;
+      }
+      // VML image - get embed reference
+      const embedRef = findEmbedReference(node);
+      if (embedRef) {
+        texts.push(`PICT_${embedRef}`);
+      } else {
+        texts.push('PICT_unknown');
+      }
+      return;
+    }
+
     for (const child of getChildren(node)) {
       walkNode(child);
     }
+  }
+
+  // Helper to get drawing info for comparison
+  // Uses dimensions, docPr id, and embed reference to create unique identifier
+  // Format uses underscores so tokenizer treats it as single word
+  function getDrawingInfo(node: XmlNode): string {
+    const parts: string[] = [];
+
+    // Find extent (dimensions)
+    const extent = findNodeByTag(node, 'wp:extent');
+    if (extent) {
+      const attrs = extent[':@'] as Record<string, string> | undefined;
+      if (attrs?.['@_cx']) parts.push(`cx${attrs['@_cx']}`);
+      if (attrs?.['@_cy']) parts.push(`cy${attrs['@_cy']}`);
+    }
+
+    // Find docPr (document properties)
+    const docPr = findNodeByTag(node, 'wp:docPr');
+    if (docPr) {
+      const attrs = docPr[':@'] as Record<string, string> | undefined;
+      if (attrs?.['@_id']) parts.push(`id${attrs['@_id']}`);
+    }
+
+    // Find embed reference
+    const embedRef = findEmbedReference(node);
+    if (embedRef) parts.push(`e${embedRef}`);
+
+    // Join with underscore to make it a single token
+    return 'DRAWING_' + (parts.join('_') || 'unknown');
+  }
+
+  // Helper to find a node by tag name recursively
+  function findNodeByTag(node: XmlNode, tag: string): XmlNode | null {
+    if (getTagName(node) === tag) return node;
+    for (const child of getChildren(node)) {
+      const found = findNodeByTag(child, tag);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  // Helper to find embed reference in drawing
+  function findEmbedReference(node: XmlNode): string | null {
+    const attrs = node[':@'] as Record<string, string> | undefined;
+
+    // Check for r:embed attribute (DrawingML images)
+    if (attrs?.['@_r:embed']) {
+      return attrs['@_r:embed'];
+    }
+
+    // Check for o:relid attribute (VML images)
+    if (attrs?.['@_o:relid']) {
+      return attrs['@_o:relid'];
+    }
+
+    // Check for r:id attribute (various references)
+    if (attrs?.['@_r:id']) {
+      return attrs['@_r:id'];
+    }
+
+    // Recurse into children to find a:blip or v:imagedata with embed
+    for (const child of getChildren(node)) {
+      const childTag = getTagName(child);
+
+      // DrawingML blip
+      if (childTag === 'a:blip') {
+        const childAttrs = child[':@'] as Record<string, string> | undefined;
+        if (childAttrs?.['@_r:embed']) {
+          return childAttrs['@_r:embed'];
+        }
+      }
+
+      // VML imagedata
+      if (childTag === 'v:imagedata') {
+        const childAttrs = child[':@'] as Record<string, string> | undefined;
+        if (childAttrs?.['@_r:id']) {
+          return childAttrs['@_r:id'];
+        }
+      }
+
+      // Recurse
+      const found = findEmbedReference(child);
+      if (found) return found;
+    }
+
+    return null;
   }
 
   walkNode(paragraph);

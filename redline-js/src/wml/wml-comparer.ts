@@ -90,6 +90,60 @@ interface WordUnit extends Hashable {
 }
 
 /**
+ * Find all top-level paragraphs in a node, excluding those inside textboxes.
+ * Paragraphs inside w:txbxContent are not returned - they are treated as part
+ * of their containing paragraph's content.
+ */
+function findTopLevelParagraphs(node: XmlNode): XmlNode[] {
+  const paragraphs: XmlNode[] = [];
+
+  function walk(n: XmlNode, insideTextbox: boolean): void {
+    const tagName = getTagName(n);
+
+    // Track if we're inside a textbox
+    if (tagName === 'w:txbxContent') {
+      insideTextbox = true;
+    }
+
+    // Only collect paragraphs that are NOT inside textboxes
+    if (tagName === 'w:p' && !insideTextbox) {
+      paragraphs.push(n);
+      // Don't recurse into the paragraph - we've found it
+      // But we still need to handle nested content like textboxes
+      for (const child of getChildren(n)) {
+        walk(child, insideTextbox);
+      }
+      return;
+    }
+
+    // Handle mc:AlternateContent - prefer mc:Fallback (VML) for textboxes
+    if (tagName === 'mc:AlternateContent') {
+      const children = getChildren(n);
+      // Look for mc:Fallback first (contains VML textbox)
+      const fallback = children.find((c) => getTagName(c) === 'mc:Fallback');
+      if (fallback) {
+        walk(fallback, insideTextbox);
+        return;
+      }
+      // Otherwise use mc:Choice
+      const choice = children.find((c) => getTagName(c) === 'mc:Choice');
+      if (choice) {
+        walk(choice, insideTextbox);
+        return;
+      }
+    }
+
+    // Recurse into children
+    for (const child of getChildren(n)) {
+      walk(child, insideTextbox);
+    }
+  }
+
+  walk(node, false);
+  return paragraphs;
+}
+
+/**
  * Compare two Word documents and produce a result with tracked changes.
  *
  * @param source1 The original document
@@ -163,6 +217,10 @@ export async function compareDocuments(
  * Uses extractParagraphText which properly handles existing tracked changes
  * by accepting revisions (skipping w:del content).
  * Includes paragraphs from main body, footnotes, and endnotes.
+ *
+ * IMPORTANT: Paragraphs inside textboxes (w:txbxContent) are NOT extracted
+ * as separate units. Textboxes are treated as atomic elements within their
+ * containing paragraph - the textbox content is included in the paragraph's hash.
  */
 function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
   const units: ParagraphUnit[] = [];
@@ -170,7 +228,8 @@ function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
   // Extract from main document body
   const body = getDocumentBody(doc);
   if (body) {
-    const paragraphs = findNodes(body, (n) => getTagName(n) === 'w:p');
+    // Find top-level paragraphs only (not inside textboxes)
+    const paragraphs = findTopLevelParagraphs(body);
     for (const node of paragraphs) {
       const text = extractParagraphText(node);
       units.push({
@@ -496,11 +555,13 @@ function compareAlignedParagraphs(
         // Skip the next sequence since we processed it
         i++;
       } else {
-        // True deletion
+        // True deletion - count each deleted paragraph as a revision
+        // The C# comparer counts individual paragraph changes
         deletions += seq.items1.length;
       }
     } else if (seq.status === CorrelationStatus.Inserted && seq.items2) {
       // True insertion (not preceded by matching deletion)
+      // Count each inserted paragraph as a revision
       insertions += seq.items2.length;
     } else if (seq.status === CorrelationStatus.Equal && seq.items1 && seq.items2) {
       // Paragraphs matched at hash level - check for word differences
