@@ -1,3 +1,26 @@
+import {
+  type OoxmlPackage,
+  getPartAsXml,
+  setPartFromXml,
+  savePackage,
+  listParts,
+  getRelationships,
+} from '../core/package';
+import {
+  type XmlNode,
+  getTagName,
+  getChildren,
+  getAttribute,
+  findByTagName,
+  createNode,
+} from '../core/xml';
+import {
+  PmlChangeType,
+  type PmlComparerSettings,
+  type PmlComparisonResult,
+  type PmlChange,
+  describeChange,
+} from './types';
 
 const PRESENTATION_REL_TYPE =
   'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide';

@@ -5,7 +5,11 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "docredline": "./bin/compare.ts"
+  },
   "scripts": {
+    "compare": "bun bin/compare.ts",
     "build": "bun run tsgo",
     "test": "bun run vitest run",
     "test:watch": "bun run vitest",
