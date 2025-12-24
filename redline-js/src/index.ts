@@ -15,6 +15,8 @@ export {
   type PmlComparerSettings,
   type PmlChange,
   type PmlComparisonResult,
+  type PmlChangeListItem,
+  type PmlChangeListOptions,
 } from './types';
 
 // Core module exports
@@ -56,5 +58,9 @@ export {
   type HyperlinkSignature,
 } from './sml/types';
 
-// PowerPoint document comparison (to be implemented)
-// export * from './pml/pml-comparer';
+export {
+  comparePresentations,
+  produceMarkedPresentation,
+  canonicalizePresentationDocument,
+  buildChangeList as buildPmlChangeList,
+} from './pml/pml-comparer';

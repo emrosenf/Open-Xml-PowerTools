@@ -199,94 +199,11 @@ export interface SmlComparisonResult {
 // PowerPoint Document Types (PML)
 // ============================================================================
 
-/**
- * Change types for PowerPoint comparison
- */
-export enum PmlChangeType {
-  SlideSizeChanged = 'SlideSizeChanged',
-  SlideInserted = 'SlideInserted',
-  SlideDeleted = 'SlideDeleted',
-  SlideMoved = 'SlideMoved',
-  ShapeInserted = 'ShapeInserted',
-  ShapeDeleted = 'ShapeDeleted',
-  ShapeMoved = 'ShapeMoved',
-  ShapeResized = 'ShapeResized',
-  TextChanged = 'TextChanged',
-  ImageReplaced = 'ImageReplaced',
-}
-
-/**
- * Settings for PowerPoint comparison
- */
-export interface PmlComparerSettings {
-  /** Compare slide structure */
-  compareSlideStructure?: boolean;
-
-  /** Compare shape structure */
-  compareShapeStructure?: boolean;
-
-  /** Compare text content */
-  compareTextContent?: boolean;
-
-  /** Compare text formatting */
-  compareTextFormatting?: boolean;
-
-  /** Compare shape transforms (position, size) */
-  compareShapeTransforms?: boolean;
-
-  /** Compare shape styles */
-  compareShapeStyles?: boolean;
-
-  /** Compare image content */
-  compareImageContent?: boolean;
-
-  /** Compare charts */
-  compareCharts?: boolean;
-
-  /** Compare tables */
-  compareTables?: boolean;
-
-  /** Compare notes */
-  compareNotes?: boolean;
-
-  /** Compare slide transitions */
-  compareTransitions?: boolean;
-
-  /** Enable fuzzy shape matching */
-  enableFuzzyShapeMatching?: boolean;
-
-  /** Use LCS for slide alignment */
-  useSlideAlignmentLCS?: boolean;
-
-  /** Add summary slide */
-  addSummarySlide?: boolean;
-
-  /** Add notes annotations */
-  addNotesAnnotations?: boolean;
-}
-
-/**
- * A single change in a PowerPoint comparison
- */
-export interface PmlChange {
-  changeType: PmlChangeType;
-  slideNumber?: number;
-  shapeName?: string;
-  oldValue?: string;
-  newValue?: string;
-}
-
-/**
- * Result of a PowerPoint comparison
- */
-export interface PmlComparisonResult {
-  changes: PmlChange[];
-  totalChanges: number;
-  slidesInserted: number;
-  slidesDeleted: number;
-  shapesInserted: number;
-  shapesDeleted: number;
-  shapesMoved: number;
-  shapesResized: number;
-  textChanges: number;
-}
+export {
+  PmlChangeType,
+  type PmlComparerSettings,
+  type PmlChange,
+  type PmlComparisonResult,
+  type PmlChangeListItem,
+  type PmlChangeListOptions,
+} from './pml/types';
