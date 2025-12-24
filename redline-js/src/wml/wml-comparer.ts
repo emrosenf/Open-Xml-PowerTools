@@ -305,16 +305,28 @@ function createInsertedParagraph(para: ParagraphUnit, settings: RevisionSettings
 }
 
 /**
- * Tokenize text into words for comparison
+ * Tokenize text into words for comparison.
+ * Separates punctuation from words for finer-grained matching.
  */
 function tokenize(text: string): WordUnit[] {
-  return text
-    .split(/\s+/)
-    .filter((word) => word.length > 0)
-    .map((word) => ({
-      hash: word.toLowerCase(), // Use lowercase for case-insensitive matching
-      text: word,
-    }));
+  // Split on whitespace, then further split on punctuation boundaries
+  // This allows "12,34" to become ["12", ",", "34"] and "Test." to become ["Test", "."]
+  const tokens: string[] = [];
+
+  // First split on whitespace
+  const parts = text.split(/\s+/).filter((p) => p.length > 0);
+
+  for (const part of parts) {
+    // Split each part, keeping punctuation as separate tokens
+    // Match: word characters OR non-word characters (but not mixing)
+    const subTokens = part.match(/\w+|[^\w\s]+/g) || [part];
+    tokens.push(...subTokens);
+  }
+
+  return tokens.map((token) => ({
+    hash: token.toLowerCase(),
+    text: token,
+  }));
 }
 
 /**
@@ -345,6 +357,12 @@ function updateDocumentBody(mainDocument: XmlNode[], newContent: XmlNode[]): voi
 /**
  * Simple comparison of two documents returning just the revision count.
  * Useful for quick validation without needing the full result document.
+ *
+ * Revision counting rules:
+ * - A contiguous group of word-level changes within a paragraph = 1 revision
+ * - An entire paragraph deleted = 1 revision
+ * - An entire paragraph inserted = 1 revision
+ * - Adjacent delete+insert at same position = 1 revision (replacement)
  */
 export async function countDocumentRevisions(
   source1: Buffer | Uint8Array,
@@ -357,38 +375,114 @@ export async function countDocumentRevisions(
   const paras1 = extractParagraphUnits(doc1);
   const paras2 = extractParagraphUnits(doc2);
 
-  const paraCorrelation = computeCorrelation(paras1, paras2, {
-    detailThreshold: settings.detailThreshold ?? 0.0,
-  });
+  // Use position-based comparison for paragraphs
+  // This allows us to compare corresponding paragraphs even if hashes differ
+  const result = compareAlignedParagraphs(paras1, paras2);
 
+  return result;
+}
+
+/**
+ * Compare paragraphs using LCS-based alignment.
+ * This properly handles paragraph insertions and deletions.
+ */
+function compareAlignedParagraphs(
+  paras1: ParagraphUnit[],
+  paras2: ParagraphUnit[]
+): { insertions: number; deletions: number; total: number } {
   let insertions = 0;
   let deletions = 0;
 
-  for (const seq of paraCorrelation) {
+  // First, try LCS alignment at paragraph level
+  const paraCorrelation = computeCorrelation(paras1, paras2);
+
+  // Process correlation, looking for adjacent delete-insert pairs
+  // that represent paragraph modifications rather than true deletions/insertions
+  for (let i = 0; i < paraCorrelation.length; i++) {
+    const seq = paraCorrelation[i];
+    const nextSeq = paraCorrelation[i + 1];
+
     if (seq.status === CorrelationStatus.Deleted && seq.items1) {
-      deletions += seq.items1.length;
+      // Check if this is followed by an insert of same length (paragraph modification)
+      if (
+        nextSeq &&
+        nextSeq.status === CorrelationStatus.Inserted &&
+        nextSeq.items2 &&
+        nextSeq.items2.length === seq.items1.length
+      ) {
+        // This is a modification - compare at word level
+        for (let j = 0; j < seq.items1.length; j++) {
+          const para1 = seq.items1[j];
+          const para2 = nextSeq.items2[j];
+
+          if (para1.text === para2.text) {
+            // No actual change
+            continue;
+          }
+
+          // Compare at word level
+          const wordRevs = countWordRevisions(para1.text, para2.text);
+          insertions += wordRevs.insertions;
+          deletions += wordRevs.deletions;
+        }
+        // Skip the next sequence since we processed it
+        i++;
+      } else {
+        // True deletion
+        deletions += seq.items1.length;
+      }
     } else if (seq.status === CorrelationStatus.Inserted && seq.items2) {
+      // True insertion (not preceded by matching deletion)
       insertions += seq.items2.length;
     } else if (seq.status === CorrelationStatus.Equal && seq.items1 && seq.items2) {
-      // Check for word-level changes in "equal" paragraphs
-      for (let i = 0; i < seq.items1.length; i++) {
-        const para1 = seq.items1[i];
-        const para2 = seq.items2[i];
+      // Paragraphs matched at hash level - check for word differences
+      for (let j = 0; j < seq.items1.length; j++) {
+        const para1 = seq.items1[j];
+        const para2 = seq.items2[j];
+
         if (para1.text !== para2.text) {
-          const words1 = tokenize(para1.text);
-          const words2 = tokenize(para2.text);
-          const wordCorr = computeCorrelation(words1, words2);
-          for (const wseq of wordCorr) {
-            if (wseq.status === CorrelationStatus.Deleted && wseq.items1) {
-              deletions++;
-            } else if (wseq.status === CorrelationStatus.Inserted && wseq.items2) {
-              insertions++;
-            }
-          }
+          const wordRevs = countWordRevisions(para1.text, para2.text);
+          insertions += wordRevs.insertions;
+          deletions += wordRevs.deletions;
         }
       }
     }
   }
 
   return { insertions, deletions, total: insertions + deletions };
+}
+
+/**
+ * Count revisions at word level within a paragraph.
+ * Adjacent changes of the same type are merged.
+ */
+function countWordRevisions(
+  text1: string,
+  text2: string
+): { insertions: number; deletions: number } {
+  const words1 = tokenize(text1);
+  const words2 = tokenize(text2);
+  const wordCorr = computeCorrelation(words1, words2);
+
+  let insertions = 0;
+  let deletions = 0;
+  let lastStatus: CorrelationStatus | null = null;
+
+  for (const wseq of wordCorr) {
+    if (wseq.status === CorrelationStatus.Deleted) {
+      if (lastStatus !== CorrelationStatus.Deleted) {
+        deletions++;
+      }
+      lastStatus = CorrelationStatus.Deleted;
+    } else if (wseq.status === CorrelationStatus.Inserted) {
+      if (lastStatus !== CorrelationStatus.Inserted) {
+        insertions++;
+      }
+      lastStatus = CorrelationStatus.Inserted;
+    } else {
+      lastStatus = null;
+    }
+  }
+
+  return { insertions, deletions };
 }
