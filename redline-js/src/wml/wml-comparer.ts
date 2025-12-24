@@ -162,23 +162,84 @@ export async function compareDocuments(
  * Extract paragraph units from a document for comparison.
  * Uses extractParagraphText which properly handles existing tracked changes
  * by accepting revisions (skipping w:del content).
+ * Includes paragraphs from main body, footnotes, and endnotes.
  */
 function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
+  const units: ParagraphUnit[] = [];
+
+  // Extract from main document body
   const body = getDocumentBody(doc);
-  if (!body) return [];
+  if (body) {
+    const paragraphs = findNodes(body, (n) => getTagName(n) === 'w:p');
+    for (const node of paragraphs) {
+      const text = extractParagraphText(node);
+      units.push({
+        hash: hashString(text),
+        node: cloneNode(node),
+        text,
+      });
+    }
+  }
 
-  const paragraphs = findNodes(body, (n) => getTagName(n) === 'w:p');
+  // Extract from footnotes
+  if (doc.footnotes) {
+    const footnoteParas = extractFootnoteEndnoteParagraphs(doc.footnotes, 'w:footnote');
+    units.push(...footnoteParas);
+  }
 
-  return paragraphs.map((node) => {
-    // Use extractParagraphText to properly handle tracked changes
-    // This skips deleted content (w:del) and w:delText elements
-    const text = extractParagraphText(node);
-    return {
-      hash: hashString(text),
-      node: cloneNode(node),
-      text,
-    };
-  });
+  // Extract from endnotes
+  if (doc.endnotes) {
+    const endnoteParas = extractFootnoteEndnoteParagraphs(doc.endnotes, 'w:endnote');
+    units.push(...endnoteParas);
+  }
+
+  return units;
+}
+
+/**
+ * Extract paragraphs from footnotes or endnotes XML.
+ * Skips separator and continuationSeparator notes.
+ */
+function extractFootnoteEndnoteParagraphs(
+  xmlNodes: XmlNode[],
+  noteTagName: string
+): ParagraphUnit[] {
+  const units: ParagraphUnit[] = [];
+
+  for (const node of xmlNodes) {
+    const tagName = getTagName(node);
+
+    if (tagName === 'w:footnotes' || tagName === 'w:endnotes') {
+      // Process children
+      const children = getChildren(node);
+      for (const child of children) {
+        if (getTagName(child) === noteTagName) {
+          // Skip separator and continuationSeparator
+          const attrs = child[':@'] as Record<string, string> | undefined;
+          const noteType = attrs?.['@_w:type'];
+          if (noteType === 'separator' || noteType === 'continuationSeparator') {
+            continue;
+          }
+
+          // Extract paragraphs from this note
+          const paragraphs = findNodes(child, (n) => getTagName(n) === 'w:p');
+          for (const para of paragraphs) {
+            const text = extractParagraphText(para);
+            if (text.trim()) {
+              // Only include non-empty paragraphs
+              units.push({
+                hash: hashString(text),
+                node: cloneNode(para),
+                text,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return units;
 }
 
 /**
