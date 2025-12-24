@@ -15,6 +15,10 @@ export interface SmlComparerSettings {
   compareFormulas?: boolean;
   compareFormatting?: boolean;
   compareSheetStructure?: boolean;
+  compareComments?: boolean;
+  compareDataValidations?: boolean;
+  compareMergedCells?: boolean;
+  compareHyperlinks?: boolean;
   caseInsensitiveValues?: boolean;
   numericTolerance?: number;
   enableRowAlignment?: boolean;
@@ -25,7 +29,7 @@ export interface SmlComparerSettings {
   slideSimilarityThreshold?: number;
   positionTolerance?: number;
   authorForChanges?: string;
-  highlightColors: HighlightColors;
+  highlightColors?: HighlightColors;
 }
 
 /**
@@ -152,10 +156,13 @@ export enum SmlChangeType {
  */
 export interface SmlChange {
   changeType: SmlChangeType;
+  sheetName?: string;
   rowIndex?: number;
   columnIndex?: number;
   oldSheetName?: string;
+  newSheetName?: string;
   cellAddress?: string;
+  cellRange?: string;
   oldValue?: string;
   newValue?: string;
   oldFormula?: string;
@@ -181,6 +188,42 @@ export interface SmlChange {
  */
 export interface SmlComparisonResult {
   changes: SmlChange[];
+}
+
+export interface SmlChangeListItem {
+  id: string;
+  changeType: SmlChangeType;
+  sheetName?: string;
+  cellAddress?: string;
+  cellRange?: string;
+  rowIndex?: number;
+  columnIndex?: number;
+  count?: number;
+  summary: string;
+  details?: {
+    oldValue?: string;
+    newValue?: string;
+    oldFormula?: string;
+    newFormula?: string;
+    oldFormat?: CellFormatSignature;
+    newFormat?: CellFormatSignature;
+    oldComment?: string;
+    newComment?: string;
+    commentAuthor?: string;
+    dataValidationType?: string;
+    oldDataValidation?: string;
+    newDataValidation?: string;
+    mergedCellRange?: string;
+    oldHyperlink?: string;
+    newHyperlink?: string;
+    oldSheetName?: string;
+    newSheetName?: string;
+  };
+  anchor?: string;
+}
+
+export interface SmlChangeListOptions {
+  groupAdjacentCells?: boolean;
 }
 
 /**

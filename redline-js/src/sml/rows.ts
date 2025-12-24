@@ -1,35 +1,41 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-import {
+import type {
   WorksheetSignature,
-  CellSignature,
+  WorkbookSignature,
+  SmlComparerSettings,
+  SmlComparisonResult,
 } from './types';
 
-import {
-  computeLCS,
-} from '../core/diff';
+interface SheetMatch {
+  sheet1Name: string;
+  sheet2Name: string;
+  sheet1: WorksheetSignature;
+  sheet2: WorksheetSignature;
+}
 
-/**
- * Matches worksheets between two workbooks.
- */
 export async function matchSheets(
   sig1: WorkbookSignature,
   sig2: WorkbookSignature,
-  settings: SmlComparerSettings
+  _settings: SmlComparerSettings
 ): Promise<SheetMatch[]> {
-  // Implementation placeholder
-  return [];
+  const matches: SheetMatch[] = [];
+  
+  for (const [name, sheet1] of sig1.sheets) {
+    const sheet2 = sig2.sheets.get(name);
+    if (sheet2) {
+      matches.push({ sheet1Name: name, sheet2Name: name, sheet1, sheet2 });
+    }
+  }
+  
+  return matches;
 }
 
-/**
- * Computes differences between matched worksheets.
- */
 export async function compareSheets(
-  sig1: WorkbookSignature,
-  sig2: WorkbookSignature,
-  settings: SmlComparerSettings
+  _sig1: WorkbookSignature,
+  _sig2: WorkbookSignature,
+  _settings: SmlComparerSettings
 ): Promise<SmlComparisonResult> {
-  const result = new SmlComparisonResult();
-  return result;
+  return { changes: [] };
 }
