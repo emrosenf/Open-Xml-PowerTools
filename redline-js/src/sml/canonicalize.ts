@@ -176,63 +176,283 @@ function extractSiText(siNode: XmlNode): string {
   return text;
 }
 
-/**
- * Parse styles from xl/styles.xml
- *
- * This extracts the cellXfs (cell formats) and builds a map to resolve
- * style indices to actual formatting properties.
- */
+interface FontInfo {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  size?: number;
+  name?: string;
+  color?: string;
+}
+
+interface FillInfo {
+  pattern?: string;
+  foregroundColor?: string;
+  backgroundColor?: string;
+}
+
+interface BorderInfo {
+  leftStyle?: string;
+  leftColor?: string;
+  rightStyle?: string;
+  rightColor?: string;
+  topStyle?: string;
+  topColor?: string;
+  bottomStyle?: string;
+  bottomColor?: string;
+}
+
+interface CellXf {
+  numFmtId: number;
+  fontId: number;
+  fillId: number;
+  borderId: number;
+  horizontalAlignment?: string;
+  verticalAlignment?: string;
+  wrapText?: boolean;
+  indent?: number;
+}
+
+interface StyleInfo {
+  numberFormats: Map<number, string>;
+  fonts: FontInfo[];
+  fills: FillInfo[];
+  borders: BorderInfo[];
+  cellFormats: CellXf[];
+}
+
 async function parseStyles(
   pkg: OoxmlPackage
 ): Promise<Map<number, CellFormatSignature>> {
   const stylesXml = await getPartAsXml(pkg, 'xl/styles.xml');
   if (!stylesXml) return new Map();
 
-  const formats = new Map<number, CellFormatSignature>();
+  const styleInfo: StyleInfo = {
+    numberFormats: new Map(),
+    fonts: [],
+    fills: [],
+    borders: [],
+    cellFormats: [],
+  };
 
   for (const node of stylesXml) {
     if (getTagName(node) === 'styleSheet') {
       const children = getChildren(node);
 
-      // Find cellXfs (cell formats)
       for (const child of children) {
-        if (getTagName(child) === 'cellXfs') {
-          const xfs = getChildren(child);
+        const tagName = getTagName(child);
 
-          for (let i = 0; i < xfs.length; i++) {
-            const xf = xfs[i];
-            const format = parseXf(xf);
-            formats.set(i, format);
-          }
+        if (tagName === 'numFmts') {
+          parseNumFmts(child, styleInfo);
+        } else if (tagName === 'fonts') {
+          parseFonts(child, styleInfo);
+        } else if (tagName === 'fills') {
+          parseFills(child, styleInfo);
+        } else if (tagName === 'borders') {
+          parseBorders(child, styleInfo);
+        } else if (tagName === 'cellXfs') {
+          parseCellXfs(child, styleInfo);
         }
       }
     }
   }
 
-  return formats;
+  return expandAllStyles(styleInfo);
 }
 
-/**
- * Parse an xf (cell format) element
- */
-function parseXf(xfNode: XmlNode): CellFormatSignature {
-  const attrs = xfNode[':@'] as Record<string, string> | undefined;
-  const format: CellFormatSignature = {};
-
-  if (attrs) {
-    format.numberFormatCode = attrs['numFmtId'];
-
-    if (attrs['fontId']) {
-      format.bold = attrs['fontId'] === '1';
-    }
-
-    if (attrs['fillId']) {
-      // Could parse fill from fills element
-      format.fillForegroundColor = attrs['fillId'];
+function parseNumFmts(numFmtsNode: XmlNode, styleInfo: StyleInfo): void {
+  for (const child of getChildren(numFmtsNode)) {
+    if (getTagName(child) !== 'numFmt') continue;
+    const attrs = child[':@'] as Record<string, string> | undefined;
+    if (attrs) {
+      const id = parseInt(attrs['numFmtId'] || '0', 10);
+      const code = attrs['formatCode'] || '';
+      styleInfo.numberFormats.set(id, code);
     }
   }
+}
 
-  return format;
+function parseFonts(fontsNode: XmlNode, styleInfo: StyleInfo): void {
+  for (const fontNode of getChildren(fontsNode)) {
+    if (getTagName(fontNode) !== 'font') continue;
+    const font: FontInfo = {};
+
+    for (const child of getChildren(fontNode)) {
+      const tagName = getTagName(child);
+      const attrs = child[':@'] as Record<string, string> | undefined;
+
+      if (tagName === 'b') font.bold = true;
+      else if (tagName === 'i') font.italic = true;
+      else if (tagName === 'u') font.underline = true;
+      else if (tagName === 'strike') font.strikethrough = true;
+      else if (tagName === 'sz' && attrs) font.size = parseFloat(attrs['val'] || '0');
+      else if (tagName === 'name' && attrs) font.name = attrs['val'];
+      else if (tagName === 'color' && attrs) font.color = getColorValue(attrs);
+    }
+
+    styleInfo.fonts.push(font);
+  }
+}
+
+function parseFills(fillsNode: XmlNode, styleInfo: StyleInfo): void {
+  for (const fillNode of getChildren(fillsNode)) {
+    if (getTagName(fillNode) !== 'fill') continue;
+    const fill: FillInfo = {};
+
+    for (const child of getChildren(fillNode)) {
+      if (getTagName(child) === 'patternFill') {
+        const attrs = child[':@'] as Record<string, string> | undefined;
+        if (attrs) fill.pattern = attrs['patternType'];
+
+        for (const pfChild of getChildren(child)) {
+          const pfAttrs = pfChild[':@'] as Record<string, string> | undefined;
+          if (getTagName(pfChild) === 'fgColor' && pfAttrs) {
+            fill.foregroundColor = getColorValue(pfAttrs);
+          } else if (getTagName(pfChild) === 'bgColor' && pfAttrs) {
+            fill.backgroundColor = getColorValue(pfAttrs);
+          }
+        }
+      }
+    }
+
+    styleInfo.fills.push(fill);
+  }
+}
+
+function parseBorders(bordersNode: XmlNode, styleInfo: StyleInfo): void {
+  for (const borderNode of getChildren(bordersNode)) {
+    if (getTagName(borderNode) !== 'border') continue;
+    const border: BorderInfo = {};
+
+    for (const child of getChildren(borderNode)) {
+      const tagName = getTagName(child);
+      const attrs = child[':@'] as Record<string, string> | undefined;
+      const style = attrs?.['style'];
+
+      let color: string | undefined;
+      for (const colorChild of getChildren(child)) {
+        if (getTagName(colorChild) === 'color') {
+          const colorAttrs = colorChild[':@'] as Record<string, string> | undefined;
+          if (colorAttrs) color = getColorValue(colorAttrs);
+        }
+      }
+
+      if (tagName === 'left') {
+        border.leftStyle = style;
+        border.leftColor = color;
+      } else if (tagName === 'right') {
+        border.rightStyle = style;
+        border.rightColor = color;
+      } else if (tagName === 'top') {
+        border.topStyle = style;
+        border.topColor = color;
+      } else if (tagName === 'bottom') {
+        border.bottomStyle = style;
+        border.bottomColor = color;
+      }
+    }
+
+    styleInfo.borders.push(border);
+  }
+}
+
+function parseCellXfs(cellXfsNode: XmlNode, styleInfo: StyleInfo): void {
+  for (const xfNode of getChildren(cellXfsNode)) {
+    if (getTagName(xfNode) !== 'xf') continue;
+    const attrs = xfNode[':@'] as Record<string, string> | undefined;
+
+    const xf: CellXf = {
+      numFmtId: parseInt(attrs?.['numFmtId'] || '0', 10),
+      fontId: parseInt(attrs?.['fontId'] || '0', 10),
+      fillId: parseInt(attrs?.['fillId'] || '0', 10),
+      borderId: parseInt(attrs?.['borderId'] || '0', 10),
+    };
+
+    for (const child of getChildren(xfNode)) {
+      if (getTagName(child) === 'alignment') {
+        const alignAttrs = child[':@'] as Record<string, string> | undefined;
+        if (alignAttrs) {
+          xf.horizontalAlignment = alignAttrs['horizontal'];
+          xf.verticalAlignment = alignAttrs['vertical'];
+          xf.wrapText = alignAttrs['wrapText'] === '1';
+          xf.indent = parseInt(alignAttrs['indent'] || '0', 10);
+        }
+      }
+    }
+
+    styleInfo.cellFormats.push(xf);
+  }
+}
+
+function getColorValue(attrs: Record<string, string>): string {
+  if (attrs['rgb']) return attrs['rgb'];
+  if (attrs['indexed']) return `indexed:${attrs['indexed']}`;
+  if (attrs['theme']) return `theme:${attrs['theme']}`;
+  return '';
+}
+
+function getBuiltInNumberFormat(numFmtId: number): string {
+  const formats: Record<number, string> = {
+    0: 'General', 1: '0', 2: '0.00', 3: '#,##0', 4: '#,##0.00',
+    9: '0%', 10: '0.00%', 11: '0.00E+00', 12: '# ?/?', 13: '# ??/??',
+    14: 'mm-dd-yy', 15: 'd-mmm-yy', 16: 'd-mmm', 17: 'mmm-yy',
+    18: 'h:mm AM/PM', 19: 'h:mm:ss AM/PM', 20: 'h:mm', 21: 'h:mm:ss',
+    22: 'm/d/yy h:mm', 37: '#,##0 ;(#,##0)', 38: '#,##0 ;[Red](#,##0)',
+    39: '#,##0.00;(#,##0.00)', 40: '#,##0.00;[Red](#,##0.00)',
+    45: 'mm:ss', 46: '[h]:mm:ss', 47: 'mmss.0', 48: '##0.0E+0', 49: '@',
+  };
+  return formats[numFmtId] || 'General';
+}
+
+function expandAllStyles(styleInfo: StyleInfo): Map<number, CellFormatSignature> {
+  const formats = new Map<number, CellFormatSignature>();
+
+  for (let i = 0; i < styleInfo.cellFormats.length; i++) {
+    const xf = styleInfo.cellFormats[i];
+    const format: CellFormatSignature = {};
+
+    const customFmt = styleInfo.numberFormats.get(xf.numFmtId);
+    format.numberFormatCode = customFmt ?? getBuiltInNumberFormat(xf.numFmtId);
+
+    if (xf.fontId >= 0 && xf.fontId < styleInfo.fonts.length) {
+      const font = styleInfo.fonts[xf.fontId];
+      format.bold = font.bold;
+      format.italic = font.italic;
+      format.underline = font.underline;
+      format.strikethrough = font.strikethrough;
+      format.fontName = font.name;
+      format.fontSize = font.size;
+      format.fontColor = font.color;
+    }
+
+    if (xf.fillId >= 0 && xf.fillId < styleInfo.fills.length) {
+      const fill = styleInfo.fills[xf.fillId];
+      format.fillPattern = fill.pattern;
+      format.fillForegroundColor = fill.foregroundColor;
+      format.fillBackgroundColor = fill.backgroundColor;
+    }
+
+    if (xf.borderId >= 0 && xf.borderId < styleInfo.borders.length) {
+      const border = styleInfo.borders[xf.borderId];
+      format.borderLeftStyle = border.leftStyle;
+      format.borderLeftColor = border.leftColor;
+      format.borderRightStyle = border.rightStyle;
+      format.borderTopStyle = border.topStyle;
+      format.borderTopColor = border.topColor;
+      format.borderBottomStyle = border.bottomStyle;
+      format.borderBottomColor = border.bottomColor;
+    }
+
+    format.horizontalAlignment = xf.horizontalAlignment;
+    format.verticalAlignment = xf.verticalAlignment;
+    format.wrapText = xf.wrapText;
+    format.indent = xf.indent;
+
+    formats.set(i, format);
+  }
+
+  return formats;
 }
 
 /**

@@ -1,6 +1,7 @@
 import type {
   WorksheetSignature,
   CellSignature,
+  CellFormatSignature,
   SmlChange,
   SmlChangeType,
 } from './types';
@@ -124,26 +125,39 @@ function compareAlignedRows(
         columnIndex: cell2.column,
         newValue: cell2.resolvedValue,
       });
-    } else if (cell1.contentHash !== cell2.contentHash) {
-      if (cell1.formula !== cell2.formula) {
+    } else {
+      if (cell1.contentHash !== cell2.contentHash) {
+        if (cell1.formula !== cell2.formula) {
+          changes.push({
+            changeType: SmlChangeType.FormulaChanged,
+            cellAddress: address,
+            rowIndex: unit2.row,
+            columnIndex: cell2.column,
+            oldFormula: cell1.formula,
+            newFormula: cell2.formula,
+            oldValue: cell1.resolvedValue,
+            newValue: cell2.resolvedValue,
+          });
+        } else {
+          changes.push({
+            changeType: SmlChangeType.ValueChanged,
+            cellAddress: address,
+            rowIndex: unit2.row,
+            columnIndex: cell2.column,
+            oldValue: cell1.resolvedValue,
+            newValue: cell2.resolvedValue,
+          });
+        }
+      }
+
+      if (settings.compareFormatting && !formatsEqual(cell1.format, cell2.format)) {
         changes.push({
-          changeType: SmlChangeType.FormulaChanged,
+          changeType: SmlChangeType.FormatChanged,
           cellAddress: address,
           rowIndex: unit2.row,
           columnIndex: cell2.column,
-          oldFormula: cell1.formula,
-          newFormula: cell2.formula,
-          oldValue: cell1.resolvedValue,
-          newValue: cell2.resolvedValue,
-        });
-      } else {
-        changes.push({
-          changeType: SmlChangeType.ValueChanged,
-          cellAddress: address,
-          rowIndex: unit2.row,
-          columnIndex: cell2.column,
-          oldValue: cell1.resolvedValue,
-          newValue: cell2.resolvedValue,
+          oldFormat: cell1.format,
+          newFormat: cell2.format,
         });
       }
     }
@@ -182,26 +196,39 @@ function compareCellsDirect(
         columnIndex: cell2.column,
         newValue: cell2.resolvedValue,
       });
-    } else if (cell1.contentHash !== cell2.contentHash) {
-      if (cell1.formula !== cell2.formula) {
+    } else {
+      if (cell1.contentHash !== cell2.contentHash) {
+        if (cell1.formula !== cell2.formula) {
+          changes.push({
+            changeType: SmlChangeType.FormulaChanged,
+            cellAddress: address,
+            rowIndex: cell2.row,
+            columnIndex: cell2.column,
+            oldFormula: cell1.formula,
+            newFormula: cell2.formula,
+            oldValue: cell1.resolvedValue,
+            newValue: cell2.resolvedValue,
+          });
+        } else {
+          changes.push({
+            changeType: SmlChangeType.ValueChanged,
+            cellAddress: address,
+            rowIndex: cell2.row,
+            columnIndex: cell2.column,
+            oldValue: cell1.resolvedValue,
+            newValue: cell2.resolvedValue,
+          });
+        }
+      }
+
+      if (settings.compareFormatting && !formatsEqual(cell1.format, cell2.format)) {
         changes.push({
-          changeType: SmlChangeType.FormulaChanged,
+          changeType: SmlChangeType.FormatChanged,
           cellAddress: address,
           rowIndex: cell2.row,
           columnIndex: cell2.column,
-          oldFormula: cell1.formula,
-          newFormula: cell2.formula,
-          oldValue: cell1.resolvedValue,
-          newValue: cell2.resolvedValue,
-        });
-      } else {
-        changes.push({
-          changeType: SmlChangeType.ValueChanged,
-          cellAddress: address,
-          rowIndex: cell2.row,
-          columnIndex: cell2.column,
-          oldValue: cell1.resolvedValue,
-          newValue: cell2.resolvedValue,
+          oldFormat: cell1.format,
+          newFormat: cell2.format,
         });
       }
     }
@@ -230,4 +257,31 @@ function getCellsInRow(sheet: WorksheetSignature, row: number): Map<string, Cell
   }
 
   return cells;
+}
+
+function formatsEqual(f1: CellFormatSignature, f2: CellFormatSignature): boolean {
+  return (
+    f1.numberFormatCode === f2.numberFormatCode &&
+    f1.bold === f2.bold &&
+    f1.italic === f2.italic &&
+    f1.underline === f2.underline &&
+    f1.strikethrough === f2.strikethrough &&
+    f1.fontName === f2.fontName &&
+    f1.fontSize === f2.fontSize &&
+    f1.fontColor === f2.fontColor &&
+    f1.fillPattern === f2.fillPattern &&
+    f1.fillForegroundColor === f2.fillForegroundColor &&
+    f1.fillBackgroundColor === f2.fillBackgroundColor &&
+    f1.borderLeftStyle === f2.borderLeftStyle &&
+    f1.borderLeftColor === f2.borderLeftColor &&
+    f1.borderRightStyle === f2.borderRightStyle &&
+    f1.borderTopStyle === f2.borderTopStyle &&
+    f1.borderTopColor === f2.borderTopColor &&
+    f1.borderBottomStyle === f2.borderBottomStyle &&
+    f1.borderBottomColor === f2.borderBottomColor &&
+    f1.horizontalAlignment === f2.horizontalAlignment &&
+    f1.verticalAlignment === f2.verticalAlignment &&
+    f1.wrapText === f2.wrapText &&
+    f1.indent === f2.indent
+  );
 }
