@@ -240,16 +240,30 @@ export function extractParagraphs(doc: WordDocument): string[] {
 }
 
 /**
- * Extract text from a single paragraph
+ * Extract text from a single paragraph.
+ * Skips deleted text (w:del elements) when acceptRevisions is true.
+ *
+ * @param paragraph The paragraph node to extract text from
+ * @param acceptRevisions If true, skips deleted text and includes inserted text
  */
-export function extractParagraphText(paragraph: XmlNode): string {
+export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true): string {
   const texts: string[] = [];
 
   function walkNode(node: XmlNode): void {
     const tagName = getTagName(node);
 
+    // Skip deleted content when accepting revisions
+    if (acceptRevisions && tagName === 'w:del') {
+      return;
+    }
+
     if (tagName === 'w:t') {
       texts.push(getTextContent(node));
+      return;
+    }
+
+    // Skip w:delText (deleted text marker) - never include
+    if (tagName === 'w:delText') {
       return;
     }
 

@@ -12,7 +12,9 @@ import { countDocumentRevisions } from '../src/wml/wml-comparer';
 const TEST_FILES_DIR = join(__dirname, '../../TestFiles');
 
 // Test cases: [testId, source1, source2, expectedRevisions]
+// These are copied from WmlComparerTests.cs WC003_Compare
 const TEST_CASES: [string, string, string, number][] = [
+  // Basic text comparisons
   ['WC-1000', 'CA/CA001-Plain.docx', 'CA/CA001-Plain-Mod.docx', 1],
   ['WC-1010', 'WC/WC001-Digits.docx', 'WC/WC001-Digits-Mod.docx', 4],
   ['WC-1020', 'WC/WC001-Digits.docx', 'WC/WC001-Digits-Deleted-Paragraph.docx', 1],
@@ -26,7 +28,18 @@ const TEST_CASES: [string, string, string, number][] = [
   ['WC-1100', 'WC/WC002-Unmodified.docx', 'WC/WC002-DeleteInMiddle.docx', 1],
   ['WC-1110', 'WC/WC002-Unmodified.docx', 'WC/WC002-InsertInMiddle.docx', 1],
   ['WC-1120', 'WC/WC002-DeleteInMiddle.docx', 'WC/WC002-Unmodified.docx', 1],
+  // Multi-paragraph
   ['WC-1330', 'WC/WC015-Three-Paragraphs.docx', 'WC/WC015-Three-Paragraphs-After.docx', 3],
+  // Twenty paragraphs
+  ['WC-1510', 'WC/WC027-Twenty-Paras-Before.docx', 'WC/WC027-Twenty-Paras-After-1.docx', 2],
+  ['WC-1520', 'WC/WC027-Twenty-Paras-After-1.docx', 'WC/WC027-Twenty-Paras-Before.docx', 2],
+  ['WC-1530', 'WC/WC027-Twenty-Paras-Before.docx', 'WC/WC027-Twenty-Paras-After-2.docx', 4],
+  // Document with line breaks
+  ['WC-1780', 'WC/WC038-Document-With-BR-Before.docx', 'WC/WC038-Document-With-BR-After.docx', 2],
+  // Identical documents (0 revisions expected)
+  ['WC-1960', 'WC/WC054-Text-in-Cell.docx', 'WC/WC054-Text-in-Cell-Mod.docx', 0],
+  ['WC-1970', 'WC/WC055-French.docx', 'WC/WC055-French-Mod.docx', 0],
+  ['WC-1980', 'WC/WC056-French.docx', 'WC/WC056-French-Mod.docx', 0],
 ];
 
 describe('WmlComparer Batch Tests', () => {

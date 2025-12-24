@@ -10,6 +10,7 @@
 import {
   loadWordDocument,
   extractParagraphs,
+  extractParagraphText,
   getDocumentBody,
   type WordDocument,
 } from './document';
@@ -158,7 +159,9 @@ export async function compareDocuments(
 }
 
 /**
- * Extract paragraph units from a document for comparison
+ * Extract paragraph units from a document for comparison.
+ * Uses extractParagraphText which properly handles existing tracked changes
+ * by accepting revisions (skipping w:del content).
  */
 function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
   const body = getDocumentBody(doc);
@@ -167,7 +170,9 @@ function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
   const paragraphs = findNodes(body, (n) => getTagName(n) === 'w:p');
 
   return paragraphs.map((node) => {
-    const text = getTextContent(node);
+    // Use extractParagraphText to properly handle tracked changes
+    // This skips deleted content (w:del) and w:delText elements
+    const text = extractParagraphText(node);
     return {
       hash: hashString(text),
       node: cloneNode(node),
@@ -323,8 +328,10 @@ function tokenize(text: string): WordUnit[] {
     tokens.push(...subTokens);
   }
 
+  // Use exact token text as hash for case-sensitive comparison
+  // This ensures "Three" and "THree" are detected as different
   return tokens.map((token) => ({
-    hash: token.toLowerCase(),
+    hash: token, // Case-sensitive matching
     text: token,
   }));
 }
