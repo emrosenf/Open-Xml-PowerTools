@@ -365,7 +365,8 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
   }
 
   // Helper to get drawing info for comparison
-  // Uses dimensions, docPr id, and embed reference to create unique identifier
+  // Uses dimensions and embed reference to create unique identifier
+  // Note: docPr id is NOT included as it varies between documents for same content
   // Format uses underscores so tokenizer treats it as single word
   function getDrawingInfo(node: XmlNode): string {
     const parts: string[] = [];
@@ -378,14 +379,7 @@ export function extractParagraphText(paragraph: XmlNode, acceptRevisions = true)
       if (attrs?.['@_cy']) parts.push(`cy${attrs['@_cy']}`);
     }
 
-    // Find docPr (document properties)
-    const docPr = findNodeByTag(node, 'wp:docPr');
-    if (docPr) {
-      const attrs = docPr[':@'] as Record<string, string> | undefined;
-      if (attrs?.['@_id']) parts.push(`id${attrs['@_id']}`);
-    }
-
-    // Find embed reference
+    // Find embed reference (the actual image/content reference)
     const embedRef = findEmbedReference(node);
     if (embedRef) parts.push(`e${embedRef}`);
 
