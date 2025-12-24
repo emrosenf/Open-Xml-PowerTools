@@ -304,10 +304,11 @@ function extractParagraphUnits(doc: WordDocument): ParagraphUnit[] {
     for (const element of elements) {
       if (element.type === 'tableRow') {
         // Table row - combine all paragraph texts for hashing
+        // Include 'TR:' prefix to ensure table rows don't match paragraphs with same text
         const texts = element.paragraphs.map((p) => extractParagraphText(p));
         const combinedText = texts.join(' ');
         units.push({
-          hash: hashString(combinedText),
+          hash: hashString('TR:' + combinedText),
           node: cloneNode(element.node),
           text: combinedText,
           isTableRow: true,
@@ -372,11 +373,12 @@ function extractFootnoteEndnoteParagraphs(
           for (const element of elements) {
             if (element.type === 'tableRow') {
               // Table row - combine all paragraph texts for hashing
+              // Include 'TR:' prefix to ensure table rows don't match paragraphs with same text
               const texts = element.paragraphs.map((p) => extractParagraphText(p));
               const combinedText = texts.join(' ');
               if (combinedText.trim()) {
                 units.push({
-                  hash: hashString(combinedText),
+                  hash: hashString('TR:' + combinedText),
                   node: cloneNode(element.node),
                   text: combinedText,
                   isTableRow: true,
@@ -690,17 +692,93 @@ function compareAlignedParagraphs(
           }
           i++;
         } else {
-          // Different lengths, not all table rows - count separately
-          const nonEmptyTableRows = seq.items1.filter((p) => p.isTableRow && p.text.trim() !== '');
-          const nonEmptyParas = seq.items1.filter((p) => !p.isTableRow && p.text.trim() !== '');
+          // Different lengths - separate text content from drawings, then compare
+          // This handles cases like paragraph changes with added/removed drawings
 
-          if (nonEmptyTableRows.length > 0 && nonEmptyParas.length === 0) {
-            deletions += 1;
-          } else if (nonEmptyTableRows.length > 0 && nonEmptyParas.length > 0) {
-            deletions += 1 + nonEmptyParas.length;
-          } else {
-            deletions += Math.max(1, nonEmptyParas.length);
+          // Separate drawings from text content
+          const drawings1 = seq.items1.filter(
+            (p) => p.text.startsWith('DRAWING_') || p.text.startsWith('PICT_')
+          );
+          const drawings2 = nextSeq.items2.filter(
+            (p) => p.text.startsWith('DRAWING_') || p.text.startsWith('PICT_')
+          );
+          const textItems1 = seq.items1.filter(
+            (p) => !p.text.startsWith('DRAWING_') && !p.text.startsWith('PICT_')
+          );
+          const textItems2 = nextSeq.items2.filter(
+            (p) => !p.text.startsWith('DRAWING_') && !p.text.startsWith('PICT_')
+          );
+
+          // Compare drawings - matched by hash, extras are ins/del
+          const drawingHashes1 = new Set(drawings1.map((d) => d.hash));
+          const drawingHashes2 = new Set(drawings2.map((d) => d.hash));
+          for (const d of drawings1) {
+            if (!drawingHashes2.has(d.hash)) deletions += 1;
           }
+          for (const d of drawings2) {
+            if (!drawingHashes1.has(d.hash)) insertions += 1;
+          }
+
+          // Compare text items using similarity-based matching
+          // For each item in the shorter list, find the best match in the longer list
+          const matchedIdx1 = new Set<number>();
+
+          // For each item in textItems2, find best match in textItems1
+          for (let j = 0; j < textItems2.length; j++) {
+            const para2 = textItems2[j];
+            let bestMatchIdx = -1;
+            let bestSimilarity = 0;
+
+            for (let k = 0; k < textItems1.length; k++) {
+              if (matchedIdx1.has(k)) continue;
+              const para1 = textItems1[k];
+
+              // Calculate word-level similarity
+              const sim = calculateSimilarity(para1.text, para2.text);
+              if (sim > bestSimilarity) {
+                bestSimilarity = sim;
+                bestMatchIdx = k;
+              }
+            }
+
+            // If we found a reasonable match (> 20% similarity), compare at word level
+            if (bestMatchIdx >= 0 && bestSimilarity > 0.2) {
+              matchedIdx1.add(bestMatchIdx);
+              const para1 = textItems1[bestMatchIdx];
+
+              // If one is a table row and one is a paragraph, they're structurally different
+              const structureDiffers = para1.isTableRow !== para2.isTableRow;
+              if (structureDiffers) {
+                if (para1.text.trim()) deletions += 1;
+                if (para2.text.trim()) insertions += 1;
+                continue;
+              }
+
+              if (para1.text === para2.text) continue;
+
+              if (para1.isTableRow && para1.rowCells && para2.isTableRow && para2.rowCells) {
+                const revs = compareTableRowContent(para1.rowCells, para2.rowCells);
+                insertions += revs.insertions;
+                deletions += revs.deletions;
+              } else {
+                const wordRevs = countWordRevisions(para1.text, para2.text);
+                insertions += wordRevs.insertions;
+                deletions += wordRevs.deletions;
+              }
+            } else {
+              // No good match found, count as pure insertion
+              if (para2.text.trim()) insertions += 1;
+            }
+          }
+
+          // Count unmatched items from textItems1 as deletions
+          for (let k = 0; k < textItems1.length; k++) {
+            if (!matchedIdx1.has(k) && textItems1[k].text.trim()) {
+              deletions += 1;
+            }
+          }
+
+          i++; // Skip next sequence
         }
       } else {
         // True deletion - check if it's table-related or regular paragraphs
@@ -864,11 +942,39 @@ function countWordRevisions(
   const totalWords = Math.max(words1.length, words2.length);
   const similarity = totalWords > 0 ? equalCount / totalWords : 0;
 
-  // If similarity is very low (< 20%), treat as complete replacement (1 del + 1 ins)
+  // If similarity is relatively low (< 40%), treat as complete replacement (1 del + 1 ins)
   // This matches C# behavior for paragraphs with minimal overlap
-  if (similarity < 0.2 && hasInsertions && hasDeletions) {
+  // The C# groups scattered word changes together rather than counting each separately
+  if (similarity < 0.4 && hasInsertions && hasDeletions) {
     return { insertions: 1, deletions: 1 };
   }
 
   return { insertions, deletions };
+}
+
+/**
+ * Calculate word-level similarity between two texts.
+ * Returns a value between 0 and 1, where 1 means identical.
+ */
+function calculateSimilarity(text1: string, text2: string): number {
+  if (text1 === text2) return 1;
+  if (!text1.trim() || !text2.trim()) return 0;
+
+  const words1 = tokenize(text1);
+  const words2 = tokenize(text2);
+
+  if (words1.length === 0 || words2.length === 0) return 0;
+
+  // Count common words using LCS
+  const wordCorr = computeCorrelation(words1, words2);
+  let equalCount = 0;
+  for (const wseq of wordCorr) {
+    if (wseq.status === CorrelationStatus.Equal && wseq.items1) {
+      equalCount += wseq.items1.length;
+    }
+  }
+
+  // Similarity is the ratio of common words to total words
+  const totalWords = Math.max(words1.length, words2.length);
+  return equalCount / totalWords;
 }
