@@ -12,9 +12,9 @@ import { countDocumentRevisions } from '../src/wml/wml-comparer';
 const TEST_FILES_DIR = join(__dirname, '../../TestFiles');
 
 // Test cases: [testId, source1, source2, expectedRevisions]
-// These are copied from WmlComparerTests.cs WC003_Compare
+// These are copied from WmlComparerTests.cs WC003_Compare and GoldenFileGenerator
 const TEST_CASES: [string, string, string, number][] = [
-  // Basic text comparisons
+  // ===== Basic text comparisons =====
   ['WC-1000', 'CA/CA001-Plain.docx', 'CA/CA001-Plain-Mod.docx', 1],
   ['WC-1010', 'WC/WC001-Digits.docx', 'WC/WC001-Digits-Mod.docx', 4],
   ['WC-1020', 'WC/WC001-Digits.docx', 'WC/WC001-Digits-Deleted-Paragraph.docx', 1],
@@ -28,18 +28,53 @@ const TEST_CASES: [string, string, string, number][] = [
   ['WC-1100', 'WC/WC002-Unmodified.docx', 'WC/WC002-DeleteInMiddle.docx', 1],
   ['WC-1110', 'WC/WC002-Unmodified.docx', 'WC/WC002-InsertInMiddle.docx', 1],
   ['WC-1120', 'WC/WC002-DeleteInMiddle.docx', 'WC/WC002-Unmodified.docx', 1],
-  // Multi-paragraph
+
+  // ===== Table tests (basic) =====
+  ['WC-1160', 'WC/WC006-Table.docx', 'WC/WC006-Table-Delete-Contests-of-Row.docx', 2],
+  ['WC-1200', 'WC/WC009-Table-Unmodified.docx', 'WC/WC009-Table-Cell-1-1-Mod.docx', 1],
+
+  // ===== Complex content =====
+  ['WC-1220', 'WC/WC011-Before.docx', 'WC/WC011-After.docx', 2],
+
+  // ===== Multi-paragraph =====
   ['WC-1330', 'WC/WC015-Three-Paragraphs.docx', 'WC/WC015-Three-Paragraphs-After.docx', 3],
-  // Twenty paragraphs
+
+  // ===== Twenty paragraphs =====
   ['WC-1510', 'WC/WC027-Twenty-Paras-Before.docx', 'WC/WC027-Twenty-Paras-After-1.docx', 2],
   ['WC-1520', 'WC/WC027-Twenty-Paras-After-1.docx', 'WC/WC027-Twenty-Paras-Before.docx', 2],
   ['WC-1530', 'WC/WC027-Twenty-Paras-Before.docx', 'WC/WC027-Twenty-Paras-After-2.docx', 4],
-  // Document with line breaks
+
+  // ===== Document with line breaks =====
   ['WC-1780', 'WC/WC038-Document-With-BR-Before.docx', 'WC/WC038-Document-With-BR-After.docx', 2],
-  // Identical documents (0 revisions expected)
+
+  // ===== Revision Consolidation tests =====
+  ['WC-1800', 'RC/RC001-Before.docx', 'RC/RC001-After1.docx', 2],
+
+  // ===== Documents with existing tracked changes (0 revisions expected) =====
   ['WC-1960', 'WC/WC054-Text-in-Cell.docx', 'WC/WC054-Text-in-Cell-Mod.docx', 0],
   ['WC-1970', 'WC/WC055-French.docx', 'WC/WC055-French-Mod.docx', 0],
   ['WC-1980', 'WC/WC056-French.docx', 'WC/WC056-French-Mod.docx', 0],
+];
+
+// Advanced tests that require features not yet implemented
+// These are tracked in bd issues and will be enabled as features are added
+const PENDING_ADVANCED_TESTS: [string, string, string, number, string][] = [
+  // Table row as unit (requires hierarchical grouping)
+  ['WC-1140', 'WC/WC006-Table.docx', 'WC/WC006-Table-Delete-Row.docx', 1, 'Table row deletion should be 1 revision'],
+  ['WC-1150', 'WC/WC006-Table-Delete-Row.docx', 'WC/WC006-Table.docx', 1, 'Table row insertion should be 1 revision'],
+  ['WC-1170', 'WC/WC007-Unmodified.docx', 'WC/WC007-Longest-At-End.docx', 2, 'Complex table/para structure'],
+  ['WC-1180', 'WC/WC007-Unmodified.docx', 'WC/WC007-Deleted-at-Beginning-of-Para.docx', 1, 'Revision merging'],
+  ['WC-1190', 'WC/WC007-Unmodified.docx', 'WC/WC007-Moved-into-Table.docx', 2, 'Content moved into table'],
+  ['WC-1210', 'WC/WC010-Para-Before-Table-Unmodified.docx', 'WC/WC010-Para-Before-Table-Mod.docx', 3, 'Para + table changes'],
+
+  // Math content (requires m:oMath support)
+  ['WC-1230', 'WC/WC012-Math-Before.docx', 'WC/WC012-Math-After.docx', 2, 'Math equation changes'],
+
+  // Images/drawings (requires drawing element support)
+  ['WC-1240', 'WC/WC013-Image-Before.docx', 'WC/WC013-Image-After.docx', 2, 'Image changes'],
+  ['WC-1250', 'WC/WC013-Image-Before.docx', 'WC/WC013-Image-After2.docx', 2, 'Image changes variant'],
+  ['WC-1260', 'WC/WC013-Image-Before2.docx', 'WC/WC013-Image-After2.docx', 2, 'Image changes variant 2'],
+  ['WC-1810', 'RC/RC002-Image.docx', 'RC/RC002-Image-After1.docx', 1, 'Image in revision consolidation'],
 ];
 
 describe('WmlComparer Batch Tests', () => {
@@ -66,4 +101,23 @@ describe('WmlComparer Batch Tests', () => {
       expect(result.total).toBe(expectedRevisions);
     });
   });
+});
+
+describe('WmlComparer Advanced Tests (Pending)', () => {
+  describe.skip.each(PENDING_ADVANCED_TESTS)(
+    '%s: %s vs %s',
+    (testId, source1, source2, expectedRevisions, reason) => {
+      it(`should detect ${expectedRevisions} revisions - ${reason}`, async () => {
+        const doc1Path = join(TEST_FILES_DIR, source1);
+        const doc2Path = join(TEST_FILES_DIR, source2);
+
+        const doc1 = await readFile(doc1Path);
+        const doc2 = await readFile(doc2Path);
+
+        const result = await countDocumentRevisions(doc1, doc2);
+
+        expect(result.total).toBe(expectedRevisions);
+      });
+    }
+  );
 });
