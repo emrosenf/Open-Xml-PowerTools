@@ -21,6 +21,7 @@ import {
   createParagraph,
   countRevisions,
   resetRevisionIdCounter,
+  createRunPropertyChange,
   type RevisionSettings,
   DEFAULT_REVISION_SETTINGS,
 } from './revision';
@@ -414,18 +415,23 @@ function buildResultParagraphs(
 ): XmlNode[] {
   const result: XmlNode[] = [];
 
-  for (const seq of correlation) {
+  for (let i = 0; i < correlation.length; i++) {
+    const seq = correlation[i];
+    const nextSeq = correlation[i + 1];
+
     switch (seq.status) {
       case CorrelationStatus.Equal:
         // For equal paragraphs, compare at word level for finer granularity
         if (seq.items1 && seq.items2) {
-          for (let i = 0; i < seq.items1.length; i++) {
-            const para1 = seq.items1[i];
-            const para2 = seq.items2[i];
+          for (let j = 0; j < seq.items1.length; j++) {
+            const para1 = seq.items1[j];
+            const para2 = seq.items2[j];
 
-            // If the text is identical, just use the original paragraph
+            // If the text is identical, check for format changes
             if (para1.text === para2.text) {
-              result.push(cloneNode(para2.node));
+              // Check if runs have different formatting
+              const formattedPara = compareFormatsInParagraph(para1, para2, settings);
+              result.push(formattedPara);
             } else {
               // Compare at word level
               const wordResult = compareWordsInParagraph(para1, para2, settings);
@@ -436,8 +442,32 @@ function buildResultParagraphs(
         break;
 
       case CorrelationStatus.Deleted:
-        // Deleted paragraphs
-        if (seq.items1) {
+        // Check if this is an adjacent delete-insert pair (paragraph modification)
+        if (
+          seq.items1 &&
+          nextSeq &&
+          nextSeq.status === CorrelationStatus.Inserted &&
+          nextSeq.items2 &&
+          seq.items1.length === nextSeq.items2.length
+        ) {
+          // Same number of paragraphs - compare at word level
+          for (let j = 0; j < seq.items1.length; j++) {
+            const para1 = seq.items1[j];
+            const para2 = nextSeq.items2[j];
+
+            if (para1.text === para2.text) {
+              // Same text, check for format changes
+              const formattedPara = compareFormatsInParagraph(para1, para2, settings);
+              result.push(formattedPara);
+            } else {
+              // Compare at word level
+              const wordResult = compareWordsInParagraph(para1, para2, settings);
+              result.push(wordResult);
+            }
+          }
+          i++; // Skip the next (insert) sequence since we handled it
+        } else if (seq.items1) {
+          // True deletion
           for (const para of seq.items1) {
             const deletedPara = createDeletedParagraph(para, settings);
             result.push(deletedPara);
@@ -446,7 +476,7 @@ function buildResultParagraphs(
         break;
 
       case CorrelationStatus.Inserted:
-        // Inserted paragraphs
+        // Inserted paragraphs (unless already handled as part of delete-insert pair)
         if (seq.items2) {
           for (const para of seq.items2) {
             const insertedPara = createInsertedParagraph(para, settings);
@@ -461,13 +491,74 @@ function buildResultParagraphs(
 }
 
 /**
- * Compare words within paragraphs that have the same hash but different text
+ * Compare two paragraphs with identical text for format changes only.
+ * Returns the modified paragraph with w:rPrChange markup where formatting differs.
+ */
+function compareFormatsInParagraph(
+  para1: ParagraphUnit,
+  para2: ParagraphUnit,
+  settings: RevisionSettings
+): XmlNode {
+  const runs1 = extractRunsWithProperties(para1.node);
+  const runs2 = extractRunsWithProperties(para2.node);
+
+  // If same number of runs with same text, compare run properties
+  if (
+    runs1.length === runs2.length &&
+    runs1.every((r, i) => r.text === runs2[i].text)
+  ) {
+    // Check if any runs have different formatting
+    let hasFormatChange = false;
+    for (let i = 0; i < runs1.length; i++) {
+      if (runPropertiesDiffer(runs1[i].properties, runs2[i].properties)) {
+        hasFormatChange = true;
+        break;
+      }
+    }
+
+    if (hasFormatChange) {
+      // Build paragraph with format change markup
+      const resultRuns: XmlNode[] = [];
+      for (let i = 0; i < runs2.length; i++) {
+        if (runPropertiesDiffer(runs1[i].properties, runs2[i].properties)) {
+          resultRuns.push(
+            createRunWithFormatChange(
+              runs2[i].text,
+              runs2[i].properties,
+              runs1[i].properties,
+              settings
+            )
+          );
+        } else {
+          resultRuns.push(createRun(runs2[i].text, runs2[i].properties));
+        }
+      }
+      const pPr = getChildren(para2.node).find((c) => getTagName(c) === 'w:pPr');
+      return createParagraph(resultRuns, pPr ? cloneNode(pPr) : undefined);
+    }
+  }
+
+  // No format changes or structure differs - just use the modified paragraph
+  return cloneNode(para2.node);
+}
+
+/**
+ * Compare words within paragraphs that have the same hash but different text.
+ * Also detects format changes on text that's equal but has different run properties.
  */
 function compareWordsInParagraph(
   para1: ParagraphUnit,
   para2: ParagraphUnit,
   settings: RevisionSettings
 ): XmlNode {
+  // Extract runs from both paragraphs for format comparison
+  const runs1 = extractRunsWithProperties(para1.node);
+  const runs2 = extractRunsWithProperties(para2.node);
+
+  // Build position-to-run mappings for format comparison
+  const pos1ToRun = buildPositionToRunMap(runs1);
+  const pos2ToRun = buildPositionToRunMap(runs2);
+
   // Tokenize both paragraphs
   const words1 = tokenize(para1.text);
   const words2 = tokenize(para2.text);
@@ -478,28 +569,50 @@ function compareWordsInParagraph(
   // Build runs from the correlation
   const runs: XmlNode[] = [];
 
+  // Track positions for format comparison
+  let pos1 = 0;
+  let pos2 = 0;
+
   for (const seq of wordCorrelation) {
     switch (seq.status) {
       case CorrelationStatus.Equal:
-        if (seq.items1) {
-          const text = seq.items1.map((w) => w.text).join(' ');
-          runs.push(createRun(text + ' '));
+        if (seq.items1 && seq.items2) {
+          // For equal text, check if run properties differ
+          const text = seq.items1.map((w) => w.text).join(' ') + ' ';
+          const textLen1 = seq.items1.map((w) => w.text).join(' ').length;
+          const textLen2 = seq.items2.map((w) => w.text).join(' ').length;
+
+          // Find runs at these positions
+          const run1Info = findRunAtPosition(runs1, pos1ToRun, pos1);
+          const run2Info = findRunAtPosition(runs2, pos2ToRun, pos2);
+
+          if (run1Info && run2Info && runPropertiesDiffer(run1Info.properties, run2Info.properties)) {
+            // Format change detected - create run with w:rPrChange
+            runs.push(createRunWithFormatChange(text, run2Info.properties, run1Info.properties, settings));
+          } else {
+            runs.push(createRun(text));
+          }
+
+          pos1 += textLen1 + 1; // +1 for space
+          pos2 += textLen2 + 1;
         }
         break;
 
       case CorrelationStatus.Deleted:
         if (seq.items1) {
-          const text = seq.items1.map((w) => w.text).join(' ');
-          const run = createRun(text + ' ');
+          const text = seq.items1.map((w) => w.text).join(' ') + ' ';
+          const run = createRun(text);
           runs.push(createDeletion(run, settings));
+          pos1 += text.length;
         }
         break;
 
       case CorrelationStatus.Inserted:
         if (seq.items2) {
-          const text = seq.items2.map((w) => w.text).join(' ');
-          const run = createRun(text + ' ');
+          const text = seq.items2.map((w) => w.text).join(' ') + ' ';
+          const run = createRun(text);
           runs.push(createInsertion(run, settings));
+          pos2 += text.length;
         }
         break;
     }
@@ -509,6 +622,36 @@ function compareWordsInParagraph(
   // Preserve original paragraph properties if available
   const pPr = getChildren(para2.node).find((c) => getTagName(c) === 'w:pPr');
   return createParagraph(runs, pPr ? cloneNode(pPr) : undefined);
+}
+
+/**
+ * Build a position-to-run index mapping for quick lookup
+ */
+function buildPositionToRunMap(runs: RunInfo[]): Map<number, number> {
+  const map = new Map<number, number>();
+  let pos = 0;
+  for (let i = 0; i < runs.length; i++) {
+    for (let j = 0; j < runs[i].text.length; j++) {
+      map.set(pos + j, i);
+    }
+    pos += runs[i].text.length;
+  }
+  return map;
+}
+
+/**
+ * Find the run that contains the given character position
+ */
+function findRunAtPosition(
+  runs: RunInfo[],
+  posMap: Map<number, number>,
+  position: number
+): RunInfo | undefined {
+  const runIndex = posMap.get(position);
+  if (runIndex !== undefined && runIndex < runs.length) {
+    return runs[runIndex];
+  }
+  return undefined;
 }
 
 /**
@@ -558,6 +701,103 @@ function tokenize(text: string): WordUnit[] {
     hash: token, // Case-sensitive matching
     text: token,
   }));
+}
+
+/**
+ * Interface for a run with its text and properties
+ */
+interface RunInfo {
+  text: string;
+  properties: XmlNode | undefined;
+  propertiesHash: string;
+}
+
+/**
+ * Extract runs from a paragraph with their text and properties
+ */
+function extractRunsWithProperties(paraNode: XmlNode): RunInfo[] {
+  const runs: RunInfo[] = [];
+
+  for (const child of getChildren(paraNode)) {
+    const tag = getTagName(child);
+    if (tag === 'w:r') {
+      const rPr = getChildren(child).find((c) => getTagName(c) === 'w:rPr');
+      const textParts: string[] = [];
+
+      for (const runChild of getChildren(child)) {
+        const runChildTag = getTagName(runChild);
+        if (runChildTag === 'w:t') {
+          textParts.push(getTextContent(runChild));
+        }
+      }
+
+      const text = textParts.join('');
+      if (text) {
+        // Create a hash of the properties for comparison
+        const propsHash = rPr ? hashString(JSON.stringify(rPr)) : '';
+        runs.push({
+          text,
+          properties: rPr,
+          propertiesHash: propsHash,
+        });
+      }
+    }
+  }
+
+  return runs;
+}
+
+/**
+ * Check if two run property nodes are different
+ */
+function runPropertiesDiffer(props1: XmlNode | undefined, props2: XmlNode | undefined): boolean {
+  // Both undefined means no difference
+  if (!props1 && !props2) return false;
+  // One defined, one not means difference
+  if (!props1 || !props2) return true;
+  // Compare serialized form
+  return JSON.stringify(props1) !== JSON.stringify(props2);
+}
+
+/**
+ * Create a run with format change tracking
+ */
+function createRunWithFormatChange(
+  text: string,
+  newProps: XmlNode | undefined,
+  oldProps: XmlNode | undefined,
+  settings: RevisionSettings
+): XmlNode {
+  const children: XmlNode[] = [];
+
+  // Create w:rPr with w:rPrChange inside
+  const rPrChildren: XmlNode[] = [];
+
+  // Copy the new properties (minus w:rPrChange if present)
+  if (newProps) {
+    for (const child of getChildren(newProps)) {
+      if (getTagName(child) !== 'w:rPrChange') {
+        rPrChildren.push(cloneNode(child));
+      }
+    }
+  }
+
+  // Add w:rPrChange element
+  const rPrChange = createRunPropertyChange(
+    oldProps || { 'w:rPr': [] }, // Original properties (empty if none)
+    settings
+  );
+  rPrChildren.push(rPrChange);
+
+  children.push({ 'w:rPr': rPrChildren });
+
+  // Add text element
+  children.push({
+    'w:t': [{ '#text': text }],
+    ':@': text.startsWith(' ') || text.endsWith(' ') ? { '@_xml:space': 'preserve' } : undefined,
+  });
+
+  return { 'w:r': children };
 }
 
 /**

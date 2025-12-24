@@ -17,8 +17,9 @@ export * from './wml/revision';
 // Word document comparison
 export * from './wml/wml-comparer';
 
-// Excel document comparison (to be implemented)
-// export * from './sml/sml-comparer';
+// Excel document comparison
+export * from './sml/sml-comparer';
+export * from './sml/types';
 
 // PowerPoint document comparison (to be implemented)
 // export * from './pml/pml-comparer';
