@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under MIT license. See LICENSE file in project root for full license information.
-
 import JSZip from 'jszip';
 
 export interface ExcelFileSpec {
@@ -21,79 +18,71 @@ export interface CellSpec {
   address: string;
   value?: string;
   formula?: string;
-  format?: CellFormatSpec;
-  comment?: CommentSpec;
-  dataValidation?: DataValidationSpec;
 }
 
-export interface CellFormatSpec {
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  strikethrough?: boolean;
-  fontSize?: number;
-  fontColor?: string;
-  fillForegroundColor?: string;
-}
-
-export interface CommentSpec {
-  author: string;
-  text: string;
-}
-
-export interface DataValidationSpec {
-  type: string;
-  operator?: string;
-  formula1?: string;
-}
-
-/**
- * Generate a minimal .xlsx file from specification
- */
 export async function generateExcelFile(spec: ExcelFileSpec): Promise<Buffer> {
   const zip = new JSZip();
 
-  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8"?>
+  const sheetOverrides = spec.sheets.map((_, i) =>
+    `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+  ).join('\n  ');
+
+  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+  ${sheetOverrides}
 </Types>`;
   zip.file('[Content_Types].xml', contentTypesXml);
 
-  const workbookRelsXml = spec.sheets.map((sheet, i) => {
-    const id = `rId${i + 1}`;
-    return `<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`;
-  }).join('\n');
-
-  zip.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8"?>
+  const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-${workbookRelsXml}
-</Relationships>`);
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+  zip.file('_rels/.rels', rootRelsXml);
 
-  const workbookXml = `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  ${spec.sheets.map((sheet, i) => `<sheet name="${sheet.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('\n')}
+  const workbookRelsEntries = spec.sheets.map((_, i) =>
+    `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
+  ).join('\n  ');
+
+  const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${workbookRelsEntries}
+  <Relationship Id="rId${spec.sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+  zip.file('xl/_rels/workbook.xml.rels', workbookRelsXml);
+
+  const sheetEntries = spec.sheets.map((sheet, i) =>
+    `<sheet name="${sheet.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`
+  ).join('\n    ');
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    ${sheetEntries}
+  </sheets>
 </workbook>`;
   zip.file('xl/workbook.xml', workbookXml);
 
-  const stylesXml = `<?xml version="1.0" encoding="UTF-8"?>
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <numFmts>
-    <numFmt numFmtId="164" formatCode="General"/>
-  </numFmts>
-  <fonts>
-    <font><sz val="11"/><color rgb="00000000"/><name val="Calibri"/></font>
+  <fonts count="1">
+    <font><sz val="11"/><name val="Calibri"/></font>
   </fonts>
-  <fills>
+  <fills count="2">
     <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
   </fills>
-  <borders>
+  <borders count="1">
     <border/>
   </borders>
-  <cellXfs>
+  <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
   </cellXfs>
 </styleSheet>`;
   zip.file('xl/styles.xml', stylesXml);
@@ -102,31 +91,31 @@ ${workbookRelsXml}
     const sheet = spec.sheets[i];
     const rowsXml = sheet.rows.map(row => {
       const cellsXml = row.cells.map(cell => {
-        const cellContent = cell.value
-          ? `<v>${cell.value}</v>`
-          : `<f>${cell.formula}</f>`;
-        return `<c r="${cell.address}">${cellContent}</c>`;
-      }).join('\n');
-      return `  <row r="${row.index}">\n${cellsXml}\n  </row>`;
-    }).join('\n');
+        if (cell.formula) {
+          return `<c r="${cell.address}"><f>${escapeXml(cell.formula)}</f></c>`;
+        }
+        return `<c r="${cell.address}" t="str"><v>${escapeXml(cell.value || '')}</v></c>`;
+      }).join('');
+      return `<row r="${row.index}">${cellsXml}</row>`;
+    }).join('\n    ');
 
-    const worksheetXml = `<?xml version="1.0" encoding="UTF-8"?>
+    const worksheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheetData>
-${rowsXml}
+    ${rowsXml}
   </sheetData>
 </worksheet>`;
     zip.file(`xl/worksheets/sheet${i + 1}.xml`, worksheetXml);
   }
 
-  for (let i = 0; i < spec.sheets.length; i++) {
-    const sheetRelsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>`;
-    zip.file(`xl/worksheets/_rels/sheet${i + 1}.xml.rels`, sheetRelsXml);
-  }
-
   return await zip.generateAsync({ type: 'nodebuffer' });
 }
 
-export { generateExcelFile, type ExcelFileSpec, type SheetSpec, type RowSpec, type CellSpec };
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}

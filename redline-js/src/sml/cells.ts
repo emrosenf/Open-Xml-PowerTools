@@ -11,7 +11,8 @@ import { SmlChangeType, type CellSignature, type SmlChange } from './types';
 export function compareCells(
   cells1: Map<string, CellSignature>,
   cells2: Map<string, CellSignature>,
-  settings: any
+  settings: any,
+  sheetName: string
 ): SmlChange[] {
   const changes: SmlChange[] = [];
   const processedAddresses = new Set<string>();
@@ -21,15 +22,16 @@ export function compareCells(
     if (cells2.has(address)) {
       processedAddresses.add(address);
     } else if (cell1.resolvedValue || cell1.formula) {
-      changes.push({
-        changeType: SmlChangeType.CellDeleted,
-        cellAddress: address,
-        rowIndex: cell1.row,
-        columnIndex: cell1.column,
-        oldValue: cell1.resolvedValue,
-        oldFormula: cell1.formula,
-        oldFormat: cell1.format,
-      });
+        changes.push({
+          changeType: SmlChangeType.CellDeleted,
+          sheetName,
+          cellAddress: address,
+          rowIndex: cell1.row,
+          columnIndex: cell1.column,
+          oldValue: cell1.resolvedValue,
+          oldFormula: cell1.formula,
+          oldFormat: cell1.format,
+        });
     }
   }
 
@@ -41,6 +43,7 @@ export function compareCells(
       if (cell2.resolvedValue || cell2.formula) {
         changes.push({
           changeType: SmlChangeType.CellAdded,
+          sheetName,
           cellAddress: address,
           rowIndex: cell2.row,
           columnIndex: cell2.column,
@@ -50,7 +53,7 @@ export function compareCells(
         });
       }
     } else if (cell1.contentHash !== cell2.contentHash) {
-      compareCellValues(cell1, cell2, address, changes, settings);
+      compareCellValues(cell1, cell2, address, changes, settings, sheetName);
     }
   }
 
@@ -65,7 +68,8 @@ function compareCellValues(
   cell2: CellSignature,
   address: string,
   changes: SmlChange[],
-  settings: any
+  settings: any,
+  sheetName: string
 ): void {
   const hasValueChange =
     settings.compareValues !== false &&
@@ -82,6 +86,7 @@ function compareCellValues(
   if (hasValueChange && hasFormulaChange) {
     changes.push({
       changeType: SmlChangeType.ValueChanged,
+      sheetName,
       cellAddress: address,
       rowIndex: cell1.row,
       columnIndex: cell1.column,
@@ -91,6 +96,7 @@ function compareCellValues(
 
     changes.push({
       changeType: SmlChangeType.FormulaChanged,
+      sheetName,
       cellAddress: address,
       rowIndex: cell1.row,
       columnIndex: cell1.column,
@@ -100,6 +106,7 @@ function compareCellValues(
   } else if (hasValueChange) {
     changes.push({
       changeType: SmlChangeType.ValueChanged,
+      sheetName,
       cellAddress: address,
       rowIndex: cell1.row,
       columnIndex: cell1.column,
@@ -109,6 +116,7 @@ function compareCellValues(
   } else if (hasFormulaChange) {
     changes.push({
       changeType: SmlChangeType.FormulaChanged,
+      sheetName,
       cellAddress: address,
       rowIndex: cell1.row,
       columnIndex: cell1.column,
@@ -120,6 +128,7 @@ function compareCellValues(
   if (hasFormatChange) {
     changes.push({
       changeType: SmlChangeType.FormatChanged,
+      sheetName,
       cellAddress: address,
       rowIndex: cell1.row,
       columnIndex: cell1.column,

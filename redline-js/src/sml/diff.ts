@@ -21,12 +21,13 @@ import { computeCorrelation, CorrelationStatus } from '../core/lcs';
 export function compareRows(
   sheet1: WorksheetSignature,
   sheet2: WorksheetSignature,
-  settings: any
+  settings: any,
+  sheetName: string
 ): SmlChange[] {
   const changes: SmlChange[] = [];
 
   if (!settings.enableRowAlignment) {
-    compareCellsDirect(sheet1, sheet2, changes, settings);
+    compareCellsDirect(sheet1, sheet2, changes, settings, sheetName);
     return changes;
   }
 
@@ -50,7 +51,7 @@ export function compareRows(
           const unit1 = seq.items1[i];
           const unit2 = seq.items2[i];
 
-          compareAlignedRows(unit1, unit2, sheet1, sheet2, changes, settings);
+          compareAlignedRows(unit1, unit2, sheet1, sheet2, changes, settings, sheetName);
           row1Index++;
           row2Index++;
         }
@@ -60,6 +61,7 @@ export function compareRows(
         for (const unit of seq.items1) {
           changes.push({
             changeType: SmlChangeType.RowDeleted,
+            sheetName,
             rowIndex: unit.row,
           });
           row1Index++;
@@ -70,6 +72,7 @@ export function compareRows(
         for (const unit of seq.items2) {
           changes.push({
             changeType: SmlChangeType.RowInserted,
+            sheetName,
             rowIndex: unit.row,
           });
           row2Index++;
@@ -105,7 +108,8 @@ function compareAlignedRows(
   sheet1: WorksheetSignature,
   sheet2: WorksheetSignature,
   changes: SmlChange[],
-  settings: any
+  settings: any,
+  sheetName: string
 ): void {
   if (unit1.hash === unit2.hash) {
     return;
@@ -117,30 +121,33 @@ function compareAlignedRows(
   for (const [address, cell2] of cells2) {
     const cell1 = cells1.get(address);
 
-    if (!cell1) {
-      changes.push({
-        changeType: SmlChangeType.CellAdded,
-        cellAddress: address,
-        rowIndex: unit2.row,
-        columnIndex: cell2.column,
-        newValue: cell2.resolvedValue,
-      });
+      if (!cell1) {
+        changes.push({
+          changeType: SmlChangeType.CellAdded,
+          sheetName,
+          cellAddress: address,
+          rowIndex: unit2.row,
+          columnIndex: cell2.column,
+          newValue: cell2.resolvedValue,
+        });
     } else {
       if (cell1.contentHash !== cell2.contentHash) {
         if (cell1.formula !== cell2.formula) {
-          changes.push({
-            changeType: SmlChangeType.FormulaChanged,
-            cellAddress: address,
-            rowIndex: unit2.row,
-            columnIndex: cell2.column,
-            oldFormula: cell1.formula,
-            newFormula: cell2.formula,
-            oldValue: cell1.resolvedValue,
-            newValue: cell2.resolvedValue,
-          });
+            changes.push({
+              changeType: SmlChangeType.FormulaChanged,
+              sheetName,
+              cellAddress: address,
+              rowIndex: unit2.row,
+              columnIndex: cell2.column,
+              oldFormula: cell1.formula,
+              newFormula: cell2.formula,
+              oldValue: cell1.resolvedValue,
+              newValue: cell2.resolvedValue,
+            });
         } else {
           changes.push({
             changeType: SmlChangeType.ValueChanged,
+            sheetName,
             cellAddress: address,
             rowIndex: unit2.row,
             columnIndex: cell2.column,
@@ -153,6 +160,7 @@ function compareAlignedRows(
       if (settings.compareFormatting && !formatsEqual(cell1.format, cell2.format)) {
         changes.push({
           changeType: SmlChangeType.FormatChanged,
+          sheetName,
           cellAddress: address,
           rowIndex: unit2.row,
           columnIndex: cell2.column,
@@ -167,6 +175,7 @@ function compareAlignedRows(
     if (!cells2.has(address) && (cell1.resolvedValue || cell1.formula)) {
       changes.push({
         changeType: SmlChangeType.CellDeleted,
+        sheetName,
         cellAddress: address,
         rowIndex: unit1.row,
         columnIndex: cell1.column,
@@ -183,7 +192,8 @@ function compareCellsDirect(
   sheet1: WorksheetSignature,
   sheet2: WorksheetSignature,
   changes: SmlChange[],
-  settings: any
+  settings: any,
+  sheetName: string
 ): void {
   for (const [address, cell2] of sheet2.cells) {
     const cell1 = sheet1.cells.get(address);
@@ -191,6 +201,7 @@ function compareCellsDirect(
     if (!cell1) {
       changes.push({
         changeType: SmlChangeType.CellAdded,
+        sheetName,
         cellAddress: address,
         rowIndex: cell2.row,
         columnIndex: cell2.column,
@@ -201,6 +212,7 @@ function compareCellsDirect(
         if (cell1.formula !== cell2.formula) {
           changes.push({
             changeType: SmlChangeType.FormulaChanged,
+            sheetName,
             cellAddress: address,
             rowIndex: cell2.row,
             columnIndex: cell2.column,
@@ -212,6 +224,7 @@ function compareCellsDirect(
         } else {
           changes.push({
             changeType: SmlChangeType.ValueChanged,
+            sheetName,
             cellAddress: address,
             rowIndex: cell2.row,
             columnIndex: cell2.column,
@@ -224,6 +237,7 @@ function compareCellsDirect(
       if (settings.compareFormatting && !formatsEqual(cell1.format, cell2.format)) {
         changes.push({
           changeType: SmlChangeType.FormatChanged,
+          sheetName,
           cellAddress: address,
           rowIndex: cell2.row,
           columnIndex: cell2.column,
@@ -238,6 +252,7 @@ function compareCellsDirect(
     if (!sheet2.cells.has(address) && (cell1.resolvedValue || cell1.formula)) {
       changes.push({
         changeType: SmlChangeType.CellDeleted,
+        sheetName,
         cellAddress: address,
         rowIndex: cell1.row,
         columnIndex: cell1.column,

@@ -35,6 +35,8 @@ export {
 // Excel document comparison - explicit exports to avoid ambiguity with ./types
 export {
   compare as compareSpreadsheets,
+  produceMarkedWorkbook,
+  buildChangeList,
 } from './sml/sml-comparer';
 
 export {
@@ -42,6 +44,8 @@ export {
   type SmlChange,
   type SmlComparerSettings,
   type SmlComparisonResult,
+  type SmlChangeListItem,
+  type SmlChangeListOptions,
   type WorkbookSignature,
   type WorksheetSignature,
   type CellSignature,

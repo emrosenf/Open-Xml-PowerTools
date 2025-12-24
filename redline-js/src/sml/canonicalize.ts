@@ -97,7 +97,6 @@ function extractWorksheetRels(workbookXml: XmlNode[]): Array<{ id: string; name:
     if (getTagName(node) === 'workbook') {
       const children = getChildren(node);
 
-      // Find sheets element
       for (const child of children) {
         if (getTagName(child) === 'sheets') {
           const sheets = getChildren(child);
@@ -106,8 +105,8 @@ function extractWorksheetRels(workbookXml: XmlNode[]): Array<{ id: string; name:
             const attrs = sheet[':@'] as Record<string, string> | undefined;
             if (attrs) {
               rels.push({
-                id: attrs['r:id'] || '',
-                name: attrs['name'] || '',
+                id: attrs['@_r:id'] || '',
+                name: attrs['@_name'] || '',
               });
             }
           }
@@ -263,8 +262,8 @@ function parseNumFmts(numFmtsNode: XmlNode, styleInfo: StyleInfo): void {
     if (getTagName(child) !== 'numFmt') continue;
     const attrs = child[':@'] as Record<string, string> | undefined;
     if (attrs) {
-      const id = parseInt(attrs['numFmtId'] || '0', 10);
-      const code = attrs['formatCode'] || '';
+      const id = parseInt(attrs['@_numFmtId'] || '0', 10);
+      const code = attrs['@_formatCode'] || '';
       styleInfo.numberFormats.set(id, code);
     }
   }
@@ -283,8 +282,8 @@ function parseFonts(fontsNode: XmlNode, styleInfo: StyleInfo): void {
       else if (tagName === 'i') font.italic = true;
       else if (tagName === 'u') font.underline = true;
       else if (tagName === 'strike') font.strikethrough = true;
-      else if (tagName === 'sz' && attrs) font.size = parseFloat(attrs['val'] || '0');
-      else if (tagName === 'name' && attrs) font.name = attrs['val'];
+      else if (tagName === 'sz' && attrs) font.size = parseFloat(attrs['@_val'] || '0');
+      else if (tagName === 'name' && attrs) font.name = attrs['@_val'];
       else if (tagName === 'color' && attrs) font.color = getColorValue(attrs);
     }
 
@@ -300,7 +299,7 @@ function parseFills(fillsNode: XmlNode, styleInfo: StyleInfo): void {
     for (const child of getChildren(fillNode)) {
       if (getTagName(child) === 'patternFill') {
         const attrs = child[':@'] as Record<string, string> | undefined;
-        if (attrs) fill.pattern = attrs['patternType'];
+        if (attrs) fill.pattern = attrs['@_patternType'];
 
         for (const pfChild of getChildren(child)) {
           const pfAttrs = pfChild[':@'] as Record<string, string> | undefined;
@@ -325,7 +324,7 @@ function parseBorders(bordersNode: XmlNode, styleInfo: StyleInfo): void {
     for (const child of getChildren(borderNode)) {
       const tagName = getTagName(child);
       const attrs = child[':@'] as Record<string, string> | undefined;
-      const style = attrs?.['style'];
+      const style = attrs?.['@_style'];
 
       let color: string | undefined;
       for (const colorChild of getChildren(child)) {
@@ -360,20 +359,20 @@ function parseCellXfs(cellXfsNode: XmlNode, styleInfo: StyleInfo): void {
     const attrs = xfNode[':@'] as Record<string, string> | undefined;
 
     const xf: CellXf = {
-      numFmtId: parseInt(attrs?.['numFmtId'] || '0', 10),
-      fontId: parseInt(attrs?.['fontId'] || '0', 10),
-      fillId: parseInt(attrs?.['fillId'] || '0', 10),
-      borderId: parseInt(attrs?.['borderId'] || '0', 10),
+      numFmtId: parseInt(attrs?.['@_numFmtId'] || '0', 10),
+      fontId: parseInt(attrs?.['@_fontId'] || '0', 10),
+      fillId: parseInt(attrs?.['@_fillId'] || '0', 10),
+      borderId: parseInt(attrs?.['@_borderId'] || '0', 10),
     };
 
     for (const child of getChildren(xfNode)) {
       if (getTagName(child) === 'alignment') {
         const alignAttrs = child[':@'] as Record<string, string> | undefined;
         if (alignAttrs) {
-          xf.horizontalAlignment = alignAttrs['horizontal'];
-          xf.verticalAlignment = alignAttrs['vertical'];
-          xf.wrapText = alignAttrs['wrapText'] === '1';
-          xf.indent = parseInt(alignAttrs['indent'] || '0', 10);
+          xf.horizontalAlignment = alignAttrs['@_horizontal'];
+          xf.verticalAlignment = alignAttrs['@_vertical'];
+          xf.wrapText = alignAttrs['@_wrapText'] === '1';
+          xf.indent = parseInt(alignAttrs['@_indent'] || '0', 10);
         }
       }
     }
@@ -383,9 +382,9 @@ function parseCellXfs(cellXfsNode: XmlNode, styleInfo: StyleInfo): void {
 }
 
 function getColorValue(attrs: Record<string, string>): string {
-  if (attrs['rgb']) return attrs['rgb'];
-  if (attrs['indexed']) return `indexed:${attrs['indexed']}`;
-  if (attrs['theme']) return `theme:${attrs['theme']}`;
+  if (attrs['@_rgb']) return attrs['@_rgb'];
+  if (attrs['@_indexed']) return `indexed:${attrs['@_indexed']}`;
+  if (attrs['@_theme']) return `theme:${attrs['@_theme']}`;
   return '';
 }
 
@@ -557,10 +556,10 @@ async function extractComments(
           if (getTagName(commentNode) !== 'comment') continue;
 
           const attrs = commentNode[':@'] as Record<string, string> | undefined;
-          if (!attrs?.['ref']) continue;
+          if (!attrs?.['@_ref']) continue;
 
-          const cellRef = attrs['ref'];
-          const authorId = parseInt(attrs['authorId'] || '0', 10);
+          const cellRef = attrs['@_ref'];
+          const authorId = parseInt(attrs['@_authorId'] || '0', 10);
           const author = authors[authorId] || 'Unknown';
 
           let text = '';
@@ -665,7 +664,7 @@ function parseSheetData(
     if (getTagName(rowNode) !== 'row') continue;
 
     const attrs = rowNode[':@'] as Record<string, string> | undefined;
-    const rowIndex = attrs ? parseInt(attrs['r'] || '0', 10) : 0;
+    const rowIndex = attrs ? parseInt(attrs['@_r'] || '0', 10) : 0;
 
     // Track populated rows
     sheetSig.populatedRows.add(rowIndex);
@@ -697,11 +696,9 @@ function parseCell(
   const attrs = cellNode[':@'] as Record<string, string> | undefined;
   if (!attrs) return null;
 
-  // Parse cell address (e.g., "A1")
-  const cellAddress = attrs['r'] || '';
+  const cellAddress = attrs['@_r'] || '';
   const columnIndex = parseColumnIndex(cellAddress);
 
-  // Extract cell content
   let resolvedValue = '';
   let formula = '';
   let styleIndex = -1;
@@ -712,9 +709,8 @@ function parseCell(
     const tagName = getTagName(child);
 
     if (tagName === 'v') {
-      // Value - resolve from shared strings if needed
       const rawValue = getTextContent(child);
-      const type = attrs['t']; // s = shared string, str = string, etc.
+      const type = attrs['@_t'];
 
       if (type === 's' && sharedStrings) {
         const index = parseInt(rawValue, 10);
@@ -725,14 +721,12 @@ function parseCell(
         resolvedValue = rawValue;
       }
     } else if (tagName === 'f') {
-      // Formula
       formula = getTextContent(child);
     }
   }
 
-  // Get style index
-  if (attrs['s']) {
-    styleIndex = parseInt(attrs['s'], 10);
+  if (attrs['@_s']) {
+    styleIndex = parseInt(attrs['@_s'], 10);
   }
 
   const format: CellFormatSignature = (styleIndex >= 0 ? styles.get(styleIndex) : undefined) ?? {};
@@ -781,8 +775,8 @@ function parseMergedCells(
     if (getTagName(mergeNode) !== 'mergeCell') continue;
 
     const attrs = mergeNode[':@'] as Record<string, string> | undefined;
-    if (attrs && attrs['ref']) {
-      sheetSig.mergedCellRanges.add(attrs['ref']);
+    if (attrs && attrs['@_ref']) {
+      sheetSig.mergedCellRanges.add(attrs['@_ref']);
     }
   }
 }
@@ -802,9 +796,9 @@ function parseHyperlinks(
     const attrs = linkNode[':@'] as Record<string, string> | undefined;
     if (attrs) {
       const sig: HyperlinkSignature = {
-        cellAddress: attrs['ref'] || '',
-        target: attrs['target'] || '',
-        hash: hashString(attrs['target'] || ''),
+        cellAddress: attrs['@_ref'] || '',
+        target: attrs['@_target'] || '',
+        hash: hashString(attrs['@_target'] || ''),
       };
       sheetSig.hyperlinks.set(sig.cellAddress, sig);
     }
@@ -827,19 +821,19 @@ function parseDataValidations(
     if (!attrs) continue;
 
     const sig: DataValidationSignature = {
-      cellRange: attrs['sqref'] || '',
-      type: attrs['type'] || '',
-      operator: attrs['operator'],
-      formula1: attrs['formula1'],
-      formula2: attrs['formula2'],
-      allowBlank: attrs['allowBlank'] === '1',
-      showDropDown: attrs['showDropDown'] === '1',
-      showInputMessage: attrs['showInputMessage'] === '1',
-      showErrorMessage: attrs['showErrorMessage'] === '1',
-      errorTitle: attrs['errorTitle'],
-      error: attrs['error'],
-      promptTitle: attrs['promptTitle'],
-      prompt: attrs['prompt'],
+      cellRange: attrs['@_sqref'] || '',
+      type: attrs['@_type'] || '',
+      operator: attrs['@_operator'],
+      formula1: attrs['@_formula1'],
+      formula2: attrs['@_formula2'],
+      allowBlank: attrs['@_allowBlank'] === '1',
+      showDropDown: attrs['@_showDropDown'] === '1',
+      showInputMessage: attrs['@_showInputMessage'] === '1',
+      showErrorMessage: attrs['@_showErrorMessage'] === '1',
+      errorTitle: attrs['@_errorTitle'],
+      error: attrs['@_error'],
+      promptTitle: attrs['@_promptTitle'],
+      prompt: attrs['@_prompt'],
       hash: '',
     };
 
@@ -936,8 +930,8 @@ async function extractDefinedNames(
           for (const nameNode of names) {
             if (getTagName(nameNode) === 'definedName') {
               const attrs = nameNode[':@'] as Record<string, string> | undefined;
-              if (attrs && attrs['name']) {
-                definedNames.set(attrs['name'], getTextContent(nameNode));
+              if (attrs && attrs['@_name']) {
+                definedNames.set(attrs['@_name'], getTextContent(nameNode));
               }
             }
           }
