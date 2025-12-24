@@ -12,6 +12,7 @@
 import {
   openPackage,
   getPartAsXml,
+  getRelationships,
   type OoxmlPackage,
 } from '../core/package';
 import {
@@ -245,8 +246,7 @@ async function canonicalizeWorksheet(
   styles: Map<number, CellFormatSignature>,
   settings: any
 ): Promise<WorksheetSignature> {
-  // Get worksheet XML path from relationship
-  const worksheetPath = resolveWorksheetPath(pkg, relId);
+  const worksheetPath = await resolveWorksheetPath(pkg, relId);
 
   if (!worksheetPath) {
     throw new Error(`Cannot find worksheet for relId: ${relId}`);
@@ -306,20 +306,37 @@ async function canonicalizeWorksheet(
 
 /**
  * Resolve worksheet path from relationship ID
+ *
+ * Parses xl/_rels/workbook.xml.rels to find the target path for a given relationship ID.
  */
-function resolveWorksheetPath(
+async function resolveWorksheetPath(
   pkg: OoxmlPackage,
   relId: string
-): string | null {
-  // Relationship ID -> target path mapping is in xl/_rels/workbook.xml.rels
-  // For now, assume standard naming: xl/worksheets/sheet1.xml, etc.
-  const sheets = pkg.zip.file(/xl\/worksheets\/sheet\d+\.xml/);
+): Promise<string | null> {
+  // Get relationships from xl/_rels/workbook.xml.rels
+  const relationships = await getRelationships(pkg, 'xl/workbook.xml');
 
-  if (sheets && sheets.length > 0) {
-    return sheets[0].name;
+  // Find the relationship with matching ID
+  const rel = relationships.find((r) => r.id === relId);
+
+  if (!rel) {
+    return null;
   }
 
-  return null;
+  // Target is relative to xl/ directory
+  // e.g., "worksheets/sheet1.xml" -> "xl/worksheets/sheet1.xml"
+  const target = rel.target;
+
+  if (target.startsWith('/')) {
+    // Absolute path from root
+    return target.slice(1);
+  } else if (target.startsWith('../')) {
+    // Relative path going up - resolve from xl/
+    return target.replace('../', '');
+  } else {
+    // Relative path from xl/
+    return `xl/${target}`;
+  }
 }
 
 /**

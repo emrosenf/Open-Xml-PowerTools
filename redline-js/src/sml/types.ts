@@ -25,7 +25,7 @@ export interface SmlComparerSettings {
   slideSimilarityThreshold?: number;
   positionTolerance?: number;
   authorForChanges?: string;
-  highlightColors: HighlightColors;
+  highlightColors?: HighlightColors;
 }
 
 /**

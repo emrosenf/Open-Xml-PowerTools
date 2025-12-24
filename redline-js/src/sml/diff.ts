@@ -49,7 +49,7 @@ export function compareRows(
           const unit1 = seq.items1[i];
           const unit2 = seq.items2[i];
 
-          compareAlignedRows(unit1, unit2, changes, settings);
+          compareAlignedRows(unit1, unit2, sheet1, sheet2, changes, settings);
           row1Index++;
           row2Index++;
         }
@@ -101,6 +101,8 @@ function convertRowsToUnits(
 function compareAlignedRows(
   unit1: { row: number; hash: string },
   unit2: { row: number; hash: string },
+  sheet1: WorksheetSignature,
+  sheet2: WorksheetSignature,
   changes: SmlChange[],
   settings: any
 ): void {
@@ -123,13 +125,38 @@ function compareAlignedRows(
         newValue: cell2.resolvedValue,
       });
     } else if (cell1.contentHash !== cell2.contentHash) {
+      if (cell1.formula !== cell2.formula) {
+        changes.push({
+          changeType: SmlChangeType.FormulaChanged,
+          cellAddress: address,
+          rowIndex: unit2.row,
+          columnIndex: cell2.column,
+          oldFormula: cell1.formula,
+          newFormula: cell2.formula,
+          oldValue: cell1.resolvedValue,
+          newValue: cell2.resolvedValue,
+        });
+      } else {
+        changes.push({
+          changeType: SmlChangeType.ValueChanged,
+          cellAddress: address,
+          rowIndex: unit2.row,
+          columnIndex: cell2.column,
+          oldValue: cell1.resolvedValue,
+          newValue: cell2.resolvedValue,
+        });
+      }
+    }
+  }
+
+  for (const [address, cell1] of cells1) {
+    if (!cells2.has(address) && (cell1.resolvedValue || cell1.formula)) {
       changes.push({
-        changeType: SmlChangeType.ValueChanged,
+        changeType: SmlChangeType.CellDeleted,
         cellAddress: address,
-        rowIndex: unit2.row,
-        columnIndex: cell2.column,
+        rowIndex: unit1.row,
+        columnIndex: cell1.column,
         oldValue: cell1.resolvedValue,
-        newValue: cell2.resolvedValue,
       });
     }
   }
@@ -156,14 +183,27 @@ function compareCellsDirect(
         newValue: cell2.resolvedValue,
       });
     } else if (cell1.contentHash !== cell2.contentHash) {
-      changes.push({
-        changeType: SmlChangeType.ValueChanged,
-        cellAddress: address,
-        rowIndex: cell2.row,
-        columnIndex: cell2.column,
-        oldValue: cell1.resolvedValue,
-        newValue: cell2.resolvedValue,
-      });
+      if (cell1.formula !== cell2.formula) {
+        changes.push({
+          changeType: SmlChangeType.FormulaChanged,
+          cellAddress: address,
+          rowIndex: cell2.row,
+          columnIndex: cell2.column,
+          oldFormula: cell1.formula,
+          newFormula: cell2.formula,
+          oldValue: cell1.resolvedValue,
+          newValue: cell2.resolvedValue,
+        });
+      } else {
+        changes.push({
+          changeType: SmlChangeType.ValueChanged,
+          cellAddress: address,
+          rowIndex: cell2.row,
+          columnIndex: cell2.column,
+          oldValue: cell1.resolvedValue,
+          newValue: cell2.resolvedValue,
+        });
+      }
     }
   }
 
