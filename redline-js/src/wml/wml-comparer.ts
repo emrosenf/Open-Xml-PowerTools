@@ -743,6 +743,7 @@ function compareTableRowContent(
 /**
  * Count revisions at word level within a paragraph.
  * Adjacent changes of the same type are merged.
+ * If there's only one type of change (pure insert or pure delete), count as 1.
  */
 function countWordRevisions(
   text1: string,
@@ -754,15 +755,19 @@ function countWordRevisions(
 
   let insertions = 0;
   let deletions = 0;
+  let hasInsertions = false;
+  let hasDeletions = false;
   let lastStatus: CorrelationStatus | null = null;
 
   for (const wseq of wordCorr) {
     if (wseq.status === CorrelationStatus.Deleted) {
+      hasDeletions = true;
       if (lastStatus !== CorrelationStatus.Deleted) {
         deletions++;
       }
       lastStatus = CorrelationStatus.Deleted;
     } else if (wseq.status === CorrelationStatus.Inserted) {
+      hasInsertions = true;
       if (lastStatus !== CorrelationStatus.Inserted) {
         insertions++;
       }
@@ -770,6 +775,15 @@ function countWordRevisions(
     } else {
       lastStatus = null;
     }
+  }
+
+  // If there's only one type of change (pure insert or pure delete),
+  // treat as a single revision regardless of fragmentation
+  if (hasInsertions && !hasDeletions) {
+    return { insertions: 1, deletions: 0 };
+  }
+  if (hasDeletions && !hasInsertions) {
+    return { insertions: 0, deletions: 1 };
   }
 
   return { insertions, deletions };
