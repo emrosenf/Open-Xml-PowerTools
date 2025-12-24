@@ -6,3 +6,4 @@ export * from './namespaces';
 export * from './xml';
 export * from './package';
 export * from './hash';
+export * from './lcs';

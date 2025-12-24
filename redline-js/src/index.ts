@@ -12,10 +12,10 @@ export * from './core';
 
 // Word document handling
 export * from './wml/document';
+export * from './wml/revision';
 
-// Word document comparison (to be implemented)
-// export * from './wml/wml-comparer';
-// export * from './wml/revision-processor';
+// Word document comparison
+export * from './wml/wml-comparer';
 
 // Excel document comparison (to be implemented)
 // export * from './sml/sml-comparer';
