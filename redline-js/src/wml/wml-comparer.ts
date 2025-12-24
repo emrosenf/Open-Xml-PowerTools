@@ -744,6 +744,7 @@ function compareTableRowContent(
  * Count revisions at word level within a paragraph.
  * Adjacent changes of the same type are merged.
  * If there's only one type of change (pure insert or pure delete), count as 1.
+ * If the paragraphs are very different (low similarity), treat as complete replacement.
  */
 function countWordRevisions(
   text1: string,
@@ -757,6 +758,7 @@ function countWordRevisions(
   let deletions = 0;
   let hasInsertions = false;
   let hasDeletions = false;
+  let equalCount = 0;
   let lastStatus: CorrelationStatus | null = null;
 
   for (const wseq of wordCorr) {
@@ -774,6 +776,7 @@ function countWordRevisions(
       lastStatus = CorrelationStatus.Inserted;
     } else {
       lastStatus = null;
+      equalCount += wseq.items1?.length || 0;
     }
   }
 
@@ -784,6 +787,16 @@ function countWordRevisions(
   }
   if (hasDeletions && !hasInsertions) {
     return { insertions: 0, deletions: 1 };
+  }
+
+  // Calculate similarity ratio based on common words
+  const totalWords = Math.max(words1.length, words2.length);
+  const similarity = totalWords > 0 ? equalCount / totalWords : 0;
+
+  // If similarity is very low (< 20%), treat as complete replacement (1 del + 1 ins)
+  // This matches C# behavior for paragraphs with minimal overlap
+  if (similarity < 0.2 && hasInsertions && hasDeletions) {
+    return { insertions: 1, deletions: 1 };
   }
 
   return { insertions, deletions };
