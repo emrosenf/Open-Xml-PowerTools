@@ -6,15 +6,11 @@
  */
 
 import {
-  createNode,
-  setAttribute,
   cloneNode,
   getTagName,
   getChildren,
   type XmlNode,
-  type XmlAttributes,
 } from '../core/xml';
-import { W } from '../core/namespaces';
 
 /**
  * Settings for revision tracking

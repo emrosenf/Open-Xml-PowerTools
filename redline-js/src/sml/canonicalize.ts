@@ -10,7 +10,6 @@
  */
 
 import {
-  openPackage,
   getPartAsXml,
   getRelationships,
   type OoxmlPackage,
@@ -31,8 +30,6 @@ import type {
   CommentSignature,
   DataValidationSignature,
   HyperlinkSignature,
-  MergedCellRange,
-  ConditionalFormatRange,
 } from './types';
 
 /**
@@ -660,7 +657,7 @@ function parseSheetData(
   sheetSig: WorksheetSignature,
   sharedStrings: string[] | null,
   styles: Map<number, CellFormatSignature>,
-  settings: any
+  _settings: unknown
 ): void {
   const rows = getChildren(sheetDataNode);
 
@@ -678,7 +675,7 @@ function parseSheetData(
     for (const cellNode of cells) {
       if (getTagName(cellNode) !== 'c') continue;
 
-      const cellSig = parseCell(cellNode, rowIndex, sharedStrings, styles, settings);
+      const cellSig = parseCell(cellNode, rowIndex, sharedStrings, styles, _settings);
       if (cellSig) {
         sheetSig.cells.set(cellSig.address, cellSig);
         sheetSig.populatedColumns.add(cellSig.column);
@@ -695,7 +692,7 @@ function parseCell(
   rowIndex: number,
   sharedStrings: string[] | null,
   styles: Map<number, CellFormatSignature>,
-  settings: any
+  _settings: unknown
 ): CellSignature | null {
   const attrs = cellNode[':@'] as Record<string, string> | undefined;
   if (!attrs) return null;
@@ -738,10 +735,8 @@ function parseCell(
     styleIndex = parseInt(attrs['s'], 10);
   }
 
-  // Get cell format
-  const format = styleIndex >= 0 ? styles.get(styleIndex) : {};
+  const format: CellFormatSignature = (styleIndex >= 0 ? styles.get(styleIndex) : undefined) ?? {};
 
-  // Compute content hash
   const content = formula || resolvedValue;
   const contentHash = hashString(content);
 
@@ -866,11 +861,10 @@ function parseDataValidations(
  * Parse conditional formatting
  */
 function parseConditionalFormatting(
-  cfNode: XmlNode,
-  sheetSig: WorksheetSignature
+  _cfNode: XmlNode,
+  _sheetSig: WorksheetSignature
 ): void {
-  // For now, just track that conditional formatting exists
-  // Full implementation would parse cfRule elements
+  // Placeholder for conditional formatting parsing
 }
 
 /**
@@ -885,13 +879,12 @@ function computeRowSignatures(sheetSig: WorksheetSignature): void {
     // Build signature from all cells in this row
     const cellSignatures: string[] = [];
 
-    for (const [address, cell] of sheetSig.cells) {
+    for (const [, cell] of sheetSig.cells) {
       if (cell.row === row) {
         cellSignatures.push(cell.contentHash);
       }
     }
 
-    // Hash the row signature
     const rowSig = hashString(cellSignatures.join('|'));
     sheetSig.rowSignatures.set(row, rowSig);
   }
@@ -909,13 +902,12 @@ function computeColumnSignatures(sheetSig: WorksheetSignature): void {
     // Build signature from all cells in this column
     const cellSignatures: string[] = [];
 
-    for (const [address, cell] of sheetSig.cells) {
+    for (const [, cell] of sheetSig.cells) {
       if (cell.column === col) {
         cellSignatures.push(cell.contentHash);
       }
     }
 
-    // Hash the column signature
     const colSig = hashString(cellSignatures.join('|'));
     sheetSig.columnSignatures.set(col, colSig);
   }

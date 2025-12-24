@@ -1,9 +1,9 @@
-import type {
-  WorksheetSignature,
-  CellSignature,
-  CellFormatSignature,
-  SmlChange,
+import {
   SmlChangeType,
+  type WorksheetSignature,
+  type CellSignature,
+  type CellFormatSignature,
+  type SmlChange,
 } from './types';
 import { computeCorrelation, CorrelationStatus } from '../core/lcs';
 

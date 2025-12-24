@@ -11,10 +11,8 @@
 
 import {
   SmlChangeType,
-  type SmlChange,
   type SmlComparisonResult,
   type SmlComparerSettings,
-  type WorkbookSignature,
   type WorksheetSignature,
   type CommentSignature,
   type DataValidationSignature,
@@ -186,7 +184,7 @@ function compareNamedRanges(
 function compareComments(
   comments1: Map<string, CommentSignature>,
   comments2: Map<string, CommentSignature>,
-  sheetName: string,
+  _sheetName: string,
   result: SmlComparisonResult
 ): void {
   const allAddresses = new Set([...comments1.keys(), ...comments2.keys()]);
@@ -224,7 +222,7 @@ function compareComments(
 function compareDataValidations(
   dvs1: Map<string, DataValidationSignature>,
   dvs2: Map<string, DataValidationSignature>,
-  sheetName: string,
+  _sheetName: string,
   result: SmlComparisonResult
 ): void {
   const allKeys = new Set([...dvs1.keys(), ...dvs2.keys()]);
@@ -270,7 +268,7 @@ function formatDataValidation(dv: DataValidationSignature): string {
 function compareMergedCells(
   merged1: Set<string>,
   merged2: Set<string>,
-  sheetName: string,
+  _sheetName: string,
   result: SmlComparisonResult
 ): void {
   for (const range of merged2) {
@@ -295,7 +293,7 @@ function compareMergedCells(
 function compareHyperlinks(
   hls1: Map<string, HyperlinkSignature>,
   hls2: Map<string, HyperlinkSignature>,
-  sheetName: string,
+  _sheetName: string,
   result: SmlComparisonResult
 ): void {
   const allAddresses = new Set([...hls1.keys(), ...hls2.keys()]);
@@ -327,4 +325,4 @@ function compareHyperlinks(
   }
 }
 
-export { compare };
+

@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "bun run tsc",
+    "build": "bun run tsgo",
     "test": "bun run vitest run",
     "test:watch": "bun run vitest",
     "test:coverage": "bun run vitest run --coverage",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^2.1.0",
-    "typescript": "^5.6.0",
+    "@typescript/native-preview": "latest",
     "vitest": "^2.1.0"
   },
   "engines": {

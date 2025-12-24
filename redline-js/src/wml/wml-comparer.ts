@@ -9,7 +9,6 @@
 
 import {
   loadWordDocument,
-  extractParagraphs,
   extractParagraphText,
   getDocumentBody,
   type WordDocument,
@@ -23,7 +22,6 @@ import {
   resetRevisionIdCounter,
   createRunPropertyChange,
   type RevisionSettings,
-  DEFAULT_REVISION_SETTINGS,
 } from './revision';
 import {
   computeCorrelation,
@@ -37,14 +35,12 @@ import {
   getChildren,
   getTextContent,
   cloneNode,
-  findNodes,
   type XmlNode,
 } from '../core/xml';
 import {
   openPackage,
   setPartFromXml,
   savePackage,
-  type OoxmlPackage,
 } from '../core/package';
 
 /**
@@ -256,15 +252,8 @@ export async function compareDocuments(
   // Clone the second document as the base for the result
   const resultPkg = await openPackage(source2);
 
-  // Get the document body and replace its content
   const docBody = getDocumentBody(doc2);
   if (docBody) {
-    // Build new body content with the result paragraphs
-    const newBody: XmlNode = {
-      'w:body': resultParagraphs,
-    };
-
-    // Find and update the document in the package
     const mainDocXml = doc2.mainDocument;
     updateDocumentBody(mainDocXml, resultParagraphs);
     setPartFromXml(resultPkg, 'word/document.xml', mainDocXml);
@@ -838,7 +827,7 @@ function updateDocumentBody(mainDocument: XmlNode[], newContent: XmlNode[]): voi
 export async function countDocumentRevisions(
   source1: Buffer | Uint8Array,
   source2: Buffer | Uint8Array,
-  settings: WmlComparerSettings = {}
+  _settings: WmlComparerSettings = {}
 ): Promise<{ insertions: number; deletions: number; total: number }> {
   const doc1 = await loadWordDocument(source1);
   const doc2 = await loadWordDocument(source2);
@@ -881,8 +870,6 @@ function compareAlignedParagraphs(
         const allInsTableRows = nextSeq.items2.every((p) => p.isTableRow);
 
         if (allDelTableRows && allInsTableRows) {
-          // Compare corresponding table rows positionally
-          const maxLen = Math.max(seq.items1.length, nextSeq.items2.length);
           const minLen = Math.min(seq.items1.length, nextSeq.items2.length);
 
           for (let j = 0; j < minLen; j++) {

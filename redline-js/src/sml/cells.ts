@@ -1,5 +1,4 @@
-import type { CellSignature, SmlChange, SmlChangeType } from './types';
-import { computeCorrelation } from '../core/lcs';
+import { SmlChangeType, type CellSignature, type SmlChange } from './types';
 
 /**
  * Compare cells and compute differences.
