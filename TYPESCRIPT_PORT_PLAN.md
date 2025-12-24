@@ -18,11 +18,13 @@ This document provides a comprehensive plan for porting three document compariso
 
 ## Current Implementation Status (2025-12-24)
 
-### WmlComparer TypeScript Port: 104/104 Tests Passing ✅
+### WmlComparer TypeScript Port: Complete ✅
 
-The TypeScript implementation in `redline-js/src/wml/wml-comparer.ts` now passes all 104 test cases from the C# test suite. However, **it uses a different architecture than the C# implementation**.
+The TypeScript implementation in `redline-js/src/wml/wml-comparer.ts` is **complete** with 104/104 tests passing.
 
-#### Architecture Comparison
+#### Implementation Approach: Heuristic (Not Faithful Port)
+
+The implementation uses empirically-tuned heuristics rather than a faithful port of the C# architecture. While this achieves test parity (104/104), there are important differences from the reference implementation documented inline as `// HEURISTIC:` comments.
 
 | Aspect | C# (Principled) | TypeScript (Heuristic) |
 |--------|-----------------|------------------------|
@@ -32,11 +34,12 @@ The TypeScript implementation in `redline-js/src/wml/wml-comparer.ts` now passes
 | **Threshold** | `DetailThreshold = 0.15` | Custom 0.4/0.5 similarity thresholds |
 | **Hash** | SHA1 per atom, propagated up | SHA256 per paragraph |
 
-#### Heuristics Used (Not in C#)
+#### Heuristics Used (Documented in Source)
 
-The TS implementation uses empirically-tuned heuristics to match C# revision counts:
+All heuristics are documented with `// HEURISTIC:` comments in `wml-comparer.ts`:
 
 1. **Similarity Thresholds** (`calculateSimilarity()`)
+   - Word-level Jaccard similarity instead of character-level atom comparison
    - If similarity < 0.4: treat as complete replacement (1 ins + 1 del)
    - If similarity < 0.5 with >2 revisions in table cell: group as 1+1
 
@@ -50,6 +53,7 @@ The TS implementation uses empirically-tuned heuristics to match C# revision cou
 
 4. **Structural Token Grouping**
    - Groups scattered changes as 1+1 when separated only by DRAWING_/PICT_/MATH_/TXBX_ tokens
+   - Handles cases like "text [DRAWING] modified" where DRAWING should not break up a single change
 
 5. **Drawing Token Differential**
    - Counts DRAWING_/PICT_ tokens separately across table rows
@@ -62,26 +66,30 @@ The TS implementation uses empirically-tuned heuristics to match C# revision cou
 | **Medium** | Nested tables, complex textboxes may diverge from C# |
 | **High** | Character-level changes (e.g., "THree"→"Three") not detected |
 
-#### Options for Future Work
+#### When to Consider Faithful Port (Option D)
 
-| Option | Effort | Description |
-|--------|--------|-------------|
-| **A: Ship As-Is** | 0 days | Accept heuristics, document limitations |
-| **B: Document** | 1-2 days | Add `// HEURISTIC:` comments, explain thresholds |
-| **C: Partial Port** | 3-5 days | Add `ComparisonUnitWord` for word-level granularity |
-| **D: Full Port** | 1-2 weeks | Full hierarchical grouping matching C# |
+If any of the following scenarios emerge:
+- Users report bugs with nested tables or complex textboxes
+- Character-level change detection is needed (e.g., "THree"→"Three")
+- Revision counts diverge from C# on real-world documents
+
+Then consider a full faithful port (1-2 weeks) implementing:
+- `ComparisonUnitAtom` - single character/element with ancestor chain
+- `ComparisonUnitWord` - collection of atoms forming a word
+- `ComparisonUnitGroup` - Paragraph/Table/Row/Cell/Textbox containers
+- Recursive LCS at each hierarchy level with DetailThreshold (0.15)
 
 #### Files
 
-- `redline-js/src/wml/wml-comparer.ts` - Main implementation (1514 lines)
+- `redline-js/src/wml/wml-comparer.ts` - Main implementation (1600+ lines, HEURISTIC comments added)
 - `redline-js/src/wml/document.ts` - Document loading and text extraction
 - `redline-js/tests/wml-batch.test.ts` - 104 test cases with expected counts
 
 ### Next Steps
 
-1. **SmlComparer (Excel)** - Phase 2 epic is open
-2. **PmlComparer (PowerPoint)** - After Excel
-3. **Faithful Port** - If edge cases emerge requiring C# architecture
+1. **SmlComparer (Excel)** - Complete ✅ (merged from smlcomparer branch)
+2. **PmlComparer (PowerPoint)** - Complete ✅ (merged from smlcomparer branch)
+3. **Integration & Packaging** - CLI tools, npm package, documentation
 
 ---
 
