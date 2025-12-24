@@ -929,13 +929,11 @@ function countWordRevisions(
     }
   }
 
-  // If there's only one type of change (pure insert or pure delete),
-  // treat as a single revision regardless of fragmentation
+  // If there's only insertions (no deletions), group as single insert
+  // But if there are only deletions, keep the individual count since
+  // each deletion sequence represents a separate change (e.g., different parts removed)
   if (hasInsertions && !hasDeletions) {
     return { insertions: 1, deletions: 0 };
-  }
-  if (hasDeletions && !hasInsertions) {
-    return { insertions: 0, deletions: 1 };
   }
 
   // Calculate similarity ratio based on common words
