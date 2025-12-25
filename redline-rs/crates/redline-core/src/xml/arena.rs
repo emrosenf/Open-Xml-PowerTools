@@ -19,6 +19,10 @@ impl XmlDocument {
         self.root
     }
 
+    pub fn set_root(&mut self, root: Option<NodeId>) {
+        self.root = root;
+    }
+
     pub fn get(&self, id: NodeId) -> Option<&XmlNodeData> {
         self.arena.get(id).map(|node| node.get())
     }
