@@ -91,7 +91,7 @@ impl OoxmlPackage {
     pub fn add_relationship(&mut self, source: &str, rel: Relationship) {
         self.relationships
             .entry(source.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(rel);
     }
 

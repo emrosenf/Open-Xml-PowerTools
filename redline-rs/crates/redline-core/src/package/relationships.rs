@@ -1,16 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum TargetMode {
+    #[default]
     Internal,
     External,
 }
 
-impl Default for TargetMode {
-    fn default() -> Self {
-        Self::Internal
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Relationship {

@@ -26,14 +26,13 @@ pub fn parse_bytes(bytes: &[u8]) -> Result<XmlDocument> {
     let mut xml_doc = XmlDocument::new();
     
     if doc.root_element().parent().is_some() {
-        build_tree(&doc, doc.root_element(), &mut xml_doc, None);
+        build_tree(doc.root_element(), &mut xml_doc, None);
     }
 
     Ok(xml_doc)
 }
 
 fn build_tree(
-    source: &roxmltree::Document,
     node: roxmltree::Node,
     doc: &mut XmlDocument,
     parent: Option<indextree::NodeId>,
@@ -90,7 +89,7 @@ fn build_tree(
     };
 
     for child in node.children() {
-        build_tree(source, child, doc, Some(new_id));
+        build_tree(child, doc, Some(new_id));
     }
 }
 
