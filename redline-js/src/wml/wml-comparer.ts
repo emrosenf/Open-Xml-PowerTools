@@ -557,6 +557,79 @@ function compareFormatsInParagraph(
 }
 
 /**
+ * Extract structural elements (drawings, pictures) from a paragraph, indexed by their token.
+ * Returns a map: token -> { run: XmlNode containing the element, element: the actual w:drawing/w:pict }
+ */
+function extractStructuralElements(paraNode: XmlNode): Map<string, { run: XmlNode; element: XmlNode }> {
+  const result = new Map<string, { run: XmlNode; element: XmlNode }>();
+
+  for (const child of getChildren(paraNode)) {
+    if (getTagName(child) !== 'w:r') continue;
+
+    for (const runChild of getChildren(child)) {
+      const tag = getTagName(runChild);
+      if (tag === 'w:drawing' || tag === 'w:pict') {
+        const token = getStructuralToken(runChild);
+        if (token) {
+          result.set(token.trim(), { run: child, element: runChild });
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+function getStructuralToken(node: XmlNode): string | null {
+  const tag = getTagName(node);
+  if (tag === 'w:drawing') {
+    return getDrawingToken(node);
+  } else if (tag === 'w:pict') {
+    return getPictToken(node);
+  }
+  return null;
+}
+
+function getDrawingToken(node: XmlNode): string {
+  const parts: string[] = [];
+  const extent = findNodeByTagDeep(node, 'wp:extent');
+  if (extent) {
+    const attrs = extent[':@'] as Record<string, string> | undefined;
+    if (attrs?.['@_cx']) parts.push(`cx${attrs['@_cx']}`);
+    if (attrs?.['@_cy']) parts.push(`cy${attrs['@_cy']}`);
+  }
+  const embedRef = findEmbedReferenceDeep(node);
+  if (embedRef) parts.push(`e${embedRef}`);
+  return 'DRAWING_' + (parts.join('_') || 'unknown');
+}
+
+function getPictToken(node: XmlNode): string {
+  const embedRef = findEmbedReferenceDeep(node);
+  return embedRef ? `PICT_${embedRef}` : 'PICT_unknown';
+}
+
+function findNodeByTagDeep(node: XmlNode, tag: string): XmlNode | null {
+  if (getTagName(node) === tag) return node;
+  for (const child of getChildren(node)) {
+    const found = findNodeByTagDeep(child, tag);
+    if (found) return found;
+  }
+  return null;
+}
+
+function findEmbedReferenceDeep(node: XmlNode): string | null {
+  const attrs = node[':@'] as Record<string, string> | undefined;
+  if (attrs?.['@_r:embed']) return attrs['@_r:embed'];
+  if (attrs?.['@_o:relid']) return attrs['@_o:relid'];
+  if (attrs?.['@_r:id']) return attrs['@_r:id'];
+  for (const child of getChildren(node)) {
+    const found = findEmbedReferenceDeep(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
  * Compare words within paragraphs that have the same hash but different text.
  * Also detects format changes on text that's equal but has different run properties.
  */
@@ -565,6 +638,10 @@ function compareWordsInParagraph(
   para2: ParagraphUnit,
   settings: RevisionSettings
 ): XmlNode {
+  // Extract structural elements (drawings, pictures) from both paragraphs
+  const struct1 = extractStructuralElements(para1.node);
+  const struct2 = extractStructuralElements(para2.node);
+
   // Extract runs from both paragraphs for format comparison
   const runs1 = extractRunsWithProperties(para1.node);
   const runs2 = extractRunsWithProperties(para2.node);
@@ -591,42 +668,58 @@ function compareWordsInParagraph(
     switch (seq.status) {
       case CorrelationStatus.Equal:
         if (seq.items1 && seq.items2) {
-          // For equal text, check if run properties differ
-          const text = seq.items1.map((w) => w.text).join(' ') + ' ';
-          const textLen1 = seq.items1.map((w) => w.text).join(' ').length;
-          const textLen2 = seq.items2.map((w) => w.text).join(' ').length;
+          const tokenText = seq.items1.map((w) => w.text).join(' ').trim();
 
-          // Find runs at these positions
-          const run1Info = findRunAtPosition(runs1, pos1ToRun, pos1);
-          const run2Info = findRunAtPosition(runs2, pos2ToRun, pos2);
-
-          if (run1Info && run2Info && runPropertiesDiffer(run1Info.properties, run2Info.properties)) {
-            // Format change detected - create run with w:rPrChange
-            runs.push(createRunWithFormatChange(text, run2Info.properties, run1Info.properties, settings));
+          // Check if this is a structural token
+          if (struct2.has(tokenText)) {
+            runs.push(cloneNode(struct2.get(tokenText)!.run));
+          } else if (struct1.has(tokenText)) {
+            runs.push(cloneNode(struct1.get(tokenText)!.run));
           } else {
-            runs.push(createRun(text));
+            // Regular text - check for format changes
+            const text = seq.items1.map((w) => w.text).join(' ') + ' ';
+            const run1Info = findRunAtPosition(runs1, pos1ToRun, pos1);
+            const run2Info = findRunAtPosition(runs2, pos2ToRun, pos2);
+
+            if (run1Info && run2Info && runPropertiesDiffer(run1Info.properties, run2Info.properties)) {
+              runs.push(createRunWithFormatChange(text, run2Info.properties, run1Info.properties, settings));
+            } else {
+              runs.push(createRun(text));
+            }
           }
 
-          pos1 += textLen1 + 1; // +1 for space
+          const textLen1 = seq.items1.map((w) => w.text).join(' ').length;
+          const textLen2 = seq.items2.map((w) => w.text).join(' ').length;
+          pos1 += textLen1 + 1;
           pos2 += textLen2 + 1;
         }
         break;
 
       case CorrelationStatus.Deleted:
         if (seq.items1) {
-          const text = seq.items1.map((w) => w.text).join(' ') + ' ';
-          const run = createRun(text);
-          runs.push(createDeletion(run, settings));
-          pos1 += text.length;
+          const tokenText = seq.items1.map((w) => w.text).join(' ').trim();
+
+          if (struct1.has(tokenText)) {
+            runs.push(createDeletion(cloneNode(struct1.get(tokenText)!.run), settings));
+          } else {
+            const text = seq.items1.map((w) => w.text).join(' ') + ' ';
+            runs.push(createDeletion(createRun(text), settings));
+          }
+          pos1 += tokenText.length + 1;
         }
         break;
 
       case CorrelationStatus.Inserted:
         if (seq.items2) {
-          const text = seq.items2.map((w) => w.text).join(' ') + ' ';
-          const run = createRun(text);
-          runs.push(createInsertion(run, settings));
-          pos2 += text.length;
+          const tokenText = seq.items2.map((w) => w.text).join(' ').trim();
+
+          if (struct2.has(tokenText)) {
+            runs.push(createInsertion(cloneNode(struct2.get(tokenText)!.run), settings));
+          } else {
+            const text = seq.items2.map((w) => w.text).join(' ') + ' ';
+            runs.push(createInsertion(createRun(text), settings));
+          }
+          pos2 += tokenText.length + 1;
         }
         break;
     }
@@ -669,20 +762,105 @@ function findRunAtPosition(
 }
 
 /**
+ * Strip w:sectPr from paragraph properties to avoid broken rId references.
+ *
+ * sectPr elements contain header/footer references (r:id) that are valid in doc1
+ * but don't exist in doc2's relationship file, causing Word "unreadable content" errors.
+ */
+function stripSectPrFromProperties(pPr: XmlNode): XmlNode {
+  const children = getChildren(pPr);
+  const filteredChildren = children.filter((child) => getTagName(child) !== 'w:sectPr');
+
+  if (filteredChildren.length === children.length) {
+    return pPr;
+  }
+
+  const result: XmlNode = { 'w:pPr': filteredChildren.map(cloneNode) };
+  if (pPr[':@']) {
+    result[':@'] = pPr[':@'];
+  }
+  return result;
+}
+
+/**
+ * Check if a paragraph contains structural elements (drawings, pictures) that must be preserved.
+ */
+function hasStructuralElements(node: XmlNode): boolean {
+  const tag = getTagName(node);
+  if (tag === 'w:drawing' || tag === 'w:pict') {
+    return true;
+  }
+  for (const child of getChildren(node)) {
+    if (hasStructuralElements(child)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Wrap all runs in a paragraph with a revision marker (w:ins or w:del).
+ * Preserves structural elements like drawings and pictures.
+ */
+function wrapParagraphRunsWithRevision(
+  para: ParagraphUnit,
+  revisionType: 'deleted' | 'inserted',
+  settings: RevisionSettings
+): XmlNode {
+  const children = getChildren(para.node);
+  const resultChildren: XmlNode[] = [];
+
+  for (const child of children) {
+    const tag = getTagName(child);
+    if (tag === 'w:pPr') {
+      const cleanPPr =
+        revisionType === 'deleted' ? stripSectPrFromProperties(child) : cloneNode(child);
+      resultChildren.push(cleanPPr);
+    } else if (tag === 'w:r') {
+      const cloned = cloneNode(child);
+      if (revisionType === 'deleted') {
+        resultChildren.push(createDeletion(cloned, settings));
+      } else {
+        resultChildren.push(createInsertion(cloned, settings));
+      }
+    } else if (tag === 'w:bookmarkStart' || tag === 'w:bookmarkEnd') {
+      resultChildren.push(cloneNode(child));
+    } else {
+      resultChildren.push(cloneNode(child));
+    }
+  }
+
+  const result: XmlNode = { 'w:p': resultChildren };
+  if (para.node[':@']) {
+    result[':@'] = para.node[':@'];
+  }
+  return result;
+}
+
+/**
  * Create a paragraph marked as deleted
  */
 function createDeletedParagraph(para: ParagraphUnit, settings: RevisionSettings): XmlNode {
+  if (hasStructuralElements(para.node)) {
+    return wrapParagraphRunsWithRevision(para, 'deleted', settings);
+  }
+
   const run = createRun(para.text);
   const deletion = createDeletion(run, settings);
 
   const pPr = getChildren(para.node).find((c) => getTagName(c) === 'w:pPr');
-  return createParagraph([deletion], pPr ? cloneNode(pPr) : undefined);
+  const cleanPPr = pPr ? stripSectPrFromProperties(pPr) : undefined;
+  return createParagraph([deletion], cleanPPr);
 }
 
 /**
  * Create a paragraph marked as inserted
  */
 function createInsertedParagraph(para: ParagraphUnit, settings: RevisionSettings): XmlNode {
+  if (hasStructuralElements(para.node)) {
+    return wrapParagraphRunsWithRevision(para, 'inserted', settings);
+  }
+
   const run = createRun(para.text);
   const insertion = createInsertion(run, settings);
 
