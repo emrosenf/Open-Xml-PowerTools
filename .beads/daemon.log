@@ -170,3 +170,75 @@
 [2025-12-24 21:36:59] Export triggered by mutation events
 [2025-12-24 21:36:59] Starting export...
 [2025-12-24 21:36:59] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:49:56] Mutation detected: update Open-Xml-PowerTools-uja
+[2025-12-24 21:49:57] Export triggered by mutation events
+[2025-12-24 21:49:57] Starting export...
+[2025-12-24 21:49:57] Exported to JSONL
+[2025-12-24 21:49:57] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:49:57] Export complete
+[2025-12-24 21:49:57] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:49:57] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:49:58] Mutation detected: update Open-Xml-PowerTools-fbj
+[2025-12-24 21:49:58] Import triggered by file change
+[2025-12-24 21:49:58] Starting auto-import...
+[2025-12-24 21:49:58] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:49:58] Export triggered by mutation events
+[2025-12-24 21:49:58] Starting export...
+[2025-12-24 21:49:58] Exported to JSONL
+[2025-12-24 21:49:58] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:49:58] Export complete
+[2025-12-24 21:49:58] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:49:58] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:49:59] Mutation detected: update Open-Xml-PowerTools-gzf
+[2025-12-24 21:49:59] Import triggered by file change
+[2025-12-24 21:49:59] Starting auto-import...
+[2025-12-24 21:49:59] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:49:59] Export triggered by mutation events
+[2025-12-24 21:49:59] Starting export...
+[2025-12-24 21:49:59] Exported to JSONL
+[2025-12-24 21:49:59] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:49:59] Export complete
+[2025-12-24 21:49:59] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:49:59] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:50:00] Mutation detected: update Open-Xml-PowerTools-dp9
+[2025-12-24 21:50:00] Import triggered by file change
+[2025-12-24 21:50:00] Starting auto-import...
+[2025-12-24 21:50:00] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:50:00] Export triggered by mutation events
+[2025-12-24 21:50:00] Starting export...
+[2025-12-24 21:50:00] Exported to JSONL
+[2025-12-24 21:50:00] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:50:00] Export complete
+[2025-12-24 21:50:00] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:50:00] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:50:01] Import triggered by file change
+[2025-12-24 21:50:01] Starting auto-import...
+[2025-12-24 21:50:01] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:50:02] Mutation detected: update Open-Xml-PowerTools-vay
+[2025-12-24 21:50:02] Mutation detected: update Open-Xml-PowerTools-vay
+[2025-12-24 21:50:03] Mutation detected: update Open-Xml-PowerTools-vay
+[2025-12-24 21:50:03] Mutation detected: update Open-Xml-PowerTools-tcw
+[2025-12-24 21:50:03] Export triggered by mutation events
+[2025-12-24 21:50:03] Starting export...
+[2025-12-24 21:50:03] Exported to JSONL
+[2025-12-24 21:50:03] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:50:03] Export complete
+[2025-12-24 21:50:04] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:50:04] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:50:04] Mutation detected: update Open-Xml-PowerTools-9h2
+[2025-12-24 21:50:05] Import triggered by file change
+[2025-12-24 21:50:05] Starting auto-import...
+[2025-12-24 21:50:05] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:50:05] Export triggered by mutation events
+[2025-12-24 21:50:05] Starting export...
+[2025-12-24 21:50:05] Exported to JSONL
+[2025-12-24 21:50:05] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:50:05] Export complete
+[2025-12-24 21:50:05] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:50:05] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:50:06] Import triggered by file change
+[2025-12-24 21:50:06] Starting auto-import...
+[2025-12-24 21:50:06] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:50:24] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:50:24] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:50:24] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
