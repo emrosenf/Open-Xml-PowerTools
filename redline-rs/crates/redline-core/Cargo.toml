@@ -1,0 +1,53 @@
+[package]
+name = "redline-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "OOXML document comparison engine - faithful port of C# OpenXmlPowerTools comparers"
+keywords = ["openxml", "docx", "xlsx", "pptx", "diff", "compare"]
+categories = ["text-processing", "parser-implementations"]
+
+[dependencies]
+# XML parsing and manipulation
+roxmltree = { workspace = true }
+quick-xml = { workspace = true }
+indextree = { workspace = true }
+
+# ZIP handling (WASM-compatible)
+zip = { workspace = true }
+
+# Cryptographic hashing
+sha1 = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+# Internationalization (culture-sensitive operations)
+icu = { workspace = true }
+icu_provider = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Fast character search (SIMD)
+memchr = { workspace = true }
+
+# Lazy initialization
+once_cell = { workspace = true }
+
+# Date/time handling
+chrono = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+pretty_assertions = { workspace = true }
+criterion = { workspace = true }
+proptest = { workspace = true }
+regex = { workspace = true }
+
+[features]
+default = []
+wasm = []

@@ -1,0 +1,16 @@
+[package]
+name = "redline-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Command-line interface for redline-core OOXML comparison engine"
+
+[[bin]]
+name = "redline"
+path = "src/main.rs"
+
+[dependencies]
+redline-core = { path = "../redline-core" }
+clap = { version = "4.4", features = ["derive"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
