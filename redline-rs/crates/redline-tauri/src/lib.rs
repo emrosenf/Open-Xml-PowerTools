@@ -5,7 +5,7 @@ use tauri::Runtime;
 async fn compare_documents(
     source1_path: String,
     source2_path: String,
-    output_path: String,
+    _output_path: String,
     _settings: Option<serde_json::Value>,
 ) -> Result<serde_json::Value, String> {
     let _older = tokio::fs::read(&source1_path)
@@ -19,7 +19,6 @@ async fn compare_documents(
 
     #[allow(unreachable_code)]
     Ok(serde_json::json!({
-        "output_path": output_path,
         "status": "success"
     }))
 }

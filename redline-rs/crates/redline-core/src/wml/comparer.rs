@@ -7,8 +7,8 @@ pub struct WmlComparer;
 
 impl WmlComparer {
     pub fn compare(
-        source1: &WmlDocument,
-        source2: &WmlDocument,
+        _source1: &WmlDocument,
+        _source2: &WmlDocument,
         settings: Option<&WmlComparerSettings>,
     ) -> Result<WmlDocument> {
         let _settings = settings.cloned().unwrap_or_default();
@@ -17,7 +17,7 @@ impl WmlComparer {
     }
 
     pub fn get_revisions(
-        document: &WmlDocument,
+        _document: &WmlDocument,
         settings: Option<&WmlComparerSettings>,
     ) -> Result<Vec<Revision>> {
         let _settings = settings.cloned().unwrap_or_default();

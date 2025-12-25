@@ -1,6 +1,8 @@
 {
   "description": "Hash test vectors for verifying Rust SHA1/SHA256 implementations match C#",
-  "generated_from": "C# PtUtils.SHA1HashStringForUTF8String and SHA256",
+  "generated_from": "C# System.Security.Cryptography.SHA1/SHA256",
+  "verified_at": "2025-12-25T12:15:00Z",
+  "verified_with": ".NET 10.0.101 in openxml-powertools Docker container",
   "sha1_vectors": [
     {
       "input": "",
@@ -24,33 +26,28 @@
     },
     {
       "input": "<w:p><w:r><w:t>Hello</w:t></w:r></w:p>",
-      "expected": "PLACEHOLDER_GENERATE_FROM_CSHARP",
-      "description": "Word XML element",
-      "needs_verification": true
+      "expected": "307d14f5780b72d87b6cf5ecaf78c7430200d1ae",
+      "description": "Word XML element"
     },
     {
       "input": "你好世界",
-      "expected": "PLACEHOLDER_GENERATE_FROM_CSHARP",
-      "description": "Chinese characters (UTF-8 encoding)",
-      "needs_verification": true
+      "expected": "dabaa5fe7c47fb21be902480a13013f16a1ab6eb",
+      "description": "Chinese characters (UTF-8 encoding)"
     },
     {
       "input": "\u00A0",
-      "expected": "PLACEHOLDER_GENERATE_FROM_CSHARP",
-      "description": "Non-breaking space",
-      "needs_verification": true
+      "expected": "ab90d23f7402359d51e25399fe46dac3401a3352",
+      "description": "Non-breaking space"
     },
     {
       "input": "line1\nline2",
-      "expected": "PLACEHOLDER_GENERATE_FROM_CSHARP",
-      "description": "Unix newlines",
-      "needs_verification": true
+      "expected": "05eed6236c8bda5ecf7af09bae911f9d5f90998b",
+      "description": "Unix newlines"
     },
     {
       "input": "line1\r\nline2",
-      "expected": "PLACEHOLDER_GENERATE_FROM_CSHARP",
-      "description": "Windows newlines",
-      "needs_verification": true
+      "expected": "2e8b459e11acdf2861942e27e7651513578e8c7d",
+      "description": "Windows newlines"
     }
   ],
   "sha256_vectors": [
@@ -78,7 +75,7 @@
   "notes": [
     "All inputs are UTF-8 encoded before hashing",
     "Outputs are lowercase hexadecimal",
-    "Vectors marked needs_verification=true should be regenerated from C#",
-    "Use GoldenFileGenerator to produce authoritative test vectors"
+    "SHA1 is used by WmlComparer, SHA256 by SmlComparer/PmlComparer",
+    "All vectors verified against .NET 10.0.101 on 2025-12-25"
   ]
 }

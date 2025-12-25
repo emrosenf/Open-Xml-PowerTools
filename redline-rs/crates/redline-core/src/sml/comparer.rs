@@ -7,8 +7,8 @@ pub struct SmlComparer;
 
 impl SmlComparer {
     pub fn compare(
-        source1: &SmlDocument,
-        source2: &SmlDocument,
+        _source1: &SmlDocument,
+        _source2: &SmlDocument,
         settings: Option<&SmlComparerSettings>,
     ) -> Result<SmlComparisonResult> {
         let _settings = settings.cloned().unwrap_or_default();
@@ -17,8 +17,8 @@ impl SmlComparer {
     }
 
     pub fn produce_marked_workbook(
-        source1: &SmlDocument,
-        source2: &SmlDocument,
+        _source1: &SmlDocument,
+        _source2: &SmlDocument,
         settings: Option<&SmlComparerSettings>,
     ) -> Result<SmlDocument> {
         let _settings = settings.cloned().unwrap_or_default();

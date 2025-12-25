@@ -7,8 +7,8 @@ pub struct PmlComparer;
 
 impl PmlComparer {
     pub fn compare(
-        source1: &PmlDocument,
-        source2: &PmlDocument,
+        _source1: &PmlDocument,
+        _source2: &PmlDocument,
         settings: Option<&PmlComparerSettings>,
     ) -> Result<PmlComparisonResult> {
         let _settings = settings.cloned().unwrap_or_default();
@@ -17,8 +17,8 @@ impl PmlComparer {
     }
 
     pub fn produce_marked_presentation(
-        source1: &PmlDocument,
-        source2: &PmlDocument,
+        _source1: &PmlDocument,
+        _source2: &PmlDocument,
         settings: Option<&PmlComparerSettings>,
     ) -> Result<PmlDocument> {
         let _settings = settings.cloned().unwrap_or_default();

@@ -1,6 +1,5 @@
 use super::node::XmlNodeData;
 use super::xname::{XAttribute, XName};
-use crate::error::{RedlineError, Result};
 use indextree::{Arena, NodeId};
 
 pub struct XmlDocument {

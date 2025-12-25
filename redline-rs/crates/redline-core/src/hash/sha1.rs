@@ -40,31 +40,55 @@ mod tests {
 
     #[test]
     fn sha1_unicode_chinese() {
-        let hash = sha1_hash_string("你好世界");
-        assert_eq!(hash.len(), 40);
-        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+        // Verified against C# .NET 10.0.101
+        assert_eq!(
+            sha1_hash_string("你好世界"),
+            "dabaa5fe7c47fb21be902480a13013f16a1ab6eb"
+        );
     }
 
     #[test]
     fn sha1_xml_content() {
-        let hash = sha1_hash_string("<w:p>test</w:p>");
-        assert_eq!(hash.len(), 40);
-        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+        // Verified against C# .NET 10.0.101
+        assert_eq!(
+            sha1_hash_string("<w:p><w:r><w:t>Hello</w:t></w:r></w:p>"),
+            "307d14f5780b72d87b6cf5ecaf78c7430200d1ae"
+        );
     }
 
     #[test]
     fn sha1_nbsp() {
-        let hash = sha1_hash_string("\u{00A0}");
-        assert_eq!(hash.len(), 40);
-        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+        // Verified against C# .NET 10.0.101
+        assert_eq!(
+            sha1_hash_string("\u{00A0}"),
+            "ab90d23f7402359d51e25399fe46dac3401a3352"
+        );
     }
 
     #[test]
-    fn sha1_newlines() {
-        let hash1 = sha1_hash_string("line1\nline2");
-        let hash2 = sha1_hash_string("line1\r\nline2");
-        assert_eq!(hash1.len(), 40);
-        assert_eq!(hash2.len(), 40);
-        assert_ne!(hash1, hash2);
+    fn sha1_unix_newlines() {
+        // Verified against C# .NET 10.0.101
+        assert_eq!(
+            sha1_hash_string("line1\nline2"),
+            "05eed6236c8bda5ecf7af09bae911f9d5f90998b"
+        );
+    }
+
+    #[test]
+    fn sha1_windows_newlines() {
+        // Verified against C# .NET 10.0.101
+        assert_eq!(
+            sha1_hash_string("line1\r\nline2"),
+            "2e8b459e11acdf2861942e27e7651513578e8c7d"
+        );
+    }
+
+    #[test]
+    fn sha1_classic_test_phrase() {
+        // Verified against C# .NET 10.0.101
+        assert_eq!(
+            sha1_hash_string("The quick brown fox jumps over the lazy dog"),
+            "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"
+        );
     }
 }

@@ -25,7 +25,7 @@ pub fn parse_bytes(bytes: &[u8]) -> Result<XmlDocument> {
 
     let mut xml_doc = XmlDocument::new();
     
-    if let Some(root_element) = doc.root_element().parent() {
+    if doc.root_element().parent().is_some() {
         build_tree(&doc, doc.root_element(), &mut xml_doc, None);
     }
 

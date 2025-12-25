@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use super::xname::XName;
 
 pub mod W {
@@ -82,12 +84,10 @@ pub mod MC {
 }
 
 pub mod CP {
-    use super::XName;
     pub const NS: &str = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties";
 }
 
 pub mod DC {
-    use super::XName;
     pub const NS: &str = "http://purl.org/dc/elements/1.1/";
 }
 
