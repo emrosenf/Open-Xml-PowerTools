@@ -242,3 +242,11 @@
 [2025-12-24 21:50:24] JSONL removed/renamed, re-establishing watch
 [2025-12-24 21:50:24] Successfully re-established JSONL watch after 50ms
 [2025-12-24 21:50:24] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:50:24] File change detected: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:50:25] Import triggered by file change
+[2025-12-24 21:50:25] Starting auto-import...
+[2025-12-24 21:50:25] Skipping auto-import: JSONL content unchanged
+[2025-12-24 21:51:09] File change detected: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
+[2025-12-24 21:51:09] JSONL removed/renamed, re-establishing watch
+[2025-12-24 21:51:09] Successfully re-established JSONL watch after 50ms
+[2025-12-24 21:51:09] JSONL file created: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/issues.jsonl
