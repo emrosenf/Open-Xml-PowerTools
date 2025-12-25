@@ -30,11 +30,11 @@
 
 import {
   loadWordDocument,
-  extractParagraphs,
   extractParagraphText,
   getDocumentBody,
   type WordDocument,
 } from './document';
+import { acceptRevisions } from './revision-accepter';
 import {
   createInsertion,
   createDeletion,
@@ -42,9 +42,10 @@ import {
   createParagraph,
   countRevisions,
   resetRevisionIdCounter,
+  findMaxRevisionId,
+  fixUpRevisionIds,
   createRunPropertyChange,
   type RevisionSettings,
-  DEFAULT_REVISION_SETTINGS,
 } from './revision';
 import {
   WmlChangeType,
@@ -66,14 +67,12 @@ import {
   getChildren,
   getTextContent,
   cloneNode,
-  findNodes,
   type XmlNode,
 } from '../core/xml';
 import {
   openPackage,
   setPartFromXml,
   savePackage,
-  type OoxmlPackage,
 } from '../core/package';
 
 export type { WmlComparerSettings, WmlComparisonResult, WmlChange, WmlChangeListItem, WmlChangeListOptions, WmlWordCount } from './types';
@@ -243,12 +242,17 @@ export async function compareDocuments(
   source2: Buffer | Uint8Array,
   settings: WmlComparerSettings = {}
 ): Promise<WmlComparisonResult> {
-  // Reset revision IDs for consistent output
-  resetRevisionIdCounter();
+  const doc1Raw = await loadWordDocument(source1);
+  const doc2Raw = await loadWordDocument(source2);
+  
+  const doc1 = acceptRevisions(doc1Raw);
+  const doc2 = acceptRevisions(doc2Raw);
 
-  // Load both documents
-  const doc1 = await loadWordDocument(source1);
-  const doc2 = await loadWordDocument(source2);
+  // Find the maximum existing revision ID in both documents to avoid collisions
+  const maxId1 = findMaxRevisionId(doc1.mainDocument);
+  const maxId2 = findMaxRevisionId(doc2.mainDocument);
+  const maxExistingId = Math.max(maxId1, maxId2);
+  resetRevisionIdCounter(maxExistingId + 1);
 
   // Create revision settings
   const revisionSettings: RevisionSettings = {
@@ -265,21 +269,14 @@ export async function compareDocuments(
     detailThreshold: settings.detailThreshold ?? 0.0,
   });
 
-  // Build result paragraphs
   const resultParagraphs = buildResultParagraphs(paraCorrelation, revisionSettings);
+  fixUpRevisionIds(resultParagraphs);
 
-  // Clone the second document as the base for the result
   const resultPkg = await openPackage(source2);
 
   // Get the document body and replace its content
   const docBody = getDocumentBody(doc2);
   if (docBody) {
-    // Build new body content with the result paragraphs
-    const newBody: XmlNode = {
-      'w:body': resultParagraphs,
-    };
-
-    // Find and update the document in the package
     const mainDocXml = doc2.mainDocument;
     updateDocumentBody(mainDocXml, resultParagraphs);
     setPartFromXml(resultPkg, 'word/document.xml', mainDocXml);
@@ -894,10 +891,13 @@ function updateDocumentBody(mainDocument: XmlNode[], newContent: XmlNode[]): voi
 export async function countDocumentRevisions(
   source1: Buffer | Uint8Array,
   source2: Buffer | Uint8Array,
-  settings: WmlComparerSettings = {}
+  _settings: WmlComparerSettings = {}
 ): Promise<{ insertions: number; deletions: number; formatChanges: number; total: number }> {
-  const doc1 = await loadWordDocument(source1);
-  const doc2 = await loadWordDocument(source2);
+  const doc1Raw = await loadWordDocument(source1);
+  const doc2Raw = await loadWordDocument(source2);
+  
+  const doc1 = acceptRevisions(doc1Raw);
+  const doc2 = acceptRevisions(doc2Raw);
 
   const paras1 = extractParagraphUnits(doc1);
   const paras2 = extractParagraphUnits(doc2);
@@ -1382,7 +1382,7 @@ function countWordRevisions(
   // - 'punctuation': Only punctuation (count only if no meaningful changes exist)
   // - 'reference': Only footnote/endnote markers (ignored unless no meaningful changes)
   const classifySequence = (
-    items: WordUnit[] | undefined,
+    items: WordUnit[] | null | undefined,
     splittingReferences: Set<string>
   ): 'meaningful' | 'punctuation' | 'reference' => {
     if (!items || items.length === 0) return 'reference';
@@ -1438,7 +1438,7 @@ function countWordRevisions(
       lastStatus = CorrelationStatus.Inserted;
     } else {
       const isReferenceEqual =
-        wseq.items1 !== undefined && wseq.items1.every((item) => isReferenceToken(item.text));
+        wseq.items1 != null && wseq.items1.every((item) => isReferenceToken(item.text));
       if (!isReferenceEqual) {
         lastStatus = null;
       }
@@ -1545,7 +1545,6 @@ function calculateSimilarity(text1: string, text2: string): number {
     }
   }
 
-  // Similarity is the ratio of common words to total words
   const totalWords = Math.max(words1.length, words2.length);
   return equalCount / totalWords;
 }

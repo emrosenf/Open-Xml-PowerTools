@@ -68,11 +68,14 @@ export function parseXml(xml: string): XmlNode[] {
 }
 
 /**
- * Build XML string from object representation
+ * Build XML string from object representation.
+ * Strips any ?xml declaration nodes since addXmlDeclaration adds the declaration separately.
  */
 export function buildXml(nodes: XmlNode | XmlNode[]): string {
   const nodeArray = Array.isArray(nodes) ? nodes : [nodes];
-  return builder.build(nodeArray);
+  // Filter out ?xml declaration nodes to avoid duplication when addXmlDeclaration is called
+  const filteredNodes = nodeArray.filter((node) => !('?xml' in node));
+  return builder.build(filteredNodes);
 }
 
 /**

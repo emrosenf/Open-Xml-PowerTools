@@ -48,6 +48,42 @@ export function getNextRevisionId(): number {
 }
 
 /**
+ * Find the maximum w:id value used in an XML node tree.
+ * This is used to avoid ID collisions with existing tracked changes.
+ * 
+ * Scans for w:id attributes on revision elements (w:ins, w:del, w:rPrChange, w:pPrChange, etc.)
+ */
+export function findMaxRevisionId(nodes: XmlNode | XmlNode[]): number {
+  const nodeArray = Array.isArray(nodes) ? nodes : [nodes];
+  let maxId = 0;
+
+  function walk(node: XmlNode): void {
+    // Check if this node has a w:id attribute
+    const attrs = node[':@'] as Record<string, string> | undefined;
+    if (attrs) {
+      const idStr = attrs['@_w:id'];
+      if (idStr !== undefined) {
+        const id = parseInt(idStr, 10);
+        if (!isNaN(id) && id > maxId) {
+          maxId = id;
+        }
+      }
+    }
+
+    // Recursively check children
+    for (const child of getChildren(node)) {
+      walk(child);
+    }
+  }
+
+  for (const node of nodeArray) {
+    walk(node);
+  }
+
+  return maxId;
+}
+
+/**
  * Create a w:ins (insertion) element wrapping content
  *
  * @param content The content to wrap (typically w:r elements)
@@ -248,6 +284,81 @@ export function isDeletion(node: XmlNode): boolean {
 export function isFormatChange(node: XmlNode): boolean {
   const tagName = getTagName(node);
   return tagName === 'w:rPrChange' || tagName === 'w:pPrChange';
+}
+
+/**
+ * Revision element tag names that have w:id attributes
+ */
+const REVISION_ELEMENT_TAGS = new Set([
+  'w:ins',
+  'w:del',
+  'w:rPrChange',
+  'w:pPrChange',
+  'w:sectPrChange',
+  'w:tblPrChange',
+  'w:tblGridChange',
+  'w:trPrChange',
+  'w:tcPrChange',
+  'w:cellIns',
+  'w:cellDel',
+  'w:cellMerge',
+  'w:customXmlInsRangeStart',
+  'w:customXmlDelRangeStart',
+  'w:customXmlMoveFromRangeStart',
+  'w:customXmlMoveToRangeStart',
+  'w:moveFrom',
+  'w:moveTo',
+  'w:moveFromRangeStart',
+  'w:moveToRangeStart',
+  'w:numberingChange',
+]);
+
+/**
+ * Fix up revision IDs by renumbering all revision elements sequentially.
+ * 
+ * This is a post-processing step that ensures all w:id attributes on revision
+ * elements (w:ins, w:del, w:rPrChange, etc.) are unique and sequential.
+ * 
+ * This mirrors the C# WmlComparer.FixUpRevisionIds() approach which:
+ * 1. Collects all revisions from main doc, footnotes, endnotes
+ * 2. Renumbers them sequentially from 1
+ * 
+ * @param nodes The XML nodes to process (modified in place)
+ */
+export function fixUpRevisionIds(nodes: XmlNode | XmlNode[]): void {
+  const nodeArray = Array.isArray(nodes) ? nodes : [nodes];
+  
+  // Collect all revision elements
+  const revisionElements: XmlNode[] = [];
+  
+  function collectRevisions(node: XmlNode): void {
+    const tagName = getTagName(node);
+    
+    // Check if this is a revision element with w:id
+    if (tagName && REVISION_ELEMENT_TAGS.has(tagName)) {
+      const attrs = node[':@'] as Record<string, string> | undefined;
+      if (attrs && '@_w:id' in attrs) {
+        revisionElements.push(node);
+      }
+    }
+    
+    // Recursively check children
+    for (const child of getChildren(node)) {
+      collectRevisions(child);
+    }
+  }
+  
+  // Collect from all nodes
+  for (const node of nodeArray) {
+    collectRevisions(node);
+  }
+  
+  // Renumber sequentially from 1
+  let nextId = 1;
+  for (const element of revisionElements) {
+    const attrs = element[':@'] as Record<string, string>;
+    attrs['@_w:id'] = String(nextId++);
+  }
 }
 
 /**
