@@ -17,6 +17,7 @@ export {
   type PmlComparisonResult,
   type PmlChangeListItem,
   type PmlChangeListOptions,
+  type PmlWordCount,
 } from './types';
 
 // Core module exports

@@ -63,6 +63,16 @@ export enum TextChangeType {
   FormatOnly,
 }
 
+/**
+ * Word count statistics for a PML change.
+ */
+export interface PmlWordCount {
+  /** Number of words deleted */
+  deleted: number;
+  /** Number of words inserted */
+  inserted: number;
+}
+
 export interface PmlTextChange {
   type: TextChangeType;
   paragraphIndex: number;
@@ -319,6 +329,9 @@ export interface PmlChangeListItem {
   shapeName?: string;
   shapeId?: string;
   summary: string;
+  previewText?: string;
+  wordCount?: PmlWordCount;
+  count?: number;
   details?: {
     oldValue?: string;
     newValue?: string;
@@ -331,6 +344,7 @@ export interface PmlChangeListItem {
 
 export interface PmlChangeListOptions {
   groupBySlide?: boolean;
+  maxPreviewLength?: number;
 }
 
 export function describeChange(change: PmlChange): string {

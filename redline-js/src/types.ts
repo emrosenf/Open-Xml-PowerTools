@@ -206,4 +206,5 @@ export {
   type PmlComparisonResult,
   type PmlChangeListItem,
   type PmlChangeListOptions,
+  type PmlWordCount,
 } from './pml/types';

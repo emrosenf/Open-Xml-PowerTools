@@ -1,10 +1,13 @@
 import { openPackage, clonePackage, savePackage } from '../core/package';
 import {
   PmlChangeType,
+  TextChangeType,
   type PmlComparerSettings,
   type PmlComparisonResult,
+  type PmlChange,
   type PmlChangeListItem,
   type PmlChangeListOptions,
+  type PmlWordCount,
   describeChange,
 } from './types';
 import { canonicalizePresentation } from './canonicalize';
@@ -77,8 +80,13 @@ export function buildChangeList(
   result: PmlComparisonResult,
   options: PmlChangeListOptions = {}
 ): PmlChangeListItem[] {
+  const maxPreviewLength = options.maxPreviewLength ?? 100;
+  
   const items = result.changes.map((change, index) => {
     const anchor = buildAnchor(change.slideIndex, change.shapeId);
+    const wordCount = computeWordCount(change);
+    const previewText = buildPreviewText(change, maxPreviewLength);
+    
     return {
       id: `pml-change-${index + 1}`,
       changeType: change.changeType,
@@ -86,6 +94,8 @@ export function buildChangeList(
       shapeName: change.shapeName,
       shapeId: change.shapeId,
       summary: describeChange(change),
+      previewText,
+      wordCount,
       details: {
         oldValue: change.oldValue,
         newValue: change.newValue,
@@ -173,4 +183,73 @@ function log(settings: Required<PmlComparerSettings>, message: string): void {
   if (settings.logCallback) {
     settings.logCallback(message);
   }
+}
+
+function countWords(text: string | undefined): number {
+  if (!text) return 0;
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function computeWordCount(change: PmlChange): PmlWordCount | undefined {
+  if (change.textChanges && change.textChanges.length > 0) {
+    let deleted = 0;
+    let inserted = 0;
+    for (const tc of change.textChanges) {
+      if (tc.type === TextChangeType.Delete || tc.type === TextChangeType.Replace) {
+        deleted += countWords(tc.oldText);
+      }
+      if (tc.type === TextChangeType.Insert || tc.type === TextChangeType.Replace) {
+        inserted += countWords(tc.newText);
+      }
+    }
+    if (deleted > 0 || inserted > 0) {
+      return { deleted, inserted };
+    }
+  }
+
+  if (change.oldValue || change.newValue) {
+    const deleted = countWords(change.oldValue);
+    const inserted = countWords(change.newValue);
+    if (deleted > 0 || inserted > 0) {
+      return { deleted, inserted };
+    }
+  }
+
+  return undefined;
+}
+
+function buildPreviewText(change: PmlChange, maxLength: number): string | undefined {
+  if (change.textChanges && change.textChanges.length > 0) {
+    const parts: string[] = [];
+    for (const tc of change.textChanges) {
+      if (tc.type === TextChangeType.Delete && tc.oldText) {
+        parts.push(`-"${tc.oldText}"`);
+      } else if (tc.type === TextChangeType.Insert && tc.newText) {
+        parts.push(`+"${tc.newText}"`);
+      } else if (tc.type === TextChangeType.Replace) {
+        if (tc.oldText && tc.newText) {
+          parts.push(`"${tc.oldText}" → "${tc.newText}"`);
+        }
+      }
+    }
+    const preview = parts.join(' ');
+    return truncate(preview, maxLength);
+  }
+
+  if (change.oldValue && change.newValue) {
+    return truncate(`"${change.oldValue}" → "${change.newValue}"`, maxLength);
+  }
+  if (change.oldValue) {
+    return truncate(`-"${change.oldValue}"`, maxLength);
+  }
+  if (change.newValue) {
+    return truncate(`+"${change.newValue}"`, maxLength);
+  }
+
+  return undefined;
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
 }
