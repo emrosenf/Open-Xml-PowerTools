@@ -1,0 +1,147 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="719cc3f0d7d646bf93c73d5f08b5d77a">
+      <w:pPr />
+      <w:r>
+        <w:t>One</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="62fd271c168c419da546bc07d3cc7484">
+      <w:pPr />
+      <w:r>
+        <w:t>Two</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="cf897ec4567246a7acba85903b7599d4">
+      <w:pPr pt14:Status="Deleted">
+        <w:rPr>
+          <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:07.7325339+00:00" />
+        </w:rPr>
+      </w:pPr>
+      <w:del w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:07.7325339+00:00">
+        <w:r>
+          <w:delText>Three</w:delText>
+        </w:r>
+      </w:del>
+    </w:p>
+    <w:p pt14:Unid="b7e92c0c7561423f9da1887c4d8de062">
+      <w:pPr />
+      <w:r>
+        <w:t>Four</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="c6fa7b5c002e4ea886179ad4e19c3c55">
+      <w:pPr />
+      <w:r>
+        <w:t>Five</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="b48dce21160b42448aced0acb31ed1da">
+      <w:pPr />
+      <w:r>
+        <w:t>Six</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="884a240c5f6b439c98bda7016acd4ce4">
+      <w:pPr />
+      <w:r>
+        <w:t>Seven</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="6861f13d01e84d97b2705f7184aa117a">
+      <w:pPr />
+      <w:r>
+        <w:t>Eight</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="42afb6fdf8f146db9d047bf2bdb4f872">
+      <w:pPr />
+      <w:r>
+        <w:t>Nine</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="d0a8c54df2e7478ba58c1556c285520b">
+      <w:pPr />
+      <w:r>
+        <w:t>Ten</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="628638999c954b46a063fa3636bde545">
+      <w:pPr />
+      <w:r>
+        <w:t>Eleven</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="d5464e9a7b0f496b968e235c2d48b3ef">
+      <w:pPr />
+      <w:r>
+        <w:t>Twelve</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="a8d0af7fb5a04e59a198a009f67a96a2">
+      <w:pPr />
+      <w:r>
+        <w:t>Thirteen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="3bcec1a1c159413fa7b7fb4b31cf9d73">
+      <w:pPr />
+      <w:r>
+        <w:t>Fourteen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="1e90c59ead184309a39373d1c61acb90">
+      <w:pPr />
+      <w:r>
+        <w:t>Fifteen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="04ba50b5c77845e6bbd8fdb3bb450d26">
+      <w:pPr />
+      <w:r>
+        <w:t>Sixteen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="345e16e874d346cfbc724f2dcf71137d">
+      <w:pPr />
+      <w:r>
+        <w:t>Seventeen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="16b8390d51474008b086c75e9f6d5d90">
+      <w:pPr />
+      <w:r>
+        <w:t>Eighteen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="693f393bf9be4ae084cbdd904b89f9a7">
+      <w:pPr />
+      <w:r>
+        <w:t>Nineteen</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="7f3142787d8647498f32ba7fa03ad3b9">
+      <w:pPr pt14:Status="Inserted">
+        <w:rPr>
+          <w:ins w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:07.7325339+00:00" />
+        </w:rPr>
+      </w:pPr>
+      <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:07.7325339+00:00">
+        <w:r>
+          <w:t>19.5</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="4be8d321fb404db4970d3444b8f889b0">
+      <w:pPr />
+      <w:r>
+        <w:t>Twenty</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="b20de1c2cddc46388fec24afaa40b834">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="4e33db115c424ea59de88da0f176ccd5" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="0083c4d8cae344e2ab12fd405f9d1cf6" />
+      <w:cols w:space="720" pt14:Unid="80368372f5fb45b99fdba91afb059ada" />
+    </w:sectPr>
+  </w:body>
+</w:document>

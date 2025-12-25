@@ -1,0 +1,26 @@
+{
+  "Summary": {
+    "TotalChanges": 1,
+    "SlidesInserted": 0,
+    "SlidesDeleted": 0,
+    "SlidesMoved": 0,
+    "ShapesInserted": 0,
+    "ShapesDeleted": 0,
+    "ShapesMoved": 0,
+    "ShapesResized": 0,
+    "TextChanges": 1,
+    "FormattingChanges": 0,
+    "ImagesReplaced": 0
+  },
+  "Changes": [
+    {
+      "ChangeType": 16,
+      "SlideIndex": 1,
+      "OldSlideIndex": null,
+      "ShapeName": "Content",
+      "OldValue": "Slide 1 Content",
+      "NewValue": "MODIFIED Content",
+      "Description": "Text changed in \u0027Content\u0027 on slide 1"
+    }
+  ]
+}

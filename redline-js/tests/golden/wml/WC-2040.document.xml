@@ -1,0 +1,55 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:aink="http://schemas.microsoft.com/office/drawing/2016/ink" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="c995f61a5710460b8a6e8266990d227c">
+      <w:pPr pt14:Unid="ba7c1a58280d466a832571ba61e301d8">
+        <w:rPr pt14:Unid="390eb088cceb486f8b754219d014c8f2">
+          <w:lang w:val="en-US" pt14:Unid="15bcc487ad8644ff992fe66802d6c3db" />
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr pt14:Unid="a0eb2148ca934cd3a97b6d1603ee18a2">
+          <w:lang w:val="en-US" pt14:Unid="30dbdaf1170b41e88822190579f9329b" />
+        </w:rPr>
+        <w:t xml:space="preserve">Video provides a </w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:11.8373940+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="c2576c60801c4423985baffc382a40cf">
+            <w:lang w:val="en-US" pt14:Unid="3efb922829ab4c94b2ec9080df0dd222" />
+          </w:rPr>
+          <w:delText>powerful</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:11.8373940+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="177ad21f7e7e4f2f90e713b32f653abc">
+            <w:rStyle w:val="MyNewCharStyle" pt14:Unid="c849480387d5424f8eae3279e0b2a8c6" />
+          </w:rPr>
+          <w:t>powerish</w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:rPr pt14:Unid="6edd83340bf0495f892d47439fb60c91">
+          <w:color w:val="F4B083" w:themeColor="accent2" w:themeTint="99" pt14:Unid="f403a0c1cdd24111aaccf58147c48400" />
+          <w:sz w:val="28" pt14:Unid="d6439046f878449da7f14b9fbda64b0d" />
+          <w:lang w:val="en-US" pt14:Unid="4b1a62b1677d42719cc5019d85f38c95" />
+          <w:rPrChange w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:11.8373940+00:00">
+            <w:rPr />
+          </w:rPrChange>
+        </w:rPr>
+        <w:t xml:space="preserve"> </w:t>
+      </w:r>
+      <w:r>
+        <w:rPr pt14:Unid="f501fba498ad4be1bb539860fba671d6">
+          <w:lang w:val="en-US" pt14:Unid="2ef44a16d5204bf99cee9c17ee85d7b5" />
+        </w:rPr>
+        <w:t>way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="8179fdd71d3f4082b9fe37f312a9bc30">
+      <w:pgSz w:w="11906" w:h="16838" pt14:Unid="9c79f0787acc42918d64fd46777bf9d8" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="b01e42789393477e877e4530ffbc50c5" />
+      <w:cols w:space="720" pt14:Unid="d70b04a6a5de4ac9a2be4670bb115607" />
+    </w:sectPr>
+  </w:body>
+</w:document>

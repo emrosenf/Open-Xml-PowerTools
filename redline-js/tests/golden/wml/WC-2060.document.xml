@@ -1,0 +1,75 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:aink="http://schemas.microsoft.com/office/drawing/2016/ink" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="19fccee0ca0e42d69d07f5a671c98a5b">
+      <w:pPr />
+      <w:r>
+        <w:rPr pt14:Unid="ce61a2a4862141e48ff8d83607dd684e">
+          <w:rStyle w:val="FootnoteReference" pt14:Unid="351b34a4526f49f180d1a6ce98dc2c10" />
+        </w:rPr>
+        <w:footnoteReference w:id="1" pt14:Unid="da1dbdb4466d4f70b7a115353ce95767" />
+      </w:r>
+      <w:r>
+        <w:t>One</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="e528ca4acd1e4aaaba26abb91a3dc01a">
+      <w:pPr />
+      <w:r>
+        <w:t>Two</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="da5af03a98854a11b68c36b439d68b5e">
+      <w:pPr />
+      <w:r>
+        <w:t>Three</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="6c8aaccb4dba4b0896cd038f8d17d98f">
+      <w:pPr />
+      <w:r>
+        <w:t>Four</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="aa41b21ab0a74e38a390848f850b0e13">
+      <w:pPr />
+      <w:r>
+        <w:t>Five</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="2042a8b109264bcda23da015e4f75d51">
+      <w:pPr />
+      <w:r>
+        <w:t>Six</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="9bd6bfa18423477eb61195505f41a9f0">
+      <w:pPr />
+      <w:r>
+        <w:t>Seven</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="31f016d2082241d4be2564d6fd9b4bab">
+      <w:pPr />
+      <w:r>
+        <w:t>Eight</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="999222a6763045cba46e54a4b2f4f9f2">
+      <w:pPr />
+      <w:r>
+        <w:t>Nine</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="212266c059cc4cd3aa70cce354c73c62">
+      <w:pPr />
+      <w:r>
+        <w:t>Ten</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="6a53e0604dc749a7a4224c9a86112e54">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="dff3a7d8f72c4cf5ba2bc6deea2ea82f" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="7fafb41018384584a52c175b54db449b" />
+      <w:cols w:space="720" pt14:Unid="0eeaf2a6762e44689a2069437367e2ed" />
+    </w:sectPr>
+  </w:body>
+</w:document>

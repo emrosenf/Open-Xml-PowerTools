@@ -1,0 +1,59 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:pt14="http://powertools.codeplex.com/2011" mc:Ignorable="w14 w15 w16se wp14 pt14">
+  <w:body>
+    <w:tbl pt14:Unid="4b9093efda1a40f28f84cceed412f8e0" pt14:CorrelatedSHA1Hash="4647f29d592e1c9d42ebaae606573fe18dfead32" pt14:SHA1Hash="2aeab90b6e361778f8302c04c7c4be7229d2a452" pt14:StructureSHA1Hash="11de8b69ff979a84cd41ed7adf30268711a7f220">
+      <w:tblPr pt14:Unid="6247151666b0466a802f50ecfb945f8f">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="8cfc7baaf1ab49c4ae1075a9444c93a1" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="6b5cca0b0353457e83fc219b79a3837e" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="4fe9378dec254565b2bf4c7c63f57871" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="d997186839484f48a065482f49c29981">
+        <w:gridCol w:w="4508" pt14:Unid="bd4d18ed73654f15b0ab2fa0a2619949" />
+        <w:gridCol w:w="4508" pt14:Unid="5188e1e4bafc48abb87fc53315f52f08" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="ff5743a579e046beb4d456ba2ed616e3" pt14:CorrelatedSHA1Hash="a05df8da8a47a81ad8776e11c7832abeb728edef" pt14:SHA1Hash="df721a23eb1f0eba93ad51e375e99c8e7d9bf048" pt14:StructureSHA1Hash="14009490723e2e5e6ad2d50030e157d6e2a297b9">
+        <w:tc pt14:Unid="7db57711bff74bdfbdd554bbf4457fd1" pt14:SHA1Hash="ab5e4c0db60616fb770d0dbafdc245aae6bfdb18">
+          <w:tcPr pt14:Unid="99b1e4d931174175870ada02b294db8c">
+            <w:tcW w:w="4508" w:type="dxa" pt14:Unid="57d6adc3ba004d74a0f8f288abb3fd53" />
+          </w:tcPr>
+          <w:p pt14:Unid="89a7b85dcb284ed4a1d5a4783eb102d3">
+            <w:pPr />
+            <w:r>
+              <w:t>Cell 1,1</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="3a6b85b4f6f6415cb5efe1c34ff8915f" pt14:SHA1Hash="69ff979e65915d4d580784a5a968ed275e85d500">
+          <w:tcPr pt14:Unid="1e96f889bf1a47ebb26cf19322636fdd">
+            <w:tcW w:w="4508" w:type="dxa" pt14:Unid="658c31c6ec7c4604844c3069eb177b13" />
+          </w:tcPr>
+          <w:p pt14:Unid="ce1273bb73ca402f8a2631865add3ac8">
+            <w:pPr pt14:Unid="24fb831b5e94451ea202b6208a9c34c3">
+              <w:rPr pt14:Unid="94bcaa81d6d248148bc5f68412d29483">
+                <w:lang w:val="en-US" pt14:Unid="d664463665884c34861c50d753bc4e21" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:rPr pt14:Unid="d33d316ae03f4687b001ef0f95c713ca">
+                <w:lang w:val="en-US" pt14:Unid="cc77c22d16004993925e87f2678c2ac1" />
+              </w:rPr>
+              <w:t xml:space="preserve">The amounts due shall bear interest </w:t>
+            </w:r>
+            <w:r>
+              <w:rPr pt14:Unid="0766d484c46c4b8fbd399c25411c360a">
+                <w:lang w:val="en-US" pt14:Unid="b2bde2d9950342cc88044ec40d192310" />
+              </w:rPr>
+              <w:t>in accordance with the procedure, rules, and regulations established by the governing body.</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="91669756ed374ee8b2453789a0635e9a">
+      <w:pPr pt14:Unid="214807956f884eb7ba46fc0c77945149">
+        <w:rPr pt14:Unid="6e1be7bad45c428fbf3ac28170c9c7be">
+          <w:lang w:val="en-US" pt14:Unid="e4a382d7e2254faab8e1e172a8709620" />
+        </w:rPr>
+      </w:pPr>
+    </w:p>
+  </w:body>
+</w:document>

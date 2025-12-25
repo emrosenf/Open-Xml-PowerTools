@@ -1,0 +1,45 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="29e9705b184e4be98144c12ec9084074">
+      <w:pPr />
+      <w:r>
+        <w:t>12.34</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="d344cfc68ddf43ebbf518f8d0547ec1c">
+      <w:pPr pt14:Status="Inserted">
+        <w:rPr>
+          <w:ins w:author="Eric White" w:id="0" w:date="2025-12-24T01:46:58.9079654+00:00" />
+        </w:rPr>
+      </w:pPr>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:46:58.9079654+00:00">
+        <w:r>
+          <w:t>12,34</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="5558edc063bc476186602ddbc2057c05">
+      <w:pPr />
+      <w:r>
+        <w:t>Ab,cd</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="bfbeead3ee784ea6b432a7477695a4f8">
+      <w:pPr />
+      <w:r>
+        <w:t>Test.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="b014935c0e0b4bd58774b0b805de8669">
+      <w:pPr />
+      <w:r>
+        <w:t>.Test.123</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="f00be1d447134e09bfb9c5025e64df90">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="9c07d9aa55ff44df9113d8b7fca31f8d" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="9f4e67818ef746acb28cbe4966ba0bcb" />
+      <w:cols w:space="720" pt14:Unid="0aa3ca3fc07641bc8554d06909b6989e" />
+    </w:sectPr>
+  </w:body>
+</w:document>

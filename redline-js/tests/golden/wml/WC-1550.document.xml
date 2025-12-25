@@ -1,0 +1,316 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="0d1c1d9785264d4b9de0ceebbda33640">
+      <w:pPr />
+      <w:r>
+        <w:t>This is a test.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="ad2c9b352b644021982956d28f092f65">
+      <w:pPr pt14:Unid="72f2328be54640aab5747e549a74f88b">
+        <w:rPr pt14:Unid="d66149afa536407d9c6789d9d6865b87">
+          <w:rFonts w:eastAsiaTheme="minorEastAsia" pt14:Unid="08846c160f2e4aa28bc30f90e0b56dfe" />
+        </w:rPr>
+      </w:pPr>
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:08.1523421+00:00">
+        <m:oMathPara pt14:Unid="d05c6074a0454770aafad03400f51c84">
+          <m:oMath pt14:Unid="12cfe98aa0e94b779c225ca0d45b4bb4">
+            <m:r pt14:Unid="955aa805cc554fbe88dfe5c4d0dcaa50">
+              <w:rPr pt14:Unid="a65055e4027645b1b8c320970d42caab">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="eae5bf4516e34361831736491ec29af8" />
+              </w:rPr>
+              <m:t pt14:Unid="3998cb4d2a6b49ce9de5986526e0224d">A=π</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="b2c9af174264428f870f2519d2b20d74">
+              <m:sSupPr pt14:Unid="4d0525efe52e441ba868f74d935f687f">
+                <m:ctrlPr pt14:Unid="4491dd713211455aa3e63a6e082e6a9b">
+                  <w:rPr pt14:Unid="3cf9fba7163c44d3bd452815a5e0fb58">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="6f1e224587934c3a8845eaccfc5db3d7" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="c95c1415f9d24f7b86741de9815e4b68">
+                <m:r pt14:Unid="34e92d41e05f4ef589ffeeffae61a868">
+                  <w:rPr pt14:Unid="d6db5bd618d2477b97d427e9dfb6948b">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="28602ef9c05d4284b4cfbecd406b6bd9" />
+                  </w:rPr>
+                  <m:t pt14:Unid="de6645a2f6564999b6aa8657b89d16e3">r</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="65f3aa65f6204d19baa0dffbb254bd96">
+                <m:r pt14:Unid="e8128096efb34abe87c4e10aad4bec7e">
+                  <w:rPr pt14:Unid="1d9646f362f243079ae393ec6ba958ef">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="4833bf6e5a14438b9815d2813e70d818" />
+                  </w:rPr>
+                  <m:t pt14:Unid="af2d6287e6194bf695d90bd39ca29be2">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+          </m:oMath>
+        </m:oMathPara>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:08.1523421+00:00">
+        <m:oMathPara pt14:Unid="14167a0baa65474c9d639c7837bf554b">
+          <m:oMath pt14:Unid="ddc5ac135f8f445e981cfaf09f1c9146">
+            <m:r pt14:Unid="7a0f74f4377a4e25b0ad4b9c1621bf61">
+              <w:rPr pt14:Unid="4d20df64d47d4a819f99286422044a16">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="5cbcef5d55b8420db01a0dbc874983bd" />
+              </w:rPr>
+              <m:t pt14:Unid="e58f95beb2734f1fba869903b8b3d272">A=</m:t>
+            </m:r>
+            <m:r pt14:Unid="70b516e739a343a786bad67ed4aa016d">
+              <w:rPr pt14:Unid="5a74b82d257547f8a27c24f1461258ac">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="c421276138b447068336e96238b12e53" />
+              </w:rPr>
+              <m:t pt14:Unid="8d025e5ab4be4bd6a5b484d119863ba5">2</m:t>
+            </m:r>
+            <m:r pt14:Unid="598ddbc8184a4a1fbb569c640eafab63">
+              <w:rPr pt14:Unid="b8ab636368fb46d3905541bc7fcdaa4d">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="00106b47a6424cefb7fac92ff090f892" />
+              </w:rPr>
+              <m:t pt14:Unid="def65f195f9845cdbd96dbe125fa4890">π</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="8bca3b883b74477d9c36c7eb6958a63f">
+              <m:sSupPr pt14:Unid="b8e7e445124043188f564f103687c9d9">
+                <m:ctrlPr pt14:Unid="ec731c4c48234241bc9f3c7b2642ee29">
+                  <w:rPr pt14:Unid="5057f39178b5483499d0632cbe94f00b">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="2abffa8b4ba04114955d3f9b7d51dfb8" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="1ee22cb6c00d45bc8806299e869f44ed">
+                <m:r pt14:Unid="151b120bb2504183accba6f6db38cedc">
+                  <w:rPr pt14:Unid="5872cf247ccb4f839d46c3cf573a054e">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="68b3815c57e345e4961cd10b9ac5b146" />
+                  </w:rPr>
+                  <m:t pt14:Unid="398f420664ff43c5af660b4edde66fe4">r</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="a8db7e54c1874a86bb8075a91d0ae6fe">
+                <m:r pt14:Unid="bec62bdf4ee94304909fdf216e7ff91f">
+                  <w:rPr pt14:Unid="f5045936334f41cba22e7e1c42db6e95">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="8149d841e34949aea99a34ec764fff10" />
+                  </w:rPr>
+                  <m:t pt14:Unid="71abc2c6b63f4d63838d7806823d6437">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+          </m:oMath>
+        </m:oMathPara>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="85fecdd1f8ac4127a84b6ed28b0adb14">
+      <w:pPr pt14:Unid="ece406b7c4cb49cf810ab3ba5aa090d7">
+        <w:rPr pt14:Unid="b24d89e10358476297047d8095cfa934">
+          <w:rFonts w:eastAsiaTheme="minorEastAsia" pt14:Unid="6121d3dc2a644d049e276b312864623b" />
+        </w:rPr>
+      </w:pPr>
+      <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:08.1523421+00:00">
+        <m:oMathPara pt14:Unid="dfd73ccc967242d5977009cc9acd4bf2">
+          <m:oMath pt14:Unid="67787ba763eb48ee96bf4ae77fd03a34">
+            <m:sSup pt14:Unid="745e9451b9d14f518a94b4aeb336b864">
+              <m:sSupPr pt14:Unid="b2e247da10a041809e775f5232e5e460">
+                <m:ctrlPr pt14:Unid="c0cb0185385f4164b79db2951b20d4c8">
+                  <w:rPr pt14:Unid="a6431e3b12ba4decb36ddbea1bd2cd10">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="c796dd1c27704c2ca1d4a3f3510a2280" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="4dfd7b02faf1444fb38594db8bdea2b5">
+                <m:r pt14:Unid="693c469d4851432eb4ee447ae2356c5c">
+                  <w:rPr pt14:Unid="8d4086b3117346b7a9e000407cfdd839">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="799a5036a45c4c5eb35798fdce88e3e8" />
+                  </w:rPr>
+                  <m:t pt14:Unid="b3753b40787246b98685da12d0293549">a</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="f57b2542287244aa85f565751b7e75e4">
+                <m:r pt14:Unid="9a16018b8ceb4a638a8c5342ea4d7680">
+                  <w:rPr pt14:Unid="348d3318f726419c81d388a3af27f1f7">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="c97ac62b7bf543e2b2c768c497e94237" />
+                  </w:rPr>
+                  <m:t pt14:Unid="ea29a8d1fc344f06aad52193aecd2c1c">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+            <m:r pt14:Unid="da101239d27e46f7894a2678bad6b176">
+              <w:rPr pt14:Unid="f6c07ce182234c4eb28006c284b8d7b0">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="539ec6e6837b4ab3ac2d455ed4f248c6" />
+              </w:rPr>
+              <m:t pt14:Unid="bb46ac6678a84bf39aba3acfec82aeea">+</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="3b173152a0b8499497ff675723364096">
+              <m:sSupPr pt14:Unid="0ea33c19e5f146589cfcfe9c71a74a7f">
+                <m:ctrlPr pt14:Unid="6e6e6649677c4d79ad1839b7d4660658">
+                  <w:rPr pt14:Unid="fa48a226679f4fba82ed9d2db6915d2b">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="12a033f6e27c4f7cb6cd32507ae1c78c" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="3e21428a7d1c432abf1b51fb43a37a42">
+                <m:r pt14:Unid="24c201e79ce14c0382750513bf1877f6">
+                  <w:rPr pt14:Unid="18aeee8abf844e2da519b3c9f113c640">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="52ca19b00b8c49f3aae26bd9b2177155" />
+                  </w:rPr>
+                  <m:t pt14:Unid="a92d3c115fc645d690cf86be47bdb8af">b</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="f405b1c2d36f4563b9c20de6c1a4365a">
+                <m:r pt14:Unid="03315f083aa54dd898bc9250005617a4">
+                  <w:rPr pt14:Unid="71bf2e2d59184716bb14bbcdecf6e239">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="11226a62eb64402d91224682835f688f" />
+                  </w:rPr>
+                  <m:t pt14:Unid="9eb20617dca64cb89d798e9ab3123162">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+            <m:r pt14:Unid="8ddc734a674b4403a0eab489eaaf0ee9">
+              <w:rPr pt14:Unid="8929a73a90fd4dfcaa755b6341e68da2">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="a30f7ecf1f2746169c2db3c988d2da80" />
+              </w:rPr>
+              <m:t pt14:Unid="df8fe6190ce849518c3fc1937328b0af">=</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="1f78bef2185e49f99c556eea75126e17">
+              <m:sSupPr pt14:Unid="c075d3384e7a474ebc4d9a0925a77344">
+                <m:ctrlPr pt14:Unid="5b14b602d65148a9988d57ab4dc796f5">
+                  <w:rPr pt14:Unid="ecca9c305f8d4e9099acc725e26eb340">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="82f1c19fbffb44d882e61ba5b83bc2eb" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="90eae1ede5444fdc82cef40983309ad6">
+                <m:r pt14:Unid="c49c73cb15ef4e7db6b141f200e6d6b9">
+                  <w:rPr pt14:Unid="9dabb101bede4b05b8bc0e8d27713342">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="625bf9def9be4912aea5ba101df60559" />
+                  </w:rPr>
+                  <m:t pt14:Unid="de529476b4c04783afe4dae906bb7525">c</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="e8fc54668e3f43a8a8e50e05c20f3d97">
+                <m:r pt14:Unid="b1ff024a930948ad9db121741a56b557">
+                  <w:rPr pt14:Unid="768532f071044ef4b7ed36747ff16672">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="287d7a1228344a949028835cd0d86938" />
+                  </w:rPr>
+                  <m:t pt14:Unid="f6e9cc4dd78f45fe9c3355abd5daf985">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+          </m:oMath>
+        </m:oMathPara>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:08.1523421+00:00">
+        <m:oMathPara pt14:Unid="fb00ba7cb08e40ffb5542984c35ffdc1">
+          <m:oMath pt14:Unid="9a82bbfad8144cdeb948e9826324a614">
+            <m:sSup pt14:Unid="12b0fd42f382481485724d6bc5ca7ad6">
+              <m:sSupPr pt14:Unid="91c553db452c406197e8f649ed44b1ac">
+                <m:ctrlPr pt14:Unid="f2cb7ab7a23f48f9909dee3726ffc032">
+                  <w:rPr pt14:Unid="548bd28f334148838ee84faf65ebe0d6">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="de8085eb28614b4595e6392467718a13" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="f8cf91f21c594f10a6a528c6a4e8f888">
+                <m:r pt14:Unid="9bf3280a4fdf45e98ff5341225383ca1">
+                  <w:rPr pt14:Unid="1c8e672be0734e27b9e95c8a6eacb179">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="694d1d48fa1846958a3592da2d2c0022" />
+                  </w:rPr>
+                  <m:t pt14:Unid="8b7e50db9f3e44218d1a21a5e6ec1226">2</m:t>
+                </m:r>
+                <m:r pt14:Unid="6a9a23a2f55f4746ad662707a3bb918d">
+                  <w:rPr pt14:Unid="4be19067e9294d939063154022592c14">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="e618e180060f474f85c7510d1cefc4f3" />
+                  </w:rPr>
+                  <m:t pt14:Unid="78b30aecbb314c9babc8fc4d7dc3561c">a</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="ec98621b16874d84895b40c88bab61fd">
+                <m:r pt14:Unid="56c9e563cd0743a09a9b95035d9aac72">
+                  <w:rPr pt14:Unid="bb6e9f3b75ce42d6835c901a568cfdce">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="4b3c792076a849569e4a7d250efce3b2" />
+                  </w:rPr>
+                  <m:t pt14:Unid="6b400bec1b754750b7e9098e690114b9">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+            <m:r pt14:Unid="da196823f03a4057b4a5bd67f01d12e6">
+              <w:rPr pt14:Unid="1a66b50401ca4f89b5a754248ac293cd">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="aac6bcb8c2494707832e12d4e0e0c6d9" />
+              </w:rPr>
+              <m:t pt14:Unid="4c4daf6a7e18452aafb779fda643c3e6">+</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="f31ff541cca34f529b39c30a0fe217d0">
+              <m:sSupPr pt14:Unid="330631dd49854401873fa8a62d5592c6">
+                <m:ctrlPr pt14:Unid="c754f66dd1a94349aae4b59616be18f8">
+                  <w:rPr pt14:Unid="89fe935f25ad48b5a1166bb4cfe25b57">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="bbe601d61bd34e05a95996cf282b9254" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="d5237c1a1bcf4fc38da1d3f456e686db">
+                <m:r pt14:Unid="db63853291af47e799274bc9453cd29d">
+                  <w:rPr pt14:Unid="48f3c40ff36c49d5ae501b4a986175f4">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="ca84b99d072142c4be3f3f1060fc13b5" />
+                  </w:rPr>
+                  <m:t pt14:Unid="868acf851cda477bac14a76e917772f2">b</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="900f9c354ba04c388bdabd6f731c76a8">
+                <m:r pt14:Unid="8f4d2f7799f84c14b6fd2d1e0cc3bd3e">
+                  <w:rPr pt14:Unid="a46def8bc2ae416ebfec1ab821a500fb">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="093de33910714fefbbba2c32db4727b8" />
+                  </w:rPr>
+                  <m:t pt14:Unid="c2bdb6348d5d43529803b76dabb4e56d">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+            <m:r pt14:Unid="ab00125dcf344903bee69e2444a9de33">
+              <w:rPr pt14:Unid="b272053d659447dcbb2f97125cc92b68">
+                <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="c5f264fe632f45a7853fe27aa759f3c5" />
+              </w:rPr>
+              <m:t pt14:Unid="4596c092acc246ee9af47742360afa86">=</m:t>
+            </m:r>
+            <m:sSup pt14:Unid="270a330e7cca40a1a42646fec2bf0fa9">
+              <m:sSupPr pt14:Unid="e81d4aae504342ec85945144cabe0740">
+                <m:ctrlPr pt14:Unid="93ba58941d36420780b956e1417cefea">
+                  <w:rPr pt14:Unid="c8889fa50e724487860209aeecc09064">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="d767c6fec69b40b8a4189a801af062cb" />
+                  </w:rPr>
+                </m:ctrlPr>
+              </m:sSupPr>
+              <m:e pt14:Unid="9600a7f0f0f64f0fa4ff1c8375bee8d6">
+                <m:r pt14:Unid="7e9576413ed64f98a0534778f66860f2">
+                  <w:rPr pt14:Unid="53be4ac8508a4b60a16f831178c98dc0">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="c97c72666c3941ef9d94fe52b9f57c3e" />
+                  </w:rPr>
+                  <m:t pt14:Unid="a8667ec6ad414e378eed804d4bbcd55f">c</m:t>
+                </m:r>
+              </m:e>
+              <m:sup pt14:Unid="4cc8d31ff4904c228db4b5457db9b2f0">
+                <m:r pt14:Unid="984683e8f0244a779fff2c3ec5c235a9">
+                  <w:rPr pt14:Unid="05ecc89bf1944d469db14d8f3bc8a19e">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsiaTheme="minorEastAsia" pt14:Unid="784adf14a05d44f58d3a52ae17bfa5cc" />
+                  </w:rPr>
+                  <m:t pt14:Unid="303fe4b655af4347aa57988f1c223298">2</m:t>
+                </m:r>
+              </m:sup>
+            </m:sSup>
+          </m:oMath>
+        </m:oMathPara>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="c53a85d8393e44099be6559ee1899ccb">
+      <w:pPr />
+      <w:r>
+        <w:rPr pt14:Unid="574c1dc3263b4e7798173744f25a2fdf">
+          <w:rFonts w:eastAsiaTheme="minorEastAsia" pt14:Unid="05298e8793264dedb27ce55d79b7f14d" />
+        </w:rPr>
+        <w:t>Paragraph after.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="2f4503f2969847b4970f59637f29db21">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="0980709e5363401bb8eaa80817308505" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="273a20d0f8304e9d961b7fc0ba9198e0" />
+      <w:cols w:space="720" pt14:Unid="6a75cd700edc40679ecc87c6454b0ac8" />
+    </w:sectPr>
+  </w:body>
+</w:document>

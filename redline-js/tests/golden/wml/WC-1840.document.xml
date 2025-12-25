@@ -1,0 +1,96 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:tbl pt14:Unid="7d5fce2db0c644cb81fc105b5fcdba58" pt14:CorrelatedSHA1Hash="2855e8740d66e31f7ef2e6ec01d9069f0628bf9f" pt14:SHA1Hash="2855e8740d66e31f7ef2e6ec01d9069f0628bf9f" pt14:StructureSHA1Hash="259507b7247f226471ab42c467f81d090a748586">
+      <w:tblPr pt14:Unid="4d333fabe7d54f1d80a0e45a1dd37799">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="e3a24c3f52c546bf91ba6830b2d41dd1" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="bb33693a07bd4e55845c852c70bdff89" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="9be19df1f8ab4ca7b8ba3a0c3d9c19cb" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="4021268d8bb244d3926c101a071d3231">
+        <w:gridCol w:w="3619" pt14:Unid="b4285e8db9ff4065a6c4d5c1482b48f1" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="8577754f591d46758ce35dba8214eec4" pt14:CorrelatedSHA1Hash="2f0341551b9cd7391950c67e4dc864be46395a04" pt14:SHA1Hash="2f0341551b9cd7391950c67e4dc864be46395a04" pt14:StructureSHA1Hash="04e44d4c9de572e6e8a76521a2626bd230cbc72a">
+        <w:tc pt14:Unid="c4803c25c63c44779a243e2fc467ae6d" pt14:SHA1Hash="07141bf40ff76f20ea201c3545de238551f80846">
+          <w:tcPr pt14:Unid="a85dfd4cafbe40eaabdcaa61a3acab65">
+            <w:tcW w:w="3619" w:type="dxa" pt14:Unid="9f986acfc8ab427480096e27b2bfe7f1" />
+          </w:tcPr>
+          <w:p pt14:Unid="4a5c1fb21a96478193c502d4b678125b">
+            <w:pPr />
+            <w:r>
+              <w:t>Video.</w:t>
+            </w:r>
+            <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:10.4546599+00:00">
+              <w:r>
+                <w:delText xml:space="preserve"> Click.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="85b18af1f8974aa2b078070127223fca">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:10.4546599+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:10.4546599+00:00">
+              <m:oMathPara pt14:Unid="82de1cb37b3c43aaa11c0c5125507967">
+                <m:oMath pt14:Unid="d70ca570d0d143818e4af023be52dd51">
+                  <m:r pt14:Unid="9ac1fa1d83824065bfc9423b28abf0c9">
+                    <w:rPr pt14:Unid="db1111fba4634db394976994fe9c6d1a">
+                      <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="80a70d484aba47658b29b2c0708bb529" />
+                    </w:rPr>
+                    <m:t pt14:Unid="194c4321b18b4250a5df0f7ed64bac4a">A=π</m:t>
+                  </m:r>
+                  <m:sSup pt14:Unid="ab0938fea5e94af388c1204b190d8034">
+                    <m:sSupPr pt14:Unid="da7b1faad3e547b591224437587adc52">
+                      <m:ctrlPr pt14:Unid="3e74cb3860e24738a5241984f49eb59f">
+                        <w:rPr pt14:Unid="424c896a25ce447587d6487b424c2c84">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="a0742bf896d74f1089c289e9dd7050e4" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:sSupPr>
+                    <m:e pt14:Unid="4032b16160eb4daa9691816a35fc740f">
+                      <m:r pt14:Unid="5c60c8cc774548878b9221aefa22fb61">
+                        <w:rPr pt14:Unid="fbd6cef8c9b14a098a0a35d66954801a">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="81427e51d1eb4b759db860c2c740a535" />
+                        </w:rPr>
+                        <m:t pt14:Unid="2bf7e6ce5f2a4fe2b17b999f50194bf2">r</m:t>
+                      </m:r>
+                    </m:e>
+                    <m:sup pt14:Unid="94c08a445ae44e638cefbe9711dc09c4">
+                      <m:r pt14:Unid="31e6ad7655944ea49dc06ddac2bc8ccf">
+                        <w:rPr pt14:Unid="1da5bc8543ac48f6adf13d9c8a3c1bec">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="87e45cfd2cce45fda6ad467f7f6d7e94" />
+                        </w:rPr>
+                        <m:t pt14:Unid="08fa99d68d814ec7898586f45b81284f">2</m:t>
+                      </m:r>
+                    </m:sup>
+                  </m:sSup>
+                </m:oMath>
+              </m:oMathPara>
+            </w:ins>
+          </w:p>
+          <w:p pt14:Unid="242a911ac1fd493b8d939f61f9355306">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:10.4546599+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:10.4546599+00:00">
+              <w:r>
+                <w:t>Click</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="9253511c17fa4456957d1d8e2e54083b">
+      <w:pPr />
+    </w:p>
+    <w:sectPr pt14:Unid="be43537174424e0d91d55abe0875b9db">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="f2125966e7a64cb9b3447184277fbf39" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="21f93a7ae60444e3bad1c9ecf902140b" />
+      <w:cols w:space="720" pt14:Unid="b9b40bd9b7974145a5ea8538c4b594df" />
+    </w:sectPr>
+  </w:body>
+</w:document>

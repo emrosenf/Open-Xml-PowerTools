@@ -1,0 +1,91 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="8867ebaac81c451e8f6682bec59ebb36">
+      <w:pPr />
+      <w:r>
+        <w:t>Para before.</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl pt14:Unid="ea0041f1d5a14839b1dfd967d3e89e67" pt14:CorrelatedSHA1Hash="b3d78ec0f2e4d25502ef50288f4677c40dc03a0a" pt14:SHA1Hash="b3d78ec0f2e4d25502ef50288f4677c40dc03a0a" pt14:StructureSHA1Hash="016e349670653589fa205cc74e49496db77b1868">
+      <w:tblPr pt14:Unid="7aa2559250e14dd0b2273ffc18eccd06">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="b8e49562876145da8bc809b85ecd14bb" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="df6ca71231b743a7b086c8a4d2d8eec6" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="83d2798a0478456293fe2e8a9c1908f1" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="05e161fd0d1b434fb6aec6044ae94ffa">
+        <w:gridCol w:w="4675" pt14:Unid="becddafcbc8f435ab72c0f18758a787a" />
+        <w:gridCol w:w="4675" pt14:Unid="fb04fdd0189446c6be6ca1415d7704ac" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="809f02ee287a46559e7b6c294b7c1a3e" pt14:CorrelatedSHA1Hash="8c7ece43738ba402a34e02fd05cffc69f86571af" pt14:SHA1Hash="8c7ece43738ba402a34e02fd05cffc69f86571af" pt14:StructureSHA1Hash="79a0eea29f620d22c292795db0fa42012a6019db">
+        <w:tc pt14:Unid="c0af0b7a160b4621a4cd24d7cb96dbc5" pt14:SHA1Hash="10f0114204d84c2df36901e40ed2e6bdbf21d699">
+          <w:tcPr pt14:Unid="3a1300c7a2c04cf281b1b854d1f76f37">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="d7a6a0fc1dd144b78b9abf5ada3a31b0" />
+          </w:tcPr>
+          <w:p pt14:Unid="f91d3384c2b54eec946b7ef941ba227f">
+            <w:pPr />
+            <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:07.5076671+00:00">
+              <w:r>
+                <w:delText>Test1</w:delText>
+              </w:r>
+            </w:del>
+            <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:07.5076671+00:00">
+              <w:r>
+                <w:t>Test2</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="6172c03eeeb04c56bf1cb604f94928f9" pt14:SHA1Hash="3519df7b6fbc6e25e4f4ebe617b68969d0111265">
+          <w:tcPr pt14:Unid="5ac27560231f41bba5e53e939284fe46">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="ad4ad594e2c841c995aa1d3237cb9f75" />
+          </w:tcPr>
+          <w:p pt14:Unid="fc761a461a6940d986e4f6f020d0fb5c">
+            <w:pPr />
+            <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:07.5076671+00:00">
+              <w:r>
+                <w:delText>Test2</w:delText>
+              </w:r>
+            </w:del>
+            <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:07.5076671+00:00">
+              <w:r>
+                <w:t>Test1</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="29a10e10711b4e4196a02213c3d70ff3" pt14:CorrelatedSHA1Hash="376826e009e033b50e7643d0a0954c342233feb4" pt14:SHA1Hash="376826e009e033b50e7643d0a0954c342233feb4" pt14:StructureSHA1Hash="79a0eea29f620d22c292795db0fa42012a6019db">
+        <w:tc pt14:Unid="41362f14061447b284d129a2a403d9c7" pt14:SHA1Hash="af9e69a2e2b5e928edc35be26bccbdc130ff0a4d">
+          <w:tcPr pt14:Unid="317f4c7540d24785ae821789b3a5d62c">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="a3b2ffa6b2ce4fe09e9034dcf3934c48" />
+          </w:tcPr>
+          <w:p pt14:Unid="d560a6b577a84064b1ec3e05c43e1982">
+            <w:pPr />
+            <w:r>
+              <w:t>Test3</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="26ac2c2a9b51458ca65eeb8843775729" pt14:SHA1Hash="dacaaffa97073711611e4195224953059aec1d53">
+          <w:tcPr pt14:Unid="f605dbbaf4ff476b8ec565773bd5187f">
+            <w:tcW w:w="4675" w:type="dxa" pt14:Unid="482632ec5c234a88ba104ac5b9c3939d" />
+          </w:tcPr>
+          <w:p pt14:Unid="b52bec66959340eb86ef9847ca000b9c">
+            <w:pPr />
+            <w:r>
+              <w:t>Test4</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="7475fef9c33e49cea0bd9169d2565d50">
+      <w:pPr />
+    </w:p>
+    <w:sectPr pt14:Unid="c7f8ce6364534a38b0b4b2a8d7c42c5e">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="794b7a118e0c4b27b0ded64317a2e187" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="074359988bab4e828f49e9aa03d4a0f1" />
+      <w:cols w:space="720" pt14:Unid="e8a35dea2ae445ab9126af767ab9c3c2" />
+    </w:sectPr>
+  </w:body>
+</w:document>

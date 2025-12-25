@@ -1,0 +1,89 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="4740300e86104bbcb88e1f6eb97ebd02">
+      <w:pPr />
+      <w:r>
+        <w:t>One</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="fe53fac426b648d9a444ae0ebcf71513">
+      <w:pPr />
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:11.7328263+00:00">
+        <w:r>
+          <w:delText>Two</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:11.7328263+00:00">
+        <w:r>
+          <w:t>Tw</w:t>
+        </w:r>
+      </w:ins>
+      <w:ins w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:11.7328263+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="2a59e32d5e504a74a23a95627bd32e60">
+            <w:rStyle w:val="EndnoteReference" pt14:Unid="b66410f701c240488a7dde6bebc2d5a4" />
+          </w:rPr>
+          <w:endnoteReference w:id="1" pt14:Status="Inserted" />
+        </w:r>
+      </w:ins>
+      <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:11.7328263+00:00">
+        <w:r>
+          <w:t>o1</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="64aec77a84cd49ac92babbf85a481f56">
+      <w:pPr />
+      <w:r>
+        <w:t>Three</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="f1c718d9bbe04bc797c3329dd9c7494b">
+      <w:pPr />
+      <w:r>
+        <w:t>Four</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="f9dfa357022647398094325b4af30701">
+      <w:pPr />
+      <w:r>
+        <w:t>Five</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="fc9864ca0e7844c8a07b0db2403e64a0">
+      <w:pPr />
+      <w:r>
+        <w:t>Six</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="019464f3dbc0465284afa5efa005fe31">
+      <w:pPr />
+      <w:r>
+        <w:t>Seven</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="b337424c83a648a7b441b1481d5693ad">
+      <w:pPr />
+      <w:r>
+        <w:t>Eight</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="ce5e92705f974a0e8903154c54efb44f">
+      <w:pPr />
+      <w:r>
+        <w:t>Nine</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="3ee8c10ac555425e983b1915607c1d7f">
+      <w:pPr />
+      <w:r>
+        <w:t>Ten</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="58ccc93c2f4144fb893c7114ab16fac7">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="53626d8edc1a4b1ab8cd85968961db98" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="c524e9b27e704e71ab6ec6acef79b7b1" />
+      <w:cols w:space="720" pt14:Unid="8e91f3703f0e4afb964abd9f309e38b4" />
+    </w:sectPr>
+  </w:body>
+</w:document>

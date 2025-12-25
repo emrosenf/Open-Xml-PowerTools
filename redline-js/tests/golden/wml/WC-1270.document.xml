@@ -1,0 +1,55 @@
+<w:document xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="9cf97dfa88c346988bf4b31521153aee">
+      <w:pPr />
+      <w:r>
+        <w:t>This is a paragraph before</w:t>
+      </w:r>
+      <w:ins w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:03.6140214+00:00">
+        <w:r>
+          <w:t xml:space="preserve"> the smart art</w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:t>.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="e1e7b96f43c0462e8e9fac86265bbb96">
+      <w:pPr />
+      <w:r>
+        <w:drawing pt14:Unid="8655d1c81b1c4c6997ef073f0401c1e3" pt14:SHA1Hash="1e8674428970ac158cbf3ede44b4725bb4eb4928">
+          <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="e7bc0261a7bd41c5b43cb96e0a17eb38">
+            <wp:extent cx="5486400" cy="1175657" pt14:Unid="9a074f7913c04504b2d7cdef6b26764b" />
+            <wp:effectExtent l="0" t="0" r="19050" b="0" pt14:Unid="43cfccfa265e4634bc0df07ca3936704" />
+            <wp:docPr id="1" name="Diagram 1" pt14:Unid="001f25c0640b43dfac0ef510b386a3a8" />
+            <wp:cNvGraphicFramePr pt14:Unid="210366f957344680bf322e527e576449" />
+            <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="38fa7e2e12b74353880e4ecad3e9c373">
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram" pt14:Unid="702558147cec4d788ee687a5fc1ae217">
+                <dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:dm="R04185a94e2dc4eedb17556a77448b6ac" r:lo="Rc27ff7ab7aa94a1d9f15e03be892880f" r:qs="R99a14eced6a54f4488fe86293c025a88" r:cs="Rb84c711de56a4700aabf4676dca4c7ea" pt14:Unid="f1c1db674e724fde8f8f0bab9e32a58c" />
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="1d7b9cf33070461ab0de514d2b538312">
+      <w:pPr />
+      <w:r>
+        <w:t>This is after</w:t>
+      </w:r>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:03.6140214+00:00">
+        <w:r>
+          <w:t xml:space="preserve"> it</w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:t>.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="0a49718ec6794860821e2b91a6ceacfe">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="f192a9d9050c4515a2a3ed9ca6564831" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="a4cf57a3a23e41f2ab2db5261a3ae53d" />
+      <w:cols w:space="720" pt14:Unid="27a9753c69ab480cbdf2c86ff6f718ef" />
+    </w:sectPr>
+  </w:body>
+</w:document>

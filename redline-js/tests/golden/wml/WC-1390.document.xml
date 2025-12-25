@@ -1,0 +1,67 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="173aa533d4a74c5f8f9922af1826d40c">
+      <w:pPr />
+      <w:r>
+        <w:t xml:space="preserve">Video </w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:05.3868381+00:00">
+        <w:r>
+          <w:delText>provides</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:05.3868381+00:00">
+        <w:r>
+          <w:t>gives</w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:t xml:space="preserve"> a powerful way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="30542d7d5b7942dd8ceca5fb22eb57c5">
+      <w:pPr />
+      <w:r>
+        <w:rPr pt14:Unid="0a855cb503f741278eeb87c26cd501e1">
+          <w:rStyle w:val="Hyperlink" pt14:Unid="18c513f756fd4905aba3edd4a5f9649d" />
+        </w:rPr>
+        <w:t>www.</w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:05.3868381+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="2deaea652e5e40c29358d18be0dca8b6">
+            <w:rStyle w:val="Hyperlink" pt14:Unid="11010d92f62a4e7083e46243f959755e" />
+          </w:rPr>
+          <w:delText>ericwhite.com</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:05.3868381+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="0a855cb503f741278eeb87c26cd501e1">
+            <w:rStyle w:val="Hyperlink" pt14:Unid="18c513f756fd4905aba3edd4a5f9649d" />
+          </w:rPr>
+          <w:t>ericwhite2.com</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="054f5de7723c4c3cbcf8569d222789d7">
+      <w:pPr />
+      <w:r>
+        <w:t>Lorem ipsum</w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:05.3868381+00:00">
+        <w:r>
+          <w:delText xml:space="preserve"> dolor</w:delText>
+        </w:r>
+      </w:del>
+      <w:r>
+        <w:t xml:space="preserve"> sit amet, consectetuer adipiscing elit.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="02f9c4c0010341cea697186044112e2a">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="5eec4e22601b4ac2b3013efae3dd6f1a" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="ff4bc9baaf7841fea6e02c37173a9fc4" />
+      <w:cols w:space="720" pt14:Unid="018e50ddcc994264a5eaeebf4b278f38" />
+    </w:sectPr>
+  </w:body>
+</w:document>

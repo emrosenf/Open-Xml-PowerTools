@@ -1,0 +1,96 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="8d2616fb6afe40c8b53778c7aa5ae4ec">
+      <w:pPr />
+      <w:r>
+        <w:t>One</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="ab2d18e1634e45c38a049f23d80c791e">
+      <w:pPr />
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:11.6759303+00:00">
+        <w:r>
+          <w:delText>Two</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:11.6759303+00:00">
+        <w:r>
+          <w:t>Tw</w:t>
+        </w:r>
+      </w:ins>
+      <w:ins w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:11.6759303+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="64ad2ba3c9ec4a69bfcbd122b2e16316">
+            <w:rStyle w:val="FootnoteReference" pt14:Unid="ac3dd5e3daa74f969db47a918c3d4892" />
+          </w:rPr>
+          <w:footnoteReference w:id="1" pt14:Status="Inserted" />
+        </w:r>
+      </w:ins>
+      <w:ins w:author="Eric White" w:id="3" w:date="2025-12-24T01:47:11.6759303+00:00">
+        <w:r>
+          <w:t>o1</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="488da5264aa44da580bdea4b0bfe74b0">
+      <w:pPr />
+      <w:r>
+        <w:t>Three</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="919b85724cb84885b2f9903982e8d60c">
+      <w:pPr />
+      <w:r>
+        <w:t>Four</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="27951176029d4fa19e89b1419a81ddf1">
+      <w:pPr />
+      <w:r>
+        <w:t>Five</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="7144e4a62e254350bf97e620dcd6ccb5">
+      <w:pPr />
+      <w:r>
+        <w:t>Six</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="2cf941e7055a4fa795876059635db726">
+      <w:pPr />
+      <w:r>
+        <w:t>Seven</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="d2527626f43f4c56a883e8311a7007fc">
+      <w:pPr />
+      <w:r>
+        <w:t>Eight</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="f780af46423c4235b84cc350f7413845">
+      <w:pPr />
+      <w:del w:author="Eric White" w:id="4" w:date="2025-12-24T01:47:11.6759303+00:00">
+        <w:r>
+          <w:delText>Nine</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="5" w:date="2025-12-24T01:47:11.6759303+00:00">
+        <w:r>
+          <w:t>NINE</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="072bf2c3135f4826984431ec45c5b018">
+      <w:pPr />
+      <w:r>
+        <w:t>Ten</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="cc062518d9da4ce2a6f28c6179591c26">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="0bd23416f8da4b11a74a69d75d237f6b" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="4ea8bf3fe734484a8465e4c882a19ee5" />
+      <w:cols w:space="720" pt14:Unid="02c313d0d8dd4abcb1d587d7b54153b1" />
+    </w:sectPr>
+  </w:body>
+</w:document>

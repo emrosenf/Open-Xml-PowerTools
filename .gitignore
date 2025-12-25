@@ -40,3 +40,7 @@ TestResults/
 # JetBrains
 .idea/
 _ReSharper.Caches/
+
+# redline-js
+redline-js/node_modules
+redline-js/dist

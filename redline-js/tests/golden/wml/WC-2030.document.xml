@@ -1,0 +1,52 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:aink="http://schemas.microsoft.com/office/drawing/2016/ink" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="b36b1edb91b04eacb3ed355a134899db">
+      <w:pPr pt14:Unid="035376aa19854202bdf941c6e043e6a9">
+        <w:rPr pt14:Unid="64f08937fa844850b75d089437c0729c">
+          <w:lang w:val="en-US" pt14:Unid="66cd0cfc41af4701a964aa93e314e1e5" />
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr pt14:Unid="8a33f391036d4a83bcf5a8558be1265b">
+          <w:lang w:val="en-US" pt14:Unid="af1d03a66876497e9c60b6df5129b725" />
+        </w:rPr>
+        <w:t>Video provides a powerful way to help you prove your point.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="6e55ea56c86e472fa36764fa9bff6907">
+      <w:pPr pt14:Unid="d4ea240bced546eda016dcec146e7384" pt14:Status="Inserted">
+        <w:pStyle w:val="MyNewParaStyle" pt14:Unid="341c6423bd2543ada979973efef9209b" />
+        <w:rPr pt14:Unid="c2f92c8793444cc9a34011624b55bb26">
+          <w:ins w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:11.7881595+00:00" />
+          <w:color w:val="8EAADB" w:themeColor="accent1" w:themeTint="99" pt14:Unid="a3a27cf53be247df9f4c29216499fa68" />
+        </w:rPr>
+      </w:pPr>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:11.7881595+00:00">
+        <w:r>
+          <w:rPr pt14:Unid="b668ad7d289046839a0a52570ae8f2bc">
+            <w:color w:val="8EAADB" w:themeColor="accent1" w:themeTint="99" pt14:Unid="4e196b8e1ea14791abbb189a877dc4fe" />
+          </w:rPr>
+          <w:t>New paragraph with new style.</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:p pt14:Unid="c68d4bd7d7f24628b26907c3e6106e62">
+      <w:pPr pt14:Unid="2c4f1b0009f94ec29051d0b701b9fd40">
+        <w:rPr pt14:Unid="5db4a8d9687241e2a7e5e8e1a33b2e1d">
+          <w:lang w:val="en-US" pt14:Unid="b2cfdc5c0b4448ea86241baf2e08d506" />
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr pt14:Unid="c3c2bdc28ee84f6bb923ea010c72c3cd">
+          <w:lang w:val="en-US" pt14:Unid="aca4786b9bce4195b552bdbb487d91e7" />
+        </w:rPr>
+        <w:t>When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr pt14:Unid="3307d5189d004cbd850798091f4437df">
+      <w:pgSz w:w="11906" w:h="16838" pt14:Unid="e0e8ff8f37be4bebbe6ab1bb135f2d1e" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="cfb54b8bbb5346cb8af827fc2465cd0f" />
+      <w:cols w:space="720" pt14:Unid="585bca29b1d44c8ea660e9f1060e6abb" />
+    </w:sectPr>
+  </w:body>
+</w:document>

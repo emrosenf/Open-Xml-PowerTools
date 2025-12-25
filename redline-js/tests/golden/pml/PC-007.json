@@ -1,0 +1,26 @@
+{
+  "Summary": {
+    "TotalChanges": 1,
+    "SlidesInserted": 0,
+    "SlidesDeleted": 0,
+    "SlidesMoved": 0,
+    "ShapesInserted": 0,
+    "ShapesDeleted": 0,
+    "ShapesMoved": 1,
+    "ShapesResized": 0,
+    "TextChanges": 0,
+    "FormattingChanges": 0,
+    "ImagesReplaced": 0
+  },
+  "Changes": [
+    {
+      "ChangeType": 11,
+      "SlideIndex": 1,
+      "OldSlideIndex": null,
+      "ShapeName": "Content",
+      "OldValue": null,
+      "NewValue": null,
+      "Description": "Shape \u0027Content\u0027 moved on slide 1"
+    }
+  ]
+}

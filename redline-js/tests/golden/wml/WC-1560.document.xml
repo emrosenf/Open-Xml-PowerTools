@@ -1,0 +1,42 @@
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="ad45fd13282a41889d07174560eb39d8">
+      <w:pPr pt14:Unid="c4d87d5a96ee40b0a6cb0b7af7730d10" />
+      <w:r>
+        <w:t xml:space="preserve">This is </w:t>
+      </w:r>
+      <w:del w:author="Eric White" w:id="0" w:date="2025-12-24T01:47:08.2555592+00:00">
+        <w:r>
+          <w:delText>a</w:delText>
+        </w:r>
+      </w:del>
+      <w:ins w:author="Eric White" w:id="1" w:date="2025-12-24T01:47:08.2555592+00:00">
+        <w:r>
+          <w:t>another</w:t>
+        </w:r>
+      </w:ins>
+      <w:r>
+        <w:t xml:space="preserve"> test.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="6e63528dcc7543809f04779fdb1518df">
+      <w:pPr />
+      <w:r>
+        <w:t>Second page</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="ab198a56d3fa4ae182e2464c03f8a756">
+      <w:pPr />
+      <w:ins w:author="Eric White" w:id="2" w:date="2025-12-24T01:47:08.2555592+00:00">
+        <w:r>
+          <w:t>And more…</w:t>
+        </w:r>
+      </w:ins>
+    </w:p>
+    <w:sectPr pt14:Unid="58468f97eb64468fa960bae5e85f1c13">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="ea0a262df56e4e96867948a7eaecf129" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="af626b2c2c2c4800bd243ce0af8267ba" />
+      <w:cols w:space="720" pt14:Unid="9e50cfff374748798708ea89edb314d1" />
+    </w:sectPr>
+  </w:body>
+</w:document>

@@ -1,0 +1,991 @@
+<w:document xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 wp14 pt14" xmlns:pt14="http://powertools.codeplex.com/2011">
+  <w:body>
+    <w:p pt14:Unid="6ba30420e50e42cfacbae1f47148ded1">
+      <w:pPr />
+      <w:r>
+        <w:t>Video provides a powerful way to help you prove your point. When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="8ee9594649544ccf8f18e4e6ed6df462">
+      <w:pPr />
+      <w:r>
+        <w:t>You can also type a keyword to search online for the video that best fits your document. To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.</w:t>
+      </w:r>
+    </w:p>
+    <w:p pt14:Unid="c1cb973c148b4dec8170ff504d875d17">
+      <w:pPr />
+    </w:p>
+    <w:tbl pt14:Unid="8e2d9ad6107e489c85c4a346b5141a56" pt14:CorrelatedSHA1Hash="2abef9d8766f8a433a1de284761d0f253754d670" pt14:SHA1Hash="2abef9d8766f8a433a1de284761d0f253754d670" pt14:StructureSHA1Hash="b4e0cf6042fb6e759226a6ca9cdad2651818bb80">
+      <w:tblPr pt14:Unid="5019a905549e4bf0a9c6d8d456cde2d0">
+        <w:tblStyle w:val="TableGrid" pt14:Unid="92fe9b1606d44aa8a9e4c9123a17fda1" />
+        <w:tblW w:w="0" w:type="auto" pt14:Unid="c2e344fac8e442be95376d3b80e5409b" />
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1" pt14:Unid="a1688d9a2cb84b1d848cd229cdfc78f4" />
+      </w:tblPr>
+      <w:tblGrid pt14:Unid="e7059383dd4d46e283ac7cf5c55e739f">
+        <w:gridCol w:w="3116" pt14:Unid="f07b85230e10428880f9b97382d02762" />
+        <w:gridCol w:w="3117" pt14:Unid="26186aa55bcb4de5b7965c06741396d8" />
+        <w:gridCol w:w="3117" pt14:Unid="2b4e44ef8781496885db2504cfb8379a" />
+      </w:tblGrid>
+      <w:tr pt14:Unid="a075f1297137424ea7a75087d77e8223" pt14:CorrelatedSHA1Hash="76cd645c40d4a0abdd1f73ad392b05770d173bb1" pt14:SHA1Hash="76cd645c40d4a0abdd1f73ad392b05770d173bb1" pt14:StructureSHA1Hash="d3f2da80066ca3779383eb409df2a27148d7c944">
+        <w:tc pt14:Unid="531f9d614a9044929a4fb4b07aad96fb" pt14:SHA1Hash="c33724d89b6a9aeb50ba8946a8f677d70e2baa0e">
+          <w:tcPr pt14:Unid="a3c3387767e74d729a2a09ed6af03a0d">
+            <w:tcW w:w="3116" w:type="dxa" pt14:Unid="77fd5aad7e79498eb3bee6f828e31789" />
+          </w:tcPr>
+          <w:p pt14:Unid="9874d51fe0f542e5add4bea4954c91d8">
+            <w:pPr />
+            <w:ins w:author="Windows User" w:id="0" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:t xml:space="preserve">Second </w:t>
+              </w:r>
+            </w:ins>
+            <w:r>
+              <w:t>Video provides a powerful way to help you prove your point.</w:t>
+            </w:r>
+          </w:p>
+          <w:p pt14:Unid="073353e630944bd38684677c20fea0b5">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Windows User" w:id="1" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Windows User" w:id="2" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:t>When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+          <w:p pt14:Unid="4bf5e44a16204592a6d723f1e8c3d251">
+            <w:pPr />
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="ec9e57285ff744f8a0a11eef29bf6d88" pt14:SHA1Hash="db957eda1e2af5262edcda7f5eb77f1572316f84">
+          <w:tcPr pt14:Unid="9dc6ee75795e45cd85b8b0bfd566c39c">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="1677a9549e6942dd83bddb93eeeb8e10" />
+          </w:tcPr>
+          <w:p pt14:Unid="2f925d6db8a6466abb32e978dda702d7">
+            <w:pPr />
+            <w:del w:author="Windows User" w:id="3" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:rPr pt14:Unid="f7f09dcdb2d34690ac87ed63ac67cb43">
+                  <w:lang w:val="en-IN" w:eastAsia="en-IN" pt14:Unid="18dac06233314253a1726bb725422cdc" />
+                </w:rPr>
+                <w:drawing pt14:Unid="96def48c9d2d4798947f2569824b8df4" pt14:SHA1Hash="cadd6156a83bbf7e0c6af4b7da09a9f7406327d7" pt14:Status="Deleted">
+                  <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="b1eb6cc79b3548a996cc1bad22555892">
+                    <wp:extent cx="2161032" cy="2438400" pt14:Unid="b983e53f99bf42ccab4994e4dc5128c2" />
+                    <wp:effectExtent l="0" t="0" r="0" b="0" pt14:Unid="0ee6f304287a44caa500778b0a0018eb" />
+                    <wp:docPr id="1" name="Picture 4" pt14:Unid="714aff100170484d880058c4285e174c" />
+                    <wp:cNvGraphicFramePr pt14:Unid="81193d00c77c406e83db2aa419e1df06">
+                      <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="83ce18b4401d468c948671d655838a46" />
+                    </wp:cNvGraphicFramePr>
+                    <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="a0c15dddcd2448a3ba62fce9fd7be144">
+                      <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="c9082e73daf24b7b88c40ffafef6eb35">
+                        <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="d707ac894c3642c897fffaf6b6d7debb">
+                          <pic:nvPicPr pt14:Unid="77e3e1db81d34754b4f0b05fbedf65b5">
+                            <pic:cNvPr id="4" name="Kind_als_Clown[1].jpg" pt14:Unid="1d2b90c791fc4eb38ea2ee367560852a" />
+                            <pic:cNvPicPr pt14:Unid="dc244d200552472f8ea26d112dfd8fdc" />
+                          </pic:nvPicPr>
+                          <pic:blipFill pt14:Unid="4743c42335fc40c0849a8370b0bb3791">
+                            <a:blip r:embed="Rf29e5b22f1aa405f9f271ac57747ff79" cstate="print" pt14:Unid="43d66d32c07f4d7fa41654d8aabc68f3">
+                              <a:extLst pt14:Unid="74b77e0dbc674222a4a99875335c9363">
+                                <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="df2ddc0a003a43f3925bcc16d5158ee2">
+                                  <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="8b9303bc91fe420585ec7af0354505f2" />
+                                </a:ext>
+                              </a:extLst>
+                            </a:blip>
+                            <a:stretch pt14:Unid="dd69525605674bfcb90bcb5fc094cac1">
+                              <a:fillRect pt14:Unid="7b74bf55a44c4883b80bed7b8ae22fba" />
+                            </a:stretch>
+                          </pic:blipFill>
+                          <pic:spPr pt14:Unid="9cf5c7cbbf494d0f8ddfcf3f4e6b4add">
+                            <a:xfrm pt14:Unid="dc3bb7603dc24456925e4df12617b83b">
+                              <a:off x="0" y="0" pt14:Unid="1ee6e172bba449328c058838f1b7ec32" />
+                              <a:ext cx="2161032" cy="2438400" pt14:Unid="2ef711dc779b484eb844cd4574b3d439" />
+                            </a:xfrm>
+                            <a:prstGeom prst="rect" pt14:Unid="b363dc2227194362b523cac0d8307496">
+                              <a:avLst pt14:Unid="e4cf2242ea1f4b5b9510e131d330812c" />
+                            </a:prstGeom>
+                          </pic:spPr>
+                        </pic:pic>
+                      </a:graphicData>
+                    </a:graphic>
+                  </wp:inline>
+                </w:drawing>
+              </w:r>
+            </w:del>
+            <w:ins w:author="Windows User" w:id="4" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <m:oMathPara pt14:Unid="b47a843fe13c46e4aa9ccd971e6fb5ba">
+                <m:oMath pt14:Unid="347b142f75dc4c06a818529c9ca4449d">
+                  <m:sSup pt14:Unid="cd9b5b13240f429f88b19f6641fe14e9">
+                    <m:sSupPr pt14:Unid="f6c59a79dec140469b1695bca2552a31">
+                      <m:ctrlPr pt14:Unid="d4e875f04dc14743b2f10f304942147f">
+                        <w:rPr pt14:Unid="c6b17d01f9ee447d9b4b038a20f1aa29">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="502a6ee0c215492899e346e9a65171c4" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:sSupPr>
+                    <m:e pt14:Unid="9ba2a7a3ca15425eb250ea5b19e013f1">
+                      <m:d pt14:Unid="843ebdc8cbeb4c23a9bbe8d37a0c62f3">
+                        <m:dPr pt14:Unid="e8eedde7cf9c4821b4bc426944383b4e">
+                          <m:ctrlPr pt14:Unid="26eb7e47f8274cd8b56fafd6a2e9b5c6">
+                            <w:rPr pt14:Unid="b503d688839f44919083dc991ff63206">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="16a99a0c84aa4c628859662ec21ca847" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:dPr>
+                        <m:e pt14:Unid="d55e158456734ffbae975d90aac64d3b">
+                          <m:r pt14:Unid="82552ac1c1c64f198768794d0929f819">
+                            <w:rPr pt14:Unid="98ea2503c925423f923c42560abee290">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="32e869b7d1ed40d085ef44282905633f" />
+                            </w:rPr>
+                            <m:t pt14:Unid="c1d18826ea4b4eca8149725cf6e34302">x+a</m:t>
+                          </m:r>
+                        </m:e>
+                      </m:d>
+                    </m:e>
+                    <m:sup pt14:Unid="c567a6dc91b44f9088a170d79f6ddc44">
+                      <m:r pt14:Unid="1bd0d9c6ded34251b2a9e8a5bed396b6">
+                        <w:rPr pt14:Unid="539128861b7a4b698c5ba3a0da66d7cb">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="fc1f54e955884935b1e73d96da36fe59" />
+                        </w:rPr>
+                        <m:t pt14:Unid="009aed2b5cf94391944843e988652106">n</m:t>
+                      </m:r>
+                    </m:sup>
+                  </m:sSup>
+                  <m:r pt14:Unid="1f29f09aaf5e42058c6107f83bde1da7">
+                    <w:rPr pt14:Unid="f2803a75bebb4b73926efa028177cdba">
+                      <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="96cdcf6d27394e22af39148cb85b4826" />
+                    </w:rPr>
+                    <m:t pt14:Unid="71c318724d534bb7b4305eb167888bde">=</m:t>
+                  </m:r>
+                  <m:nary pt14:Unid="5bf30a46a576427bb84e9be55edd5e92">
+                    <m:naryPr pt14:Unid="c177c00d38b84d6ea0d4fb4f38dd61f0">
+                      <m:chr m:val="∑" pt14:Unid="1f356e9f400a48f6a5d83656d85be369" />
+                      <m:grow m:val="1" pt14:Unid="43da819dc2034ddf82692f10c67cf0f2" />
+                      <m:ctrlPr pt14:Unid="89237013def342ba9e71a9b56e4afb7d">
+                        <w:rPr pt14:Unid="cbf25e3adef64189894986ad1fc66248">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="1658082e125649f69328fc40c4e24509" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:naryPr>
+                    <m:sub pt14:Unid="26163b6a1c574864a774a53ef9345901">
+                      <m:r pt14:Unid="5c14a15ded794416847aa1cfd1f6847e">
+                        <w:rPr pt14:Unid="85b04829b87d441cb595e8a0a0dd187e">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="4645e7b6b7594256be03853378adb33f" />
+                        </w:rPr>
+                        <m:t pt14:Unid="0ea7de5572d345e0bf2355fbe7fd9a01">k=0</m:t>
+                      </m:r>
+                    </m:sub>
+                    <m:sup pt14:Unid="29fd2348bade4c97aaf5565f40ee4752">
+                      <m:r pt14:Unid="ab3a4fb759654a3d9cd65263695d1df0">
+                        <w:rPr pt14:Unid="6d08040c793a4a1aa54c3ca678d55bd2">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="3cf09edc6f45469ea35ba4def785c3b8" />
+                        </w:rPr>
+                        <m:t pt14:Unid="8ea967a8e1c246beb68be900091128d7">n</m:t>
+                      </m:r>
+                    </m:sup>
+                    <m:e pt14:Unid="23ef6c0458ad4aa89f8038742387a27c">
+                      <m:d pt14:Unid="f818eb2e71084671ade7b8042013d09c">
+                        <m:dPr pt14:Unid="255091c9bb614db6a989c16725db8127">
+                          <m:ctrlPr pt14:Unid="3b8798624d1f4f42956d5345858be614">
+                            <w:rPr pt14:Unid="a1626ee118e6411a831d59f259519667">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="055108ddf83b4871a1794131f6458f69" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:dPr>
+                        <m:e pt14:Unid="2e3ab31bab8241c3954e11ff4e7def58">
+                          <m:f pt14:Unid="a8eb7337b53f4ec9862ea5f6a0e530d2">
+                            <m:fPr pt14:Unid="a62ab89046df445ca0b89e8f6a9e997d">
+                              <m:type m:val="noBar" pt14:Unid="d84dc209c12f46aebcc31095dd03af6f" />
+                              <m:ctrlPr pt14:Unid="357e0afc5e1543aa9a9031e4947ccc53">
+                                <w:rPr pt14:Unid="c8d09f8395b34b4b995773230e460c10">
+                                  <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="5939f4bfb4554b10a09809dd846b17db" />
+                                </w:rPr>
+                              </m:ctrlPr>
+                            </m:fPr>
+                            <m:num pt14:Unid="e38b3244b556421db8c148b63a293952">
+                              <m:r pt14:Unid="b000aa42c8d14b2ab1009483903ef9bf">
+                                <w:rPr pt14:Unid="f983cfc58a0a4b5f9fc155a371b92e34">
+                                  <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="8198c0c13fd54a9b8973b5422f696668" />
+                                </w:rPr>
+                                <m:t pt14:Unid="91ea228019264625ab8e4aa8ffba3f57">n</m:t>
+                              </m:r>
+                            </m:num>
+                            <m:den pt14:Unid="0864af3021fd4e4cbfa816fa37a77daf">
+                              <m:r pt14:Unid="de7e0dd2e54c4b6dae18b6ad28f69ac0">
+                                <w:rPr pt14:Unid="d2d8d9c4197944c0ad463dd91897557c">
+                                  <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="2a256d008f344057844ec69275200145" />
+                                </w:rPr>
+                                <m:t pt14:Unid="08ecbd60f9cb446ea225a62e7b507030">k</m:t>
+                              </m:r>
+                            </m:den>
+                          </m:f>
+                        </m:e>
+                      </m:d>
+                      <m:sSup pt14:Unid="85dfa935db16468886f2629dfda78142">
+                        <m:sSupPr pt14:Unid="542618c2848640598645dabb991de721">
+                          <m:ctrlPr pt14:Unid="9579ed656ce245ca9c670fa47d00f0b8">
+                            <w:rPr pt14:Unid="dc313f9e220b4e29b650d6797ea87586">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="bca3576f48ec4bab86ac95e5b64ac45b" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:sSupPr>
+                        <m:e pt14:Unid="bfa9df8fc3b541a383d8440dc07b39cd">
+                          <m:r pt14:Unid="dfed6c045b634b37a46f20c588c05832">
+                            <w:rPr pt14:Unid="623f641e420744cbad05273ea46b88a7">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="907d5b89e3e34fd8933354299d375058" />
+                            </w:rPr>
+                            <m:t pt14:Unid="8c0293f89e2a40d1a0d7c6aa1b5d6b14">x</m:t>
+                          </m:r>
+                        </m:e>
+                        <m:sup pt14:Unid="b22b6e980d684fe79fbf7bf92f8be42d">
+                          <m:r pt14:Unid="de70ad373ce64b6faf478552f4799ba4">
+                            <w:rPr pt14:Unid="531f3978cb244a65b63cc90c7f3aa9c0">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="43ad3401fff7436aa864cba145292730" />
+                            </w:rPr>
+                            <m:t pt14:Unid="2b0e9f1bd9504834b69b4b3b758d3381">k</m:t>
+                          </m:r>
+                        </m:sup>
+                      </m:sSup>
+                      <m:sSup pt14:Unid="5b76320e1f664bfaa3b6dbeade12b7d7">
+                        <m:sSupPr pt14:Unid="1a2cc2cd43004c7e9ee06a7a52a81135">
+                          <m:ctrlPr pt14:Unid="6bfb3bebb1c14d6e926e166556248132">
+                            <w:rPr pt14:Unid="6017cf3bb3264d448ef2b3adbebb0ff4">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="f3e6bd7ab3b14fa7ac99d506415a1c2c" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:sSupPr>
+                        <m:e pt14:Unid="ba617376e8644cb0904fbab3b868bc9e">
+                          <m:r pt14:Unid="77b2c288911a4131b2b4d9b9a6a11dba">
+                            <w:rPr pt14:Unid="9cd9fd0e32584fe4a8df9f3756765965">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="4a8740c340b44314b4e8355897d26ea9" />
+                            </w:rPr>
+                            <m:t pt14:Unid="1e0fd2490335499b9413173f3ae6e345">a</m:t>
+                          </m:r>
+                        </m:e>
+                        <m:sup pt14:Unid="88bf236767b244c8bfac4344864fbed9">
+                          <m:r pt14:Unid="3854171b4c564016b55f9838d986b034">
+                            <w:rPr pt14:Unid="84ae0c018dfa4d3fbe81cf2a3ae0261c">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="a29cde993d4146c39aa8839af9d9aaa7" />
+                            </w:rPr>
+                            <m:t pt14:Unid="91540873fa6b43a99c7174e620558e5d">n-k</m:t>
+                          </m:r>
+                        </m:sup>
+                      </m:sSup>
+                    </m:e>
+                  </m:nary>
+                </m:oMath>
+              </m:oMathPara>
+            </w:ins>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="8b9c9308dda4423caecf5e1617d2a309" pt14:SHA1Hash="e843ddcdd0b2ffb6c424ce1d81058e733b1debe5">
+          <w:tcPr pt14:Unid="c888377f7c1a416a9bae285fd833abb7">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="df9af9b0aa3b4e36938bcc7e941bff7c" />
+          </w:tcPr>
+          <w:p pt14:Unid="65f2e09d0966407f9a8e09fb37c960bf">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="5" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:r>
+              <w:t>Video provides a powerful way to help you prove your point.</w:t>
+            </w:r>
+            <w:del w:author="Windows User" w:id="6" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:delText xml:space="preserve"> When you click Online Video, you can paste in the embed code for the video you want to add.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="dfa719d3999d4ff8adafc4125aae81cb">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="7" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="8" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:delText>You can also type a keyword to search online for the video that best fits your document. To make your document look professionally produced, Word provides header, footer, cover page, and text box designs that complement each other.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="10f0a795b83c449abd6d283aaecd507a">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Windows User" w:id="9" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+          </w:p>
+          <w:p pt14:Unid="b50ae327bb9b4c3eae917a85067a7502">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Windows User" w:id="10" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Windows User" w:id="11" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <m:oMathPara pt14:Unid="56599d60b09d4ab7a8242ab975f6b77f">
+                <m:oMath pt14:Unid="c618c78496f14477897ebf49ffc06e08">
+                  <m:r pt14:Unid="bec5a73218344dd18558fb817f575eba">
+                    <w:rPr pt14:Unid="87eb14e6222c4a2caa2a1291ea38d83b">
+                      <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="dcc13fae00134bbe8eb101d7a2e020e1" />
+                    </w:rPr>
+                    <m:t pt14:Unid="ffe01d4de5ce46cea876bba0168b4bf7">A=π</m:t>
+                  </m:r>
+                  <m:sSup pt14:Unid="9210b2d96e344870b9d70a35ae55aac6">
+                    <m:sSupPr pt14:Unid="2e142a06de1a4ca9b110a6bc25a69bb5">
+                      <m:ctrlPr pt14:Unid="dd278453ec684a99aba0cad77d966f00">
+                        <w:rPr pt14:Unid="7c7e699eb2ad44fea7b6360b17cea0be">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="d147cde12b7548eeb23aa7d370d31cd0" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:sSupPr>
+                    <m:e pt14:Unid="b2ab87c2f0404b2cb491bd2a969c96e7">
+                      <m:r pt14:Unid="b962cb822eb64877996571717027bb91">
+                        <w:rPr pt14:Unid="4d28d501c08d42359c4f99e9ffeb1b80">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="a7d00480acc445e9a8701b93b44d90d7" />
+                        </w:rPr>
+                        <m:t pt14:Unid="04835fd5574e46ce8a14e13bc8104e8f">r</m:t>
+                      </m:r>
+                    </m:e>
+                    <m:sup pt14:Unid="a035044d91ac4594a511c13e1826ba2f">
+                      <m:r pt14:Unid="af6a6dd61f184ab591693dae711dca90">
+                        <w:rPr pt14:Unid="3977388b27494fd4b3199cbcdcbdd981">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="b40f3d00523441cfa17b0e062dc843e7" />
+                        </w:rPr>
+                        <m:t pt14:Unid="4982b3ace7744ddaa33d73a022b496d8">2</m:t>
+                      </m:r>
+                    </m:sup>
+                  </m:sSup>
+                </m:oMath>
+              </m:oMathPara>
+            </w:ins>
+          </w:p>
+          <w:p pt14:Unid="8394712230ee4755baeaa9cee390eafa">
+            <w:pPr pt14:Status="Inserted">
+              <w:rPr>
+                <w:ins w:author="Windows User" w:id="12" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:ins w:author="Windows User" w:id="13" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:t>When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+              </w:r>
+            </w:ins>
+          </w:p>
+          <w:p pt14:Unid="e4cc5a79409f4445bc43d76af9ce1ee1">
+            <w:pPr />
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="57909dbbbad444188d4323025c24d509" pt14:CorrelatedSHA1Hash="239ddfe5210b9e7db8846d8d90f650700d1ae317" pt14:SHA1Hash="239ddfe5210b9e7db8846d8d90f650700d1ae317" pt14:StructureSHA1Hash="d3f2da80066ca3779383eb409df2a27148d7c944">
+        <w:trPr>
+          <w:del w:author="Windows User" w:id="14" w:date="2025-12-24T01:47:06.8671911+00:00" />
+        </w:trPr>
+        <w:tc pt14:Unid="62223e0d696e4becb2291f51d59126e7" pt14:SHA1Hash="887e4c27f070bef191b9f8908e9e2fbd9fc76968">
+          <w:tcPr pt14:Unid="b8ef31c96baa422ea5cb2e7c646998e7">
+            <w:tcW w:w="3116" w:type="dxa" pt14:Unid="ca5d795c6f3745b4a75e22b14c6c8709" />
+          </w:tcPr>
+          <w:p pt14:Unid="ae1adcb294b54661b9cec6dccac8121e">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="15" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="16" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:delText>Video provides a powerful way to help you prove your point.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="2a08a943a645441da7ce2f49fa4bb8df">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="17" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="18" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:delText>When you click Online Video, you can paste in the embed code for the video you want to add.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="04dadd594eae45f48ba9070a6c346154">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="19" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="7630594ce4af434aba6956bafa86cb29" pt14:SHA1Hash="6b336d9e0f154aab1d2ae714f51928026ccd58cf">
+          <w:tcPr pt14:Unid="62a80b0c5cf34a1cb47f271ec950ab9d">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="aaf90c59a54f4e7a8a5d11bf15eba36d" />
+          </w:tcPr>
+          <w:p pt14:Unid="c754fbcc974c4edda2f8a778087e13ed">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="20" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="21" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <m:oMathPara pt14:Unid="d775749b79ed41caa60d52a2f17e9e2a">
+                <m:oMath pt14:Unid="4ca1b4826db14822a7b4295249727dd2">
+                  <m:sSup pt14:Unid="39f8503d4f13487ca04251a05db843f4">
+                    <m:sSupPr pt14:Unid="4395d467bf494c5891e8b7fe97dfc0bd">
+                      <m:ctrlPr pt14:Unid="f3763c1bfe9045898bfe2c19bb957eae">
+                        <w:rPr pt14:Unid="f87eb78f3b634a76abf0e6174869a423">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="c569b3aea9714372866559d186298c77" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:sSupPr>
+                    <m:e pt14:Unid="557003d729b34eecbc507cba644342e8">
+                      <m:d pt14:Unid="84368984e1c14a9f863d3cbb757c441c">
+                        <m:dPr pt14:Unid="dc3ebc2cb34c483d811396f560e61e66">
+                          <m:ctrlPr pt14:Unid="57047ce178f646619438435dca96a7d0">
+                            <w:rPr pt14:Unid="fbd8ca35e72342c1b010c1995c3701e5">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="04d919b6d7a649188a680651604f5b72" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:dPr>
+                        <m:e pt14:Unid="8185512eb6194d18a5c59367b665e7b1">
+                          <m:r pt14:Unid="5e7083a3f9764dbda502b896a601548e">
+                            <w:rPr pt14:Unid="2cde7a1ad6ac4fc5a0d83a7f34e81431">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="d62f40453df14f4c8036681a309703bd" />
+                            </w:rPr>
+                            <m:t pt14:Unid="66f1a9a9781f46018be4e3a231c124a7">x+a</m:t>
+                          </m:r>
+                        </m:e>
+                      </m:d>
+                    </m:e>
+                    <m:sup pt14:Unid="024ad6c7e6e042ea92e466886805b45a">
+                      <m:r pt14:Unid="e9a1a1470b284d67b191cdc258e61464">
+                        <w:rPr pt14:Unid="ad5c0d1cc6824453b8ec2597f7822160">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="a3a2ce0a122243b9942e8e9c2c625b1b" />
+                        </w:rPr>
+                        <m:t pt14:Unid="808814711bba47668c6be6f9d1771fe8">n</m:t>
+                      </m:r>
+                    </m:sup>
+                  </m:sSup>
+                  <m:r pt14:Unid="56e895f7965e47d9bd9c8b91daa0aced">
+                    <w:rPr pt14:Unid="7f8f89fc1e1f4ddc8a016a0c8856d21a">
+                      <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="530b31333b454c1b8c1a5b5d160b86da" />
+                    </w:rPr>
+                    <m:t pt14:Unid="6cb6299b39064c95a6c165aa267dfea8">=</m:t>
+                  </m:r>
+                  <m:nary pt14:Unid="cdf2df13dec9403bb831d97e185f84e3">
+                    <m:naryPr pt14:Unid="9b3e9de935ad4ce3bc295bc3e0641374">
+                      <m:chr m:val="∑" pt14:Unid="4816ac7e6aa345d4a76841f74ed505cc" />
+                      <m:grow m:val="1" pt14:Unid="a22ea827aa0f416ca7619f448a1de37d" />
+                      <m:ctrlPr pt14:Unid="f98fc496bb0944c99c5ca3f2c028bc21">
+                        <w:rPr pt14:Unid="6cff7d71ff5f4f4e850c68930feeb2f3">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="3e69ee7d47dd4353bd7f8c20cc8048f4" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:naryPr>
+                    <m:sub pt14:Unid="e3b1139484064c6cb409796f042cb40b">
+                      <m:r pt14:Unid="139ed5567b1347ff99fe2dd81c0ae7d4">
+                        <w:rPr pt14:Unid="f40018645d404ce8b2013babaf4f28c9">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="213dc48d4dba49099a3967dedcd3dd70" />
+                        </w:rPr>
+                        <m:t pt14:Unid="e791de0a5c1e4db7aa584d03aab8759c">k=0</m:t>
+                      </m:r>
+                    </m:sub>
+                    <m:sup pt14:Unid="adb528b93e8b4bdc84a8cc9153e1dee7">
+                      <m:r pt14:Unid="0e5b85c5fdfb426e8f50b95372a788af">
+                        <w:rPr pt14:Unid="5689002566d649c5bbc5ab3a59b99669">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="56c8053cbaae4383a411f44eb9dd9ed7" />
+                        </w:rPr>
+                        <m:t pt14:Unid="e74362eab4344aa68dbbc1fd4397df1c">n</m:t>
+                      </m:r>
+                    </m:sup>
+                    <m:e pt14:Unid="95a6ca59e5fa4177b4a6738e80ceaedc">
+                      <m:d pt14:Unid="02f073e391b64a2db1eaecb8cc003005">
+                        <m:dPr pt14:Unid="e733a86aa0de4c358dc24161db20a91f">
+                          <m:ctrlPr pt14:Unid="99d6603022b948f688ea4585e1416735">
+                            <w:rPr pt14:Unid="d1dbb9da01254bb0b0ec16dab07e7901">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="2d4c2d4690b44da5a65df863e33d98d7" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:dPr>
+                        <m:e pt14:Unid="f95c689db3c343be9b56acd4b113af4e">
+                          <m:f pt14:Unid="6b80e59a685a49989db0863b934d97e7">
+                            <m:fPr pt14:Unid="9cf171fa2771413ea7a096b6c2870665">
+                              <m:type m:val="noBar" pt14:Unid="5031eaed71084893aae652a16cf3a9dc" />
+                              <m:ctrlPr pt14:Unid="012a448c4b9d4225a06bc2dab0949183">
+                                <w:rPr pt14:Unid="a81a749dda214c5cb5dcab69baa82c1e">
+                                  <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="081d054aa31f4c6382e7d01e90ffb147" />
+                                </w:rPr>
+                              </m:ctrlPr>
+                            </m:fPr>
+                            <m:num pt14:Unid="f1ae785388c9474290d6cc6932a098ac">
+                              <m:r pt14:Unid="67719bf0dc3049c1b3bb951792b92f7b">
+                                <w:rPr pt14:Unid="ccefb2c9a3674020b0728114edf5cc17">
+                                  <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="09c95db6a7c040e1b7dcc996bfaaa329" />
+                                </w:rPr>
+                                <m:t pt14:Unid="1d3669b84a41443aa7eaea47f94d81f9">n</m:t>
+                              </m:r>
+                            </m:num>
+                            <m:den pt14:Unid="49246a4d26684d77bf20bf5d74e4c6cc">
+                              <m:r pt14:Unid="992947fe3188433d9fc7afbf6a011df0">
+                                <w:rPr pt14:Unid="d4efdfebd3d24a17b1c1ccaf9ede5bfb">
+                                  <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="a367692d761e4e44b7265077b9180422" />
+                                </w:rPr>
+                                <m:t pt14:Unid="ae42959a1f584c7b8822ca5426caf570">k</m:t>
+                              </m:r>
+                            </m:den>
+                          </m:f>
+                        </m:e>
+                      </m:d>
+                      <m:sSup pt14:Unid="85cb4526f45f48a99730fb21417ebb45">
+                        <m:sSupPr pt14:Unid="1f98a8d749a84c7e89201d803ad9ba5e">
+                          <m:ctrlPr pt14:Unid="036a2c3602a14f019a0970e278c0d6e4">
+                            <w:rPr pt14:Unid="2bd24355857a4bf191b08d8b1f7680e0">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="8cee83dcb6ae42cba40648a6e43633f1" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:sSupPr>
+                        <m:e pt14:Unid="05f063032f2e44868853afd5bc5a1381">
+                          <m:r pt14:Unid="c80da4e3285144d89eb703f5d518d4db">
+                            <w:rPr pt14:Unid="1db04d433cc344239d115c8b45ce7f47">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="a1606f299cff43999460a8f65573ef5b" />
+                            </w:rPr>
+                            <m:t pt14:Unid="368bca764b7e48a6975690992e703671">x</m:t>
+                          </m:r>
+                        </m:e>
+                        <m:sup pt14:Unid="b61dcd023d374ff19184ceefccaff333">
+                          <m:r pt14:Unid="2d11e156271a4f6ebc87d379d487c299">
+                            <w:rPr pt14:Unid="57146ee89999457aaefc03d627df0797">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="08a7315046da461683e427460b270539" />
+                            </w:rPr>
+                            <m:t pt14:Unid="4c0a57d838fa4ab9b0834576bd334d8e">k</m:t>
+                          </m:r>
+                        </m:sup>
+                      </m:sSup>
+                      <m:sSup pt14:Unid="fbfeb4da074d4eee82fe37a8eb1d16fe">
+                        <m:sSupPr pt14:Unid="0e1a6de2de2f4ff2972ecc79fa5c3364">
+                          <m:ctrlPr pt14:Unid="46431feec63a4eb295d8974b14374129">
+                            <w:rPr pt14:Unid="c8aed96964634694aeec9ce477fc7ac5">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="6ae978e4e5904431a6ca3d62b65fb772" />
+                            </w:rPr>
+                          </m:ctrlPr>
+                        </m:sSupPr>
+                        <m:e pt14:Unid="93ba389316454d15ba08ac4ced93fb73">
+                          <m:r pt14:Unid="d4e1ddd7adc14d7fadbad906c3ed0331">
+                            <w:rPr pt14:Unid="5cbf8765528845bd8f799048deaf8fe5">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="8b4e900af2df43dc81ebde96056063bd" />
+                            </w:rPr>
+                            <m:t pt14:Unid="c33f1938af614ec4ab6c48024c6a2221">a</m:t>
+                          </m:r>
+                        </m:e>
+                        <m:sup pt14:Unid="5cc0e88e0c36402a8455e4416f08e1e1">
+                          <m:r pt14:Unid="524dca3e96d34548af5e2f6e690ae082">
+                            <w:rPr pt14:Unid="315137451cfd4200a7a76b1a4ab4eb3c">
+                              <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math" w:cs="Cambria Math" pt14:Unid="35f231ad101c4160b83784fcbdbca238" />
+                            </w:rPr>
+                            <m:t pt14:Unid="03a1030b9c8a46fd9ead600c915af61e">n-k</m:t>
+                          </m:r>
+                        </m:sup>
+                      </m:sSup>
+                    </m:e>
+                  </m:nary>
+                </m:oMath>
+              </m:oMathPara>
+            </w:del>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="3f8e669eb79e45a2add92911e7d9aa61" pt14:SHA1Hash="e843ddcdd0b2ffb6c424ce1d81058e733b1debe5">
+          <w:tcPr pt14:Unid="1cd8cccd11e64f1ea70adf513f6a0749">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="ccb5c818704c4997aa5a1700b8cb23f7" />
+          </w:tcPr>
+          <w:p pt14:Unid="39bc30a6ee154e4585d067199ab122e7">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="22" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="23" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:delText>Video provides a powerful way to help you prove your point.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="5bafbae2ef3e4c11a0f7115e1aa06f69">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="24" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="25" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <m:oMathPara pt14:Unid="5dd9691342f0485dab56631f219954ca">
+                <m:oMath pt14:Unid="dfe7d18bc3be4d3eacda44133109d333">
+                  <m:r pt14:Unid="d2cef104c67445bba37a1b9e70bf9270">
+                    <w:rPr pt14:Unid="645e6655bb59467b9f37495da9614fa7">
+                      <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="a2a670c1bf564239845f6dc08c6b2c86" />
+                    </w:rPr>
+                    <m:t pt14:Unid="1230bfb20723416290253e3e9d45392d">A=π</m:t>
+                  </m:r>
+                  <m:sSup pt14:Unid="f65dedc9dc2047259a30e04662565f34">
+                    <m:sSupPr pt14:Unid="eefaa32f7bc34c5a917f28620fd9bba6">
+                      <m:ctrlPr pt14:Unid="0ae27703494d4f6fa8a8a01e97f92c4b">
+                        <w:rPr pt14:Unid="7e5939c78ba6426a9853a1cd6db75f80">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="c5851445e2d7469cb8a953c916efb2b7" />
+                        </w:rPr>
+                      </m:ctrlPr>
+                    </m:sSupPr>
+                    <m:e pt14:Unid="a1b5715a30104058a300f8b9d0ada07d">
+                      <m:r pt14:Unid="e12e8566a1c242ddaecf1a772aa0f23e">
+                        <w:rPr pt14:Unid="2fd22b77c923416da67d361df0bde9bd">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="a5c387e1cf344952bc8b15ceefdf087e" />
+                        </w:rPr>
+                        <m:t pt14:Unid="927ec7098f634d92a0664f9dec51982c">r</m:t>
+                      </m:r>
+                    </m:e>
+                    <m:sup pt14:Unid="0f01c7a124454b0aa9b5bd9ab5d71c2f">
+                      <m:r pt14:Unid="39c3f9633eac492cb3220513253dd432">
+                        <w:rPr pt14:Unid="7f28c2be414947b4a2588b86aa00c03f">
+                          <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="6b4c598aa3554b78a08acd1d23d41c39" />
+                        </w:rPr>
+                        <m:t pt14:Unid="6edff8b604644a95a4df1c13776ea6c5">2</m:t>
+                      </m:r>
+                    </m:sup>
+                  </m:sSup>
+                </m:oMath>
+              </m:oMathPara>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="5a0ed0a411544d70adc61b912c9cae15">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="26" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+            <w:del w:author="Windows User" w:id="27" w:date="2025-12-24T01:47:06.8671911+00:00">
+              <w:r>
+                <w:delText>When you click Online Video, you can paste in the embed code for the video you want to add.</w:delText>
+              </w:r>
+            </w:del>
+          </w:p>
+          <w:p pt14:Unid="bbb6cdff5fbd411cbd85966fcdc230cd">
+            <w:pPr pt14:Status="Deleted">
+              <w:rPr>
+                <w:del w:author="Windows User" w:id="28" w:date="2025-12-24T01:47:06.8671911+00:00" />
+              </w:rPr>
+            </w:pPr>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="eaefa3d9301649aabe16445c82cee6cc" pt14:CorrelatedSHA1Hash="febd1c33fdaecad4461c1777a019719813fdadad" pt14:SHA1Hash="febd1c33fdaecad4461c1777a019719813fdadad" pt14:StructureSHA1Hash="9ccc6dd87955889b3c0484270dee19fde56ccedc">
+        <w:tc pt14:Unid="c9e68fb7b1d5468e811f82b8a9bdd7ab" pt14:SHA1Hash="8260bace37155745644847aaebfd4a4173ad295f">
+          <w:tcPr pt14:Unid="8c25546c7d9041f58ad025afa2988313">
+            <w:tcW w:w="3116" w:type="dxa" pt14:Unid="fa53dbca8d0c47c7bc224ef4ec552343" />
+          </w:tcPr>
+          <w:p pt14:Unid="105bafcd2d9646fdac58313e8a9c5e14">
+            <w:pPr />
+            <w:r>
+              <w:rPr pt14:Unid="a5f4eb5a12ab47b09058b69e2712c13b">
+                <w:lang w:val="en-IN" w:eastAsia="en-IN" pt14:Unid="da15eff83cdc47dca07c7af5e46ed321" />
+              </w:rPr>
+              <w:drawing pt14:Unid="994fd13e4fe44a15ad1bbf9568f43cf0" pt14:SHA1Hash="49e0cc338b1cffc5caf190a1b9d2d5a5f6b95f1a">
+                <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="147cff7312f14c33bb395df54349202b">
+                  <wp:extent cx="2161032" cy="2438400" pt14:Unid="c2075649de01419da574fe66028fd094" />
+                  <wp:effectExtent l="0" t="0" r="0" b="0" pt14:Unid="cbb0272009b144259746ac04ede3a9f5" />
+                  <wp:docPr id="2" name="Picture 5" pt14:Unid="685e9b0b67924b34a07657454074b12d" />
+                  <wp:cNvGraphicFramePr pt14:Unid="d55177a1228443a781606642c8425adf">
+                    <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="e1c9ac2a6b5e42438767f9581f3691df" />
+                  </wp:cNvGraphicFramePr>
+                  <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="04f27c5ae11d4bdf844c84f5cd7e3146">
+                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="40cac25b1156424aaad0690fe0fcb783">
+                      <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="ebddc8d669a54f249be5a6ba546512dc">
+                        <pic:nvPicPr pt14:Unid="ac920fa62180444ca9cb7fdbb49cea26">
+                          <pic:cNvPr id="4" name="Kind_als_Clown[1].jpg" pt14:Unid="e40546a9f9154f29a3c9fcc627e83619" />
+                          <pic:cNvPicPr pt14:Unid="97c9fae3f32d40f3882f883db882efce" />
+                        </pic:nvPicPr>
+                        <pic:blipFill pt14:Unid="a2454b4d475344a498c5a930c340baba">
+                          <a:blip r:embed="R6c08948e8e004e71998453e5fdbf5f31" cstate="print" pt14:Unid="216419f1cde9470ebb7f66aa7294c923">
+                            <a:extLst pt14:Unid="5332049c23c44ab7a2ac6cfa1cc36283">
+                              <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="e7854f2893af484e8a4682c920a847c7">
+                                <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="c4748e6e31a5413c851aebf5088645f4" />
+                              </a:ext>
+                            </a:extLst>
+                          </a:blip>
+                          <a:stretch pt14:Unid="fa89b9b4e2554f1e8dff2af16ec1bf7a">
+                            <a:fillRect pt14:Unid="c1a10da8e82c46b4b7c4c986dbdc430d" />
+                          </a:stretch>
+                        </pic:blipFill>
+                        <pic:spPr pt14:Unid="6f2c762fa7404736baf5832668c04f67">
+                          <a:xfrm pt14:Unid="f7540afcf872499988f872b213cbc61c">
+                            <a:off x="0" y="0" pt14:Unid="fa32f7271c524600b8664a06c759dbf1" />
+                            <a:ext cx="2161032" cy="2438400" pt14:Unid="0f96cc258dfc4d9788f3f4be531342c9" />
+                          </a:xfrm>
+                          <a:prstGeom prst="rect" pt14:Unid="680234ed7a894f35b356f5c06d69bf61">
+                            <a:avLst pt14:Unid="c9657fb16e2a42b4b52aeeab00c50319" />
+                          </a:prstGeom>
+                        </pic:spPr>
+                      </pic:pic>
+                    </a:graphicData>
+                  </a:graphic>
+                </wp:inline>
+              </w:drawing>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="94e3d81965654e3496bbd3f8a55273ec" pt14:SHA1Hash="53768c4bcec1cd2c1b9364fb2d69939233109812">
+          <w:tcPr pt14:Unid="54a170f5e66f43f1b2d751a8548b29f7">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="8b509537789b4dccb218443a20d39e9c" />
+          </w:tcPr>
+          <w:p pt14:Unid="67d5931131db4bebac776bfa74dcf222">
+            <w:pPr />
+            <m:oMathPara pt14:Unid="354b10434aa5473c9fd6abe87d647b58">
+              <m:oMath pt14:Unid="b8097eea8f924b438b2c6fc272d78243">
+                <m:r pt14:Unid="b9484d7c3ff14bf79e664119aba8b774">
+                  <w:rPr pt14:Unid="b1c57b86bb024df2a3dca7f969c62451">
+                    <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="fae91617f7f4410698f0b164934c3292" />
+                  </w:rPr>
+                  <m:t pt14:Unid="b0fa589ebd7e4f79979ea434c138ed8d">A=π</m:t>
+                </m:r>
+                <m:sSup pt14:Unid="4a9392b353084381af88e75ae91f2916">
+                  <m:sSupPr pt14:Unid="09628f837ef046dc92deef6367aa0cbd">
+                    <m:ctrlPr pt14:Unid="7603662f60024f4a83de7c7ce3156001">
+                      <w:rPr pt14:Unid="8a24ced412f04b0db71ac078749be9e1">
+                        <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="24f4eb469c4849d18c2e96bd70262384" />
+                      </w:rPr>
+                    </m:ctrlPr>
+                  </m:sSupPr>
+                  <m:e pt14:Unid="785424aa8bf34c8ab1ccec859f67b724">
+                    <m:r pt14:Unid="4c30ec4566f44d98b0fd3366f9e98486">
+                      <w:rPr pt14:Unid="7f5db23db8694e47961e039f72e4398e">
+                        <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="fbe80b48633447c68f0e626a098e4760" />
+                      </w:rPr>
+                      <m:t pt14:Unid="088bb4e8551e43f7939359d0a9e3f58c">r</m:t>
+                    </m:r>
+                  </m:e>
+                  <m:sup pt14:Unid="0c0b02753284471e82a328224d9f7775">
+                    <m:r pt14:Unid="685382216e194c84a6c1c0b167148eae">
+                      <w:rPr pt14:Unid="0918aaab4c8f4b948a283503716d3cee">
+                        <w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" pt14:Unid="fed9508d54184ac98b69dc848cdfb962" />
+                      </w:rPr>
+                      <m:t pt14:Unid="a42893788ece44fda1523aad9e8a8a7d">2</m:t>
+                    </m:r>
+                  </m:sup>
+                </m:sSup>
+              </m:oMath>
+            </m:oMathPara>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="4a2741fdf6904df4964feac00c2bc940" pt14:SHA1Hash="887e4c27f070bef191b9f8908e9e2fbd9fc76968">
+          <w:tcPr pt14:Unid="d5e0f296d75f4f75a2e3f280ae08693d">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="295a982c967c4d349ebc0361c92fcdab" />
+          </w:tcPr>
+          <w:p pt14:Unid="05e1ff6c97a34fbbb8a53e671a5e4021">
+            <w:pPr />
+            <w:r>
+              <w:t>Video provides a powerful way to help you prove your point.</w:t>
+            </w:r>
+          </w:p>
+          <w:p pt14:Unid="f61a533ee8df4236a3256c9b6527beab">
+            <w:pPr />
+            <w:r>
+              <w:t>When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+            </w:r>
+          </w:p>
+          <w:p pt14:Unid="a9949c0aa81d4077b2383b0f957cedcd">
+            <w:pPr />
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr pt14:Unid="2ed247db8ae34c4f8a0d15ec23654be1" pt14:CorrelatedSHA1Hash="3e18409ab7480255187add21c285a8cea603b1a0" pt14:SHA1Hash="3e18409ab7480255187add21c285a8cea603b1a0" pt14:StructureSHA1Hash="8bcbf43c9dae9e9d6c453c86b1d237266660aa6d">
+        <w:tc pt14:Unid="40dd3ae2e09341b19ef053588411cac4" pt14:SHA1Hash="4620eb21b2261f911cb5c593d2e17be7b6a74415">
+          <w:tcPr pt14:Unid="78b915fbf8f94fb2bf2600318d8c0358">
+            <w:tcW w:w="3116" w:type="dxa" pt14:Unid="ec508f495aaf49b9ae3d0d0bb468ded9" />
+          </w:tcPr>
+          <w:p pt14:Unid="e228aa07b69c400d8581738c8c12a7b5">
+            <w:pPr />
+            <w:r>
+              <w:t>Video provides a powerful way to help you prove your point.</w:t>
+            </w:r>
+          </w:p>
+          <w:p pt14:Unid="af303e8e6b3845bc8af788e03fa54b67">
+            <w:pPr />
+            <w:r>
+              <w:t>When you click Online Video, you can paste in the embed code for the video you want to add.</w:t>
+            </w:r>
+          </w:p>
+          <w:p pt14:Unid="c9a906e87f374645b46aae765f653bc7">
+            <w:pPr />
+            <w:r>
+              <w:rPr pt14:Unid="f37b5c22db30412e88dee7102ff29871">
+                <w:lang w:val="en-IN" w:eastAsia="en-IN" pt14:Unid="2a263341979140f9adf368b54e7a4224" />
+              </w:rPr>
+              <w:drawing pt14:Unid="8be4f2f6a1a2490fa24bc71ec9c9344a" pt14:SHA1Hash="d891d2dfefc7d57d91341451b00893f4c384bfce">
+                <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="e0a7af20603e4d6a939d881a98aac620">
+                  <wp:extent cx="2161032" cy="2438400" pt14:Unid="5b63fcd827be4cf9be6987c77a3f9989" />
+                  <wp:effectExtent l="0" t="0" r="0" b="0" pt14:Unid="ce7297c257704093bd293a502ab400fe" />
+                  <wp:docPr id="3" name="Picture 7" pt14:Unid="e52280b8a747406f98bcd7453131ea8a" />
+                  <wp:cNvGraphicFramePr pt14:Unid="d57c93bcc2c64bbd8c892c5250c20701">
+                    <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="45a8964057774dc1b3aec78ce297e67b" />
+                  </wp:cNvGraphicFramePr>
+                  <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="03b2535b6b8c43bf8f808002b81d85a0">
+                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="bb8581c9ba254826bfaa61c7ec40c935">
+                      <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="fd875c4d8a124c01a16a2f54c0413abc">
+                        <pic:nvPicPr pt14:Unid="92cf8b83ba08464ba3e545ca5916d461">
+                          <pic:cNvPr id="4" name="Kind_als_Clown[1].jpg" pt14:Unid="5112a8e8d170485c8b0110a64e686a6d" />
+                          <pic:cNvPicPr pt14:Unid="61b6041262cc4eae8b6e780fb45d9c69" />
+                        </pic:nvPicPr>
+                        <pic:blipFill pt14:Unid="b4ad65832e4646379d795d0409237925">
+                          <a:blip r:embed="R6050f97dd71c4c77838e2740cb1a622f" cstate="print" pt14:Unid="3ec5f3bc7079413aa688fe2a76ac2310">
+                            <a:extLst pt14:Unid="cbf1ee5b5abd4d1794fad11984d6cc39">
+                              <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="782cc33240e74db2b2cd93a55f677c9a">
+                                <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="ba856902ad314bd2a4bf92227a74e87a" />
+                              </a:ext>
+                            </a:extLst>
+                          </a:blip>
+                          <a:stretch pt14:Unid="29b3e2b2ec4b439193bb4bd7c75ede15">
+                            <a:fillRect pt14:Unid="17aea472586f4bc2870d85084bda37b3" />
+                          </a:stretch>
+                        </pic:blipFill>
+                        <pic:spPr pt14:Unid="d547b944e5674ab29e7f8e9c6ecfe90e">
+                          <a:xfrm pt14:Unid="e7894b43035b441cb30c0a84c78d7d98">
+                            <a:off x="0" y="0" pt14:Unid="a1f772ca9e7246abb2d00f38b733b404" />
+                            <a:ext cx="2161032" cy="2438400" pt14:Unid="ab5908c2fac54a92871d39fcd474f803" />
+                          </a:xfrm>
+                          <a:prstGeom prst="rect" pt14:Unid="76c717aa5e294eae82af89ef6072706e">
+                            <a:avLst pt14:Unid="e68546b2c9da4eefa2d47229641e2c6b" />
+                          </a:prstGeom>
+                        </pic:spPr>
+                      </pic:pic>
+                    </a:graphicData>
+                  </a:graphic>
+                </wp:inline>
+              </w:drawing>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="cdc0af35389a465faa67ddb8f6bd7abe" pt14:SHA1Hash="0a45869e985877e24a84020bc4a1548dc5a36d2c">
+          <w:tcPr pt14:Unid="e1e180383f0e4ba48d647f824ec82018">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="3133eca802a2432aa13fa493596749cb" />
+          </w:tcPr>
+          <w:p pt14:Unid="a0914aa2cff94fd2871447fe6d446ddc">
+            <w:pPr />
+          </w:p>
+          <w:p pt14:Unid="1846f8ca7e87456fafca23d624bc08f4">
+            <w:pPr />
+            <w:r>
+              <w:rPr pt14:Unid="a293a1ea8fec404a8848b487a6c6efd1">
+                <w:lang w:val="en-IN" w:eastAsia="en-IN" pt14:Unid="1a6a0c33acf64464994c68cf84ddc92f" />
+              </w:rPr>
+              <w:drawing pt14:Unid="104648cbe614450ea28d8d632a0e33ee" pt14:SHA1Hash="6f05f3121aaa13e93ae989679d0936502d4d4720">
+                <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="4cf86200c21942ff883a2f565387cf73">
+                  <wp:extent cx="2161032" cy="2438400" pt14:Unid="c23aeadd6a8f432588192e09dfbc389f" />
+                  <wp:effectExtent l="0" t="0" r="0" b="0" pt14:Unid="6b1ca04d629647aaa421a60831a1ce7f" />
+                  <wp:docPr id="4" name="Picture 8" pt14:Unid="15255a5cdf2e4e1a8250a2cb702d7e0f" />
+                  <wp:cNvGraphicFramePr pt14:Unid="012215655feb44baab5317830235409c">
+                    <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="6cd3739987db4664b97f78cbd7f27aa8" />
+                  </wp:cNvGraphicFramePr>
+                  <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="768727c42f9148c2b9f4133a48c9989d">
+                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="9f9aaa1f26e74667ae60a4e47d520162">
+                      <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="041a16e7e9cb492a9f736e20621fa13a">
+                        <pic:nvPicPr pt14:Unid="59bef1749ba34f04b9327b1af6157e9e">
+                          <pic:cNvPr id="4" name="Kind_als_Clown[1].jpg" pt14:Unid="2cd67b4bc0c8438fa9a262071de0c7d9" />
+                          <pic:cNvPicPr pt14:Unid="bd0b16ea71ba47eeadfbc0a77eee2147" />
+                        </pic:nvPicPr>
+                        <pic:blipFill pt14:Unid="ab16d8b68b7144b9b1e396a7307f64c4">
+                          <a:blip r:embed="Racb57a7dcb884b3b9d679ad1438caa14" cstate="print" pt14:Unid="b0e4224247b54404967ef949cea6236a">
+                            <a:extLst pt14:Unid="339f1e986ffa4fecb0decf2e09c1811c">
+                              <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="c3823b41d0bf4a49a9f0b209e4bf422c">
+                                <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="ac43d6e0dbae4d7e9bcfaf60a28e0fc5" />
+                              </a:ext>
+                            </a:extLst>
+                          </a:blip>
+                          <a:stretch pt14:Unid="57c292027c094824bc975b082f39d35e">
+                            <a:fillRect pt14:Unid="cf89b72c637f4baebfbd20fca6a647f2" />
+                          </a:stretch>
+                        </pic:blipFill>
+                        <pic:spPr pt14:Unid="b830102e883c436db81e38e4f58fbe1c">
+                          <a:xfrm pt14:Unid="0c89ee596d2b4c6e99aebe3065742c34">
+                            <a:off x="0" y="0" pt14:Unid="ff73993ed18f44c486a83f72b201867c" />
+                            <a:ext cx="2161032" cy="2438400" pt14:Unid="f3a4918efaf847b888258dd8a1c01bf3" />
+                          </a:xfrm>
+                          <a:prstGeom prst="rect" pt14:Unid="5a0d224e42564ee0ae7ed02cbb44a5a7">
+                            <a:avLst pt14:Unid="2d7af4648a3144e69aae50451a304260" />
+                          </a:prstGeom>
+                        </pic:spPr>
+                      </pic:pic>
+                    </a:graphicData>
+                  </a:graphic>
+                </wp:inline>
+              </w:drawing>
+            </w:r>
+            <w:r>
+              <w:t>Video provides a powerful way to help you prove your point.</w:t>
+            </w:r>
+          </w:p>
+          <w:p pt14:Unid="bf5d7c3ef3294278b24a154fc95f9d4b">
+            <w:pPr />
+          </w:p>
+        </w:tc>
+        <w:tc pt14:Unid="2169fce8464749639f344362fbe30438" pt14:SHA1Hash="b04ba4eeb146a7253322c2059eec191b7bc9cea9">
+          <w:tcPr pt14:Unid="798972498f344cc79630f2b72281eb9e">
+            <w:tcW w:w="3117" w:type="dxa" pt14:Unid="d8901abb17a54dcda2452b286e65d2a3" />
+          </w:tcPr>
+          <w:p pt14:Unid="de1ed01deda84f7698fc8a5644f07f2a">
+            <w:pPr />
+            <w:r>
+              <w:rPr pt14:Unid="4e7d71fa820943f0b18aff193dbc2654">
+                <w:lang w:val="en-IN" w:eastAsia="en-IN" pt14:Unid="08eedc2053964e5d8133f8249ac99987" />
+              </w:rPr>
+              <w:drawing pt14:Unid="4eee94fda1414df7bbb8726cbfadf2bd" pt14:SHA1Hash="27fa89c9b1504fa74f7a1eff7fbc404436135d1d">
+                <wp:inline distT="0" distB="0" distL="0" distR="0" pt14:Unid="11fd557d862243e5ac832b35c072d153">
+                  <wp:extent cx="2161032" cy="2438400" pt14:Unid="c1f308d66d1d4757afe6812fcc176967" />
+                  <wp:effectExtent l="0" t="0" r="0" b="0" pt14:Unid="6c5e6f451c244b1fbee2cf0e649ad2dc" />
+                  <wp:docPr id="5" name="Picture 6" pt14:Unid="ab7f1ce261e44a73b56ea136971ad7ef" />
+                  <wp:cNvGraphicFramePr pt14:Unid="b774981ea4654cb38dd5d0661234d7fc">
+                    <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1" pt14:Unid="fa8221c67c514fec8716f36b1073498f" />
+                  </wp:cNvGraphicFramePr>
+                  <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" pt14:Unid="8b5568e10b204f5ea9dd3c4010050a38">
+                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="ae2d38a20bbb4be5887ca30eef40be69">
+                      <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" pt14:Unid="7f1a806696224d4a978826517c058e36">
+                        <pic:nvPicPr pt14:Unid="26f41932b46246658aaf815ab838f908">
+                          <pic:cNvPr id="4" name="Kind_als_Clown[1].jpg" pt14:Unid="df262872e2cf47c28d486445cdde2fb6" />
+                          <pic:cNvPicPr pt14:Unid="e95b4102665042bfa723a082cbf27cce" />
+                        </pic:nvPicPr>
+                        <pic:blipFill pt14:Unid="bbb0ffc466a94132956d13e4bea0d62c">
+                          <a:blip r:embed="R6f33bf11171a497cab73a1a58a0fc980" cstate="print" pt14:Unid="9f7465196bca4421946b35eafff949b8">
+                            <a:extLst pt14:Unid="0d43ed07f9c8432db5b66ec2827407ef">
+                              <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}" pt14:Unid="171e336d684d4d87b3a98cab1ce94cc0">
+                                <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0" pt14:Unid="9e0d97e3d270485b8e2641c8ae58e878" />
+                              </a:ext>
+                            </a:extLst>
+                          </a:blip>
+                          <a:stretch pt14:Unid="4358e29d2ba14c219984930547661159">
+                            <a:fillRect pt14:Unid="b1bf16e2cee24c0caa49e67ee97e8143" />
+                          </a:stretch>
+                        </pic:blipFill>
+                        <pic:spPr pt14:Unid="59006393355446a7af76a93b0d16dd88">
+                          <a:xfrm pt14:Unid="6cd393aa1f4b4c67b1922aca21bc6c1f">
+                            <a:off x="0" y="0" pt14:Unid="0936bb9ff7ff497085efe2b1a0255542" />
+                            <a:ext cx="2161032" cy="2438400" pt14:Unid="117b550434f640608bf7ea8d79418079" />
+                          </a:xfrm>
+                          <a:prstGeom prst="rect" pt14:Unid="2b047158d6774832ac3f1806b830099e">
+                            <a:avLst pt14:Unid="5b5afd7b98034cd8a1e8d438cae9b097" />
+                          </a:prstGeom>
+                        </pic:spPr>
+                      </pic:pic>
+                    </a:graphicData>
+                  </a:graphic>
+                </wp:inline>
+              </w:drawing>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p pt14:Unid="d0cdbc69ebff4800856e62c79dc1d322">
+      <w:pPr />
+    </w:p>
+    <w:sectPr pt14:Unid="3eac6ed37b7c4543a10f6cb803fd0108">
+      <w:pgSz w:w="12240" w:h="15840" pt14:Unid="a76a393dc7c44c3cb2b0d2c5fd4ddd37" />
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0" pt14:Unid="33db790fa9ba4e38a43373dbec570eb5" />
+      <w:cols w:space="720" pt14:Unid="ae5e6f9607a442cabb11b2afe4ec5bf0" />
+    </w:sectPr>
+  </w:body>
+</w:document>
