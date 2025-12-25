@@ -47,6 +47,14 @@ import {
   DEFAULT_REVISION_SETTINGS,
 } from './revision';
 import {
+  WmlChangeType,
+  type WmlChange,
+  type WmlComparisonResult,
+  type WmlComparerSettings,
+  type WmlChangeListItem,
+  type WmlChangeListOptions,
+} from './types';
+import {
   computeCorrelation,
   CorrelationStatus,
   type Hashable,
@@ -68,31 +76,8 @@ import {
   type OoxmlPackage,
 } from '../core/package';
 
-/**
- * Settings for Word document comparison
- */
-export interface WmlComparerSettings {
-  /** Author name for tracked changes */
-  author?: string;
-  /** Date/time for tracked changes */
-  dateTime?: Date;
-  /** Threshold for paragraph matching (0-1) */
-  detailThreshold?: number;
-}
-
-/**
- * Result of a Word document comparison
- */
-export interface WmlComparisonResult {
-  /** The comparison result document as a buffer */
-  document: Buffer;
-  /** Number of insertions */
-  insertions: number;
-  /** Number of deletions */
-  deletions: number;
-  /** Total number of revisions */
-  revisionCount: number;
-}
+export type { WmlComparerSettings, WmlComparisonResult, WmlChange, WmlChangeListItem, WmlChangeListOptions, WmlWordCount } from './types';
+export { WmlChangeType } from './types';
 
 /**
  * A comparison unit representing a paragraph or table row with its hash
@@ -303,13 +288,15 @@ export async function compareDocuments(
   // Save the result
   const resultBuffer = await savePackage(resultPkg);
 
-  // Count revisions
   const counts = countRevisions(resultParagraphs);
+  const changes = extractChangesFromNodes(resultParagraphs, revisionSettings);
 
   return {
     document: resultBuffer,
+    changes,
     insertions: counts.insertions,
     deletions: counts.deletions,
+    formatChanges: counts.formatChanges,
     revisionCount: counts.total,
   };
 }
@@ -1561,4 +1548,238 @@ function calculateSimilarity(text1: string, text2: string): number {
   // Similarity is the ratio of common words to total words
   const totalWords = Math.max(words1.length, words2.length);
   return equalCount / totalWords;
+}
+
+function extractChangesFromNodes(
+  nodes: XmlNode[],
+  settings: RevisionSettings
+): WmlChange[] {
+  const changes: WmlChange[] = [];
+  let paragraphIndex = 0;
+
+  function getTextFromNode(node: XmlNode): string {
+    const text: string[] = [];
+    function walk(n: XmlNode): void {
+      const tag = getTagName(n);
+      if (tag === 'w:t' || tag === 'w:delText') {
+        text.push(getTextContent(n));
+      }
+      for (const child of getChildren(n)) {
+        walk(child);
+      }
+    }
+    walk(node);
+    return text.join('');
+  }
+
+  function countWords(text: string): number {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  }
+
+  function walkNode(node: XmlNode, context: { inTable: boolean; inFootnote: boolean; inEndnote: boolean; inTextbox: boolean }): void {
+    const tag = getTagName(node);
+    const attrs = node[':@'] as Record<string, string> | undefined;
+
+    if (tag === 'w:p') {
+      paragraphIndex++;
+    }
+
+    if (tag === 'w:tbl') {
+      context = { ...context, inTable: true };
+    }
+    if (tag === 'w:txbxContent') {
+      context = { ...context, inTextbox: true };
+    }
+
+    if (tag === 'w:ins') {
+      const text = getTextFromNode(node);
+      const revisionId = attrs?.['@_w:id'] ? parseInt(attrs['@_w:id'], 10) : 0;
+      changes.push({
+        changeType: WmlChangeType.TextInserted,
+        revisionId,
+        paragraphIndex,
+        newText: text,
+        wordCount: { deleted: 0, inserted: countWords(text) },
+        author: attrs?.['@_w:author'] ?? settings.author,
+        dateTime: attrs?.['@_w:date'] ?? settings.dateTime,
+        inTable: context.inTable,
+        inFootnote: context.inFootnote,
+        inEndnote: context.inEndnote,
+        inTextbox: context.inTextbox,
+      });
+      return;
+    }
+
+    if (tag === 'w:del') {
+      const text = getTextFromNode(node);
+      const revisionId = attrs?.['@_w:id'] ? parseInt(attrs['@_w:id'], 10) : 0;
+      changes.push({
+        changeType: WmlChangeType.TextDeleted,
+        revisionId,
+        paragraphIndex,
+        oldText: text,
+        wordCount: { deleted: countWords(text), inserted: 0 },
+        author: attrs?.['@_w:author'] ?? settings.author,
+        dateTime: attrs?.['@_w:date'] ?? settings.dateTime,
+        inTable: context.inTable,
+        inFootnote: context.inFootnote,
+        inEndnote: context.inEndnote,
+        inTextbox: context.inTextbox,
+      });
+      return;
+    }
+
+    if (tag === 'w:rPrChange') {
+      const revisionId = attrs?.['@_w:id'] ? parseInt(attrs['@_w:id'], 10) : 0;
+      changes.push({
+        changeType: WmlChangeType.FormatChanged,
+        revisionId,
+        paragraphIndex,
+        author: attrs?.['@_w:author'] ?? settings.author,
+        dateTime: attrs?.['@_w:date'] ?? settings.dateTime,
+        inTable: context.inTable,
+        inFootnote: context.inFootnote,
+        inEndnote: context.inEndnote,
+        inTextbox: context.inTextbox,
+      });
+      return;
+    }
+
+    for (const child of getChildren(node)) {
+      walkNode(child, context);
+    }
+  }
+
+  const baseContext = { inTable: false, inFootnote: false, inEndnote: false, inTextbox: false };
+  for (const node of nodes) {
+    walkNode(node, baseContext);
+  }
+
+  return changes;
+}
+
+export function buildChangeList(
+  result: WmlComparisonResult,
+  options: WmlChangeListOptions = {}
+): WmlChangeListItem[] {
+  const mergeReplacements = options.mergeReplacements !== false;
+  const maxPreviewLength = options.maxPreviewLength ?? 100;
+
+  const items: WmlChangeListItem[] = [];
+  const changes = [...result.changes];
+
+  for (let i = 0; i < changes.length; i++) {
+    const change = changes[i];
+    const nextChange = changes[i + 1];
+
+    if (
+      mergeReplacements &&
+      change.changeType === WmlChangeType.TextDeleted &&
+      nextChange?.changeType === WmlChangeType.TextInserted &&
+      change.paragraphIndex === nextChange.paragraphIndex
+    ) {
+      const deletedWords = change.wordCount?.deleted ?? 0;
+      const insertedWords = nextChange.wordCount?.inserted ?? 0;
+
+      items.push({
+        id: `change-${items.length + 1}`,
+        changeType: WmlChangeType.TextReplaced,
+        summary: 'Replaced',
+        previewText: truncateText(change.oldText ?? '', maxPreviewLength) +
+          ' → ' + truncateText(nextChange.newText ?? '', maxPreviewLength),
+        wordCount: { deleted: deletedWords, inserted: insertedWords },
+        paragraphIndex: change.paragraphIndex,
+        revisionId: change.revisionId,
+        anchor: `revision-${change.revisionId}`,
+        details: {
+          oldText: change.oldText,
+          newText: nextChange.newText,
+          author: change.author,
+          dateTime: change.dateTime,
+          locationContext: buildLocationContext(change),
+        },
+      });
+      i++;
+      continue;
+    }
+
+    items.push(toChangeListItem(change, items.length + 1, maxPreviewLength));
+  }
+
+  return items;
+}
+
+function toChangeListItem(change: WmlChange, index: number, maxPreviewLength: number): WmlChangeListItem {
+  const summary = summarizeChange(change);
+  const previewText = change.newText ?? change.oldText ?? '';
+
+  return {
+    id: `change-${index}`,
+    changeType: change.changeType,
+    summary,
+    previewText: truncateText(previewText, maxPreviewLength),
+    wordCount: change.wordCount,
+    paragraphIndex: change.paragraphIndex,
+    revisionId: change.revisionId,
+    anchor: `revision-${change.revisionId}`,
+    details: {
+      oldText: change.oldText,
+      newText: change.newText,
+      formatDescription: change.formatDescription,
+      author: change.author,
+      dateTime: change.dateTime,
+      locationContext: buildLocationContext(change),
+    },
+  };
+}
+
+function summarizeChange(change: WmlChange): string {
+  switch (change.changeType) {
+    case WmlChangeType.TextInserted:
+      return 'Inserted';
+    case WmlChangeType.TextDeleted:
+      return 'Deleted';
+    case WmlChangeType.TextReplaced:
+      return 'Replaced';
+    case WmlChangeType.ParagraphInserted:
+      return 'Paragraph inserted';
+    case WmlChangeType.ParagraphDeleted:
+      return 'Paragraph deleted';
+    case WmlChangeType.FormatChanged:
+      return 'Format changed';
+    case WmlChangeType.TableRowInserted:
+      return 'Table row inserted';
+    case WmlChangeType.TableRowDeleted:
+      return 'Table row deleted';
+    case WmlChangeType.TableCellChanged:
+      return 'Table cell changed';
+    case WmlChangeType.ImageInserted:
+      return 'Image inserted';
+    case WmlChangeType.ImageDeleted:
+      return 'Image deleted';
+    case WmlChangeType.ImageReplaced:
+      return 'Image replaced';
+    case WmlChangeType.NoteChanged:
+      return 'Note changed';
+    case WmlChangeType.MovedFrom:
+      return 'Moved from';
+    case WmlChangeType.MovedTo:
+      return 'Moved to';
+    default:
+      return 'Changed';
+  }
+}
+
+function buildLocationContext(change: WmlChange): string | undefined {
+  const parts: string[] = [];
+  if (change.inFootnote) parts.push('In footnote');
+  if (change.inEndnote) parts.push('In endnote');
+  if (change.inTable) parts.push('In table');
+  if (change.inTextbox) parts.push('In textbox');
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
 }

@@ -28,10 +28,16 @@ export * from './wml/revision';
 
 // Word document comparison - explicit exports to avoid ambiguity with ./types
 export {
+  WmlChangeType,
+  type WmlChange,
   type WmlComparerSettings,
   type WmlComparisonResult,
+  type WmlChangeListItem,
+  type WmlChangeListOptions,
+  type WmlWordCount,
   compareDocuments,
   countDocumentRevisions,
+  buildChangeList as buildWmlChangeList,
 } from './wml/wml-comparer';
 
 // Excel document comparison - explicit exports to avoid ambiguity with ./types
