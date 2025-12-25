@@ -1,0 +1,172 @@
+[2025-12-24 21:32:18] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-12-24 21:32:18] Using database: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/beads.db
+[2025-12-24 21:32:18] Database opened: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/beads.db (freshness checking enabled)
+[2025-12-24 21:32:18] Upgrading .beads/.gitignore...
+[2025-12-24 21:32:18] Warning: failed to upgrade .gitignore: open .beads/.gitignore: no such file or directory
+[2025-12-24 21:32:18] Repository fingerprint validated: 3dbfda81
+[2025-12-24 21:32:18] Starting RPC server: /Users/evan/development/Open-Xml-PowerTools/.git/beads-worktrees/vNext/.beads/bd.sock
+[2025-12-24 21:32:18] RPC server ready (socket listening)
+[2025-12-24 21:32:18] Registered in global registry
+[2025-12-24 21:32:18] Starting sync cycle...
+[2025-12-24 21:32:18] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:32:18] Monitoring parent process (PID 0)
+[2025-12-24 21:32:18] Using event-driven mode
+[2025-12-24 21:32:18] Auto-pull disabled: use 'git pull' manually to sync remote changes
+[2025-12-24 21:32:18] Mutation detected: create Open-Xml-PowerTools-9t1
+[2025-12-24 21:32:19] Export triggered by mutation events
+[2025-12-24 21:32:19] Starting export...
+[2025-12-24 21:32:19] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:32:30] Mutation detected: update Open-Xml-PowerTools-9t1
+[2025-12-24 21:32:31] Export triggered by mutation events
+[2025-12-24 21:32:31] Starting export...
+[2025-12-24 21:32:31] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:32:40] Mutation detected: create Open-Xml-PowerTools-bfq
+[2025-12-24 21:32:41] Export triggered by mutation events
+[2025-12-24 21:32:41] Starting export...
+[2025-12-24 21:32:41] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:33:00] Mutation detected: create Open-Xml-PowerTools-uja
+[2025-12-24 21:33:00] Mutation detected: create Open-Xml-PowerTools-fbj
+[2025-12-24 21:33:00] Mutation detected: create Open-Xml-PowerTools-gzf
+[2025-12-24 21:33:01] Mutation detected: create Open-Xml-PowerTools-dp9
+[2025-12-24 21:33:01] Mutation detected: create Open-Xml-PowerTools-vay
+[2025-12-24 21:33:02] Mutation detected: create Open-Xml-PowerTools-tcw
+[2025-12-24 21:33:02] Mutation detected: create Open-Xml-PowerTools-9h2
+[2025-12-24 21:33:03] Export triggered by mutation events
+[2025-12-24 21:33:03] Starting export...
+[2025-12-24 21:33:03] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:33:20] Mutation detected: create Open-Xml-PowerTools-ygv
+[2025-12-24 21:33:21] Mutation detected: create Open-Xml-PowerTools-pqg
+[2025-12-24 21:33:21] Mutation detected: create Open-Xml-PowerTools-fi6
+[2025-12-24 21:33:22] Mutation detected: create Open-Xml-PowerTools-zjz
+[2025-12-24 21:33:22] Mutation detected: create Open-Xml-PowerTools-fuy
+[2025-12-24 21:33:22] Export triggered by mutation events
+[2025-12-24 21:33:22] Starting export...
+[2025-12-24 21:33:22] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:33:56] Mutation detected: create Open-Xml-PowerTools-95z
+[2025-12-24 21:33:57] Mutation detected: create Open-Xml-PowerTools-9xl
+[2025-12-24 21:33:57] Export triggered by mutation events
+[2025-12-24 21:33:57] Starting export...
+[2025-12-24 21:33:57] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:33:57] Mutation detected: create Open-Xml-PowerTools-kq1
+[2025-12-24 21:33:58] Export triggered by mutation events
+[2025-12-24 21:33:58] Starting export...
+[2025-12-24 21:33:58] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:33:58] Mutation detected: create Open-Xml-PowerTools-cvy
+[2025-12-24 21:33:58] Mutation detected: create Open-Xml-PowerTools-c2p
+[2025-12-24 21:33:59] Mutation detected: create Open-Xml-PowerTools-b2m
+[2025-12-24 21:33:59] Mutation detected: create Open-Xml-PowerTools-hvl
+[2025-12-24 21:34:00] Export triggered by mutation events
+[2025-12-24 21:34:00] Starting export...
+[2025-12-24 21:34:00] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:34:22] Mutation detected: create Open-Xml-PowerTools-8ft
+[2025-12-24 21:34:22] Mutation detected: create Open-Xml-PowerTools-7pi
+[2025-12-24 21:34:23] Mutation detected: create Open-Xml-PowerTools-9hb
+[2025-12-24 21:34:23] Mutation detected: create Open-Xml-PowerTools-wab
+[2025-12-24 21:34:24] Mutation detected: create Open-Xml-PowerTools-6t2
+[2025-12-24 21:34:24] Mutation detected: create Open-Xml-PowerTools-ar7
+[2025-12-24 21:34:25] Mutation detected: create Open-Xml-PowerTools-58n
+[2025-12-24 21:34:25] Mutation detected: create Open-Xml-PowerTools-zfj
+[2025-12-24 21:34:25] Mutation detected: create Open-Xml-PowerTools-0lt
+[2025-12-24 21:34:26] Export triggered by mutation events
+[2025-12-24 21:34:26] Starting export...
+[2025-12-24 21:34:26] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:35:00] Mutation detected: create Open-Xml-PowerTools-4od
+[2025-12-24 21:35:01] Mutation detected: create Open-Xml-PowerTools-ays
+[2025-12-24 21:35:01] Mutation detected: create Open-Xml-PowerTools-2ae
+[2025-12-24 21:35:02] Mutation detected: create Open-Xml-PowerTools-1ll
+[2025-12-24 21:35:02] Mutation detected: create Open-Xml-PowerTools-ajj
+[2025-12-24 21:35:03] Mutation detected: create Open-Xml-PowerTools-301
+[2025-12-24 21:35:03] Mutation detected: create Open-Xml-PowerTools-pxq
+[2025-12-24 21:35:04] Mutation detected: create Open-Xml-PowerTools-6fh
+[2025-12-24 21:35:04] Mutation detected: create Open-Xml-PowerTools-7mx
+[2025-12-24 21:35:05] Export triggered by mutation events
+[2025-12-24 21:35:05] Starting export...
+[2025-12-24 21:35:05] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:35:54] Mutation detected: create Open-Xml-PowerTools-ozg
+[2025-12-24 21:35:55] Export triggered by mutation events
+[2025-12-24 21:35:55] Starting export...
+[2025-12-24 21:35:55] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:35:56] Mutation detected: create Open-Xml-PowerTools-lyx
+[2025-12-24 21:35:56] Export triggered by mutation events
+[2025-12-24 21:35:56] Starting export...
+[2025-12-24 21:35:56] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:35:58] Mutation detected: create Open-Xml-PowerTools-yuf
+[2025-12-24 21:35:58] Export triggered by mutation events
+[2025-12-24 21:35:58] Starting export...
+[2025-12-24 21:35:58] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:35:59] Mutation detected: create Open-Xml-PowerTools-4rx
+[2025-12-24 21:36:00] Export triggered by mutation events
+[2025-12-24 21:36:00] Starting export...
+[2025-12-24 21:36:00] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:01] Mutation detected: create Open-Xml-PowerTools-2ge
+[2025-12-24 21:36:02] Export triggered by mutation events
+[2025-12-24 21:36:02] Starting export...
+[2025-12-24 21:36:02] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:03] Mutation detected: create Open-Xml-PowerTools-cnm
+[2025-12-24 21:36:03] Export triggered by mutation events
+[2025-12-24 21:36:03] Starting export...
+[2025-12-24 21:36:03] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:05] Mutation detected: create Open-Xml-PowerTools-u69
+[2025-12-24 21:36:05] Export triggered by mutation events
+[2025-12-24 21:36:05] Starting export...
+[2025-12-24 21:36:05] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:07] Mutation detected: create Open-Xml-PowerTools-hmu
+[2025-12-24 21:36:07] Export triggered by mutation events
+[2025-12-24 21:36:07] Starting export...
+[2025-12-24 21:36:07] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:19] Mutation detected: create Open-Xml-PowerTools-esw
+[2025-12-24 21:36:19] Export triggered by mutation events
+[2025-12-24 21:36:19] Starting export...
+[2025-12-24 21:36:19] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:21] Mutation detected: create Open-Xml-PowerTools-d1k
+[2025-12-24 21:36:21] Export triggered by mutation events
+[2025-12-24 21:36:21] Starting export...
+[2025-12-24 21:36:21] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:23] Mutation detected: create Open-Xml-PowerTools-kbs
+[2025-12-24 21:36:23] Export triggered by mutation events
+[2025-12-24 21:36:23] Starting export...
+[2025-12-24 21:36:23] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:25] Mutation detected: create Open-Xml-PowerTools-xrt
+[2025-12-24 21:36:25] Export triggered by mutation events
+[2025-12-24 21:36:25] Starting export...
+[2025-12-24 21:36:25] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:27] Mutation detected: create Open-Xml-PowerTools-k46
+[2025-12-24 21:36:27] Export triggered by mutation events
+[2025-12-24 21:36:27] Starting export...
+[2025-12-24 21:36:27] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:34] Mutation detected: create Open-Xml-PowerTools-1nd
+[2025-12-24 21:36:34] Export triggered by mutation events
+[2025-12-24 21:36:34] Starting export...
+[2025-12-24 21:36:34] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:37] Mutation detected: create Open-Xml-PowerTools-5q8
+[2025-12-24 21:36:37] Export triggered by mutation events
+[2025-12-24 21:36:37] Starting export...
+[2025-12-24 21:36:37] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:40] Mutation detected: create Open-Xml-PowerTools-kpq
+[2025-12-24 21:36:40] Export triggered by mutation events
+[2025-12-24 21:36:40] Starting export...
+[2025-12-24 21:36:40] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:43] Mutation detected: create Open-Xml-PowerTools-99n
+[2025-12-24 21:36:43] Export triggered by mutation events
+[2025-12-24 21:36:43] Starting export...
+[2025-12-24 21:36:43] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:50] Mutation detected: create Open-Xml-PowerTools-988
+[2025-12-24 21:36:51] Export triggered by mutation events
+[2025-12-24 21:36:51] Starting export...
+[2025-12-24 21:36:51] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:52] Mutation detected: create Open-Xml-PowerTools-9zx
+[2025-12-24 21:36:53] Export triggered by mutation events
+[2025-12-24 21:36:53] Starting export...
+[2025-12-24 21:36:53] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:55] Mutation detected: create Open-Xml-PowerTools-z0r
+[2025-12-24 21:36:55] Export triggered by mutation events
+[2025-12-24 21:36:55] Starting export...
+[2025-12-24 21:36:55] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:57] Mutation detected: create Open-Xml-PowerTools-c3y
+[2025-12-24 21:36:57] Export triggered by mutation events
+[2025-12-24 21:36:57] Starting export...
+[2025-12-24 21:36:57] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
+[2025-12-24 21:36:59] Mutation detected: create Open-Xml-PowerTools-dg4
+[2025-12-24 21:36:59] Export triggered by mutation events
+[2025-12-24 21:36:59] Starting export...
+[2025-12-24 21:36:59] Pre-export validation failed: refusing to export: JSONL content has changed since last import (import first to avoid data loss)
