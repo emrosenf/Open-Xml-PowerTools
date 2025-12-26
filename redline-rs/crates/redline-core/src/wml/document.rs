@@ -123,8 +123,8 @@ fn extract_text_recursive(
                     let id = attrs.iter()
                         .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
                         .map(|a| a.value.as_str())
-                        .unwrap_or("unknown");
-                    texts.push(format!(" FOOTNOTE_REF_{} ", id));
+                        .unwrap_or("0");
+                    texts.push(format!(" FOOTNOTEREF{} ", id));
                 }
                 return;
             }
@@ -134,15 +134,15 @@ fn extract_text_recursive(
                     let id = attrs.iter()
                         .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
                         .map(|a| a.value.as_str())
-                        .unwrap_or("unknown");
-                    texts.push(format!(" ENDNOTE_REF_{} ", id));
+                        .unwrap_or("0");
+                    texts.push(format!(" ENDNOTEREF{} ", id));
                 }
                 return;
             }
             
             if ns == Some(M::NS) && (local == "oMath" || local == "oMathPara") {
                 let math_hash = compute_math_hash(doc, node);
-                texts.push(format!(" MATH_{:x} ", math_hash));
+                texts.push(format!(" MATH{:08x} ", math_hash));
                 return;
             }
             
@@ -162,17 +162,17 @@ fn extract_text_recursive(
             }
             
             if ns == Some(W::NS) && local == "txbxContent" {
-                texts.push(" TXBX_START ".to_string());
+                texts.push(" TXBXSTART ".to_string());
                 for child in doc.children(node) {
                     extract_text_recursive(doc, child, texts, accept_revisions);
                 }
-                texts.push(" TXBX_END ".to_string());
+                texts.push(" TXBXEND ".to_string());
                 return;
             }
             
             if ns == Some(W::NS) && local == "drawing" {
                 let drawing_info = get_drawing_info(doc, node);
-                texts.push(drawing_info);
+                texts.push(format!(" {} ", drawing_info));
                 return;
             }
             
@@ -184,7 +184,9 @@ fn extract_text_recursive(
                     return;
                 }
                 let embed_ref = find_embed_reference(doc, node);
-                texts.push(format!("PICT_{}", embed_ref.unwrap_or("unknown".to_string())));
+                let hash: u32 = embed_ref.as_deref().unwrap_or("unknown").bytes()
+                    .fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
+                texts.push(format!(" PICT{:08x} ", hash));
                 return;
             }
             
@@ -241,17 +243,14 @@ fn extract_math_text(doc: &XmlDocument, node: NodeId, texts: &mut Vec<String>) {
 }
 
 fn get_drawing_info(doc: &XmlDocument, node: NodeId) -> String {
-    let mut parts = Vec::new();
+    let mut hash_input = String::new();
     
     if let Some(extent) = find_descendant_by_local_name(doc, node, "extent") {
         if let Some(data) = doc.get(extent) {
             if let Some(attrs) = data.attributes() {
                 for attr in attrs {
-                    if attr.name.local_name == "cx" {
-                        parts.push(format!("cx{}", attr.value));
-                    }
-                    if attr.name.local_name == "cy" {
-                        parts.push(format!("cy{}", attr.value));
+                    if attr.name.local_name == "cx" || attr.name.local_name == "cy" {
+                        hash_input.push_str(&attr.value);
                     }
                 }
             }
@@ -259,10 +258,15 @@ fn get_drawing_info(doc: &XmlDocument, node: NodeId) -> String {
     }
     
     if let Some(embed_ref) = find_embed_reference(doc, node) {
-        parts.push(format!("e{}", embed_ref));
+        hash_input.push_str(&embed_ref);
     }
     
-    format!("DRAWING_{}", if parts.is_empty() { "unknown".to_string() } else { parts.join("_") })
+    if hash_input.is_empty() {
+        "DRAWINGunknown".to_string()
+    } else {
+        let hash: u32 = hash_input.bytes().fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
+        format!("DRAWING{:08x}", hash)
+    }
 }
 
 fn find_descendant_by_local_name(doc: &XmlDocument, start: NodeId, local: &str) -> Option<NodeId> {

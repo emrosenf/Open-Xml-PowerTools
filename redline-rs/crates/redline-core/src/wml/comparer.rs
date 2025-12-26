@@ -556,4 +556,14 @@ mod tests {
         assert_eq!(ins, 1);
         assert_eq!(del, 0);
     }
+    
+    #[test]
+    fn test_image_comparison() {
+        let text1 = "DRAWING12345678";
+        let text2 = "DRAWINGabcdef01";
+        
+        let (ins, del) = count_word_level_revision_groups(text1, text2);
+        println!("Image comparison: {} ins, {} del", ins, del);
+        assert_eq!(ins + del, 2, "Different image should be 1 del + 1 ins");
+    }
 }
