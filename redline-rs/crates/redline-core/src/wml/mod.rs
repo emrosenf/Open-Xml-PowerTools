@@ -9,6 +9,7 @@ mod formatting;
 mod get_revisions;
 mod lcs_algorithm;
 mod order;
+mod preprocess;
 mod revision;
 mod revision_accepter;
 mod revision_processor;
@@ -66,4 +67,8 @@ pub use types::{
 pub use formatting::{
     compute_normalized_rpr, compute_formatting_signature, compute_formatting_signature_hash,
     formatting_differs,
+};
+pub use preprocess::{
+    preprocess_markup, add_correlated_hashes_from_processed_doc,
+    repair_unids_after_revision_acceptance, PreProcessSettings,
 };
