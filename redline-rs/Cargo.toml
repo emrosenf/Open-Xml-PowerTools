@@ -48,6 +48,9 @@ once_cell = "1.19"
 # Date/time handling
 chrono = { version = "0.4", features = ["serde"] }
 
+# UUID generation (for UNID matching C# Guid.NewGuid())
+uuid = { version = "1.10", features = ["v4"] }
+
 # Dev dependencies
 insta = { version = "1.41", features = ["json"] }
 pretty_assertions = "1.4"

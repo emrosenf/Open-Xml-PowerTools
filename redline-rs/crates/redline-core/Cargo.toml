@@ -41,6 +41,9 @@ once_cell = { workspace = true }
 # Date/time handling
 chrono = { workspace = true }
 
+# UUID generation
+uuid = { workspace = true }
+
 [dev-dependencies]
 insta = { workspace = true }
 pretty_assertions = { workspace = true }

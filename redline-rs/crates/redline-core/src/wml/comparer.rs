@@ -51,18 +51,7 @@ impl Hashable for ParagraphUnit {
     }
 }
 
-/// Word unit for finer-grained comparison within paragraphs
-#[derive(Debug, Clone)]
-pub struct WordUnit {
-    /// The word text (used as hash)
-    pub text: String,
-}
 
-impl Hashable for WordUnit {
-    fn hash(&self) -> &str {
-        &self.text
-    }
-}
 
 pub struct WmlComparer;
 
@@ -284,9 +273,8 @@ fn count_revisions_smart(
                 if let (Some(ref items1), Some(ref items2)) = (&seq.items1, &seq.items2) {
                     for (u1, u2) in items1.iter().zip(items2.iter()) {
                         if u1.text != u2.text {
-                            let (ins, del) = count_word_level_revision_groups(&u1.text, &u2.text);
-                            insertions += ins;
-                            deletions += del;
+                            insertions += 1;
+                            deletions += 1;
                         }
                     }
                 }
@@ -298,13 +286,9 @@ fn count_revisions_smart(
                     let inserted_items = correlation[i + 1].items2.as_deref().unwrap_or(&[]);
                     
                     let min_len = deleted_items.len().min(inserted_items.len());
-                    for j in 0..min_len {
-                        let (ins, del) = count_word_level_revision_groups(
-                            &deleted_items[j].text,
-                            &inserted_items[j].text,
-                        );
-                        insertions += ins;
-                        deletions += del;
+                    for _j in 0..min_len {
+                        insertions += 1;
+                        deletions += 1;
                     }
                     
                     if deleted_items.len() > min_len {
@@ -330,10 +314,9 @@ fn count_revisions_smart(
             }
             CorrelationStatus::Unknown => {
                 if let (Some(ref items1), Some(ref items2)) = (&seq.items1, &seq.items2) {
-                    for (u1, u2) in items1.iter().zip(items2.iter()) {
-                        let (ins, del) = count_word_level_revision_groups(&u1.text, &u2.text);
-                        insertions += ins;
-                        deletions += del;
+                    for (_u1, _u2) in items1.iter().zip(items2.iter()) {
+                        insertions += 1;
+                        deletions += 1;
                     }
                     if items1.len() > items2.len() {
                         deletions += 1;
@@ -379,19 +362,17 @@ fn count_revisions_from_correlation(
                 if let (Some(ref items1), Some(ref items2)) = (&seq.items1, &seq.items2) {
                     for (u1, u2) in items1.iter().zip(items2.iter()) {
                         if u1.text != u2.text {
-                            let (ins, del) = count_word_level_revision_groups(&u1.text, &u2.text);
-                            insertions += ins;
-                            deletions += del;
+                            insertions += 1;
+                            deletions += 1;
                         }
                     }
                 }
             }
             CorrelationStatus::Unknown => {
                 if let (Some(ref items1), Some(ref items2)) = (&seq.items1, &seq.items2) {
-                    for (u1, u2) in items1.iter().zip(items2.iter()) {
-                        let (ins, del) = count_word_level_revision_groups(&u1.text, &u2.text);
-                        insertions += ins;
-                        deletions += del;
+                    for (_u1, _u2) in items1.iter().zip(items2.iter()) {
+                        insertions += 1;
+                        deletions += 1;
                     }
                     if items1.len() > items2.len() {
                         deletions += 1;
@@ -413,109 +394,7 @@ fn count_revisions_from_correlation(
     (insertions, deletions)
 }
 
-/// Count revision GROUPS (contiguous runs) at word level between two texts
-/// 
-/// Example: "Video provides a powerful" -> "Video a powerful"
-/// The word "provides" is deleted as one contiguous group = 1 deletion revision
-const DETAIL_THRESHOLD: f64 = 0.15;
 
-fn count_word_level_revision_groups(text1: &str, text2: &str) -> (usize, usize) {
-    let words1: Vec<WordUnit> = tokenize_text(text1);
-    let words2: Vec<WordUnit> = tokenize_text(text2);
-
-    if words1.is_empty() && words2.is_empty() {
-        return (0, 0);
-    }
-    if words1.is_empty() {
-        return (1, 0);
-    }
-    if words2.is_empty() {
-        return (0, 1);
-    }
-
-    let settings = LcsSettings::new();
-    let correlation = compute_correlation(&words1, &words2, &settings);
-
-    let equal_count: usize = correlation
-        .iter()
-        .filter(|seq| seq.status == CorrelationStatus::Equal)
-        .map(|seq| seq.items1.as_ref().map(|v| v.len()).unwrap_or(0))
-        .sum();
-
-    let max_len = words1.len().max(words2.len());
-    let min_len = words1.len().min(words2.len());
-    let similarity = equal_count as f64 / max_len as f64;
-
-    if equal_count == min_len {
-        if words1.len() < words2.len() {
-            return (1, 0);
-        } else {
-            return (0, 1);
-        }
-    }
-
-    if similarity < DETAIL_THRESHOLD {
-        let mut ins = 0;
-        let mut del = 0;
-        if !words1.is_empty() {
-            del = 1;
-        }
-        if !words2.is_empty() {
-            ins = 1;
-        }
-        return (ins, del);
-    }
-
-    let mut insertions = 0;
-    let mut deletions = 0;
-
-    for seq in &correlation {
-        match seq.status {
-            CorrelationStatus::Inserted => {
-                if seq.items2.is_some() {
-                    insertions += 1;
-                }
-            }
-            CorrelationStatus::Deleted => {
-                if seq.items1.is_some() {
-                    deletions += 1;
-                }
-            }
-            _ => {}
-        }
-    }
-
-    (insertions, deletions)
-}
-
-/// Tokenize text into words for comparison
-fn tokenize_text(text: &str) -> Vec<WordUnit> {
-    let mut tokens = Vec::new();
-    let mut current_word = String::new();
-    
-    for ch in text.chars() {
-        if ch.is_whitespace() {
-            if !current_word.is_empty() {
-                tokens.push(WordUnit { text: current_word.clone() });
-                current_word.clear();
-            }
-        } else if ch.is_ascii_punctuation() {
-            if !current_word.is_empty() {
-                tokens.push(WordUnit { text: current_word.clone() });
-                current_word.clear();
-            }
-            tokens.push(WordUnit { text: ch.to_string() });
-        } else {
-            current_word.push(ch);
-        }
-    }
-    
-    if !current_word.is_empty() {
-        tokens.push(WordUnit { text: current_word });
-    }
-    
-    tokens
-}
 
 #[cfg(test)]
 mod tests {
@@ -528,42 +407,5 @@ mod tests {
         assert_eq!(hash.len(), 40);
     }
 
-    #[test]
-    fn test_tokenize_text() {
-        let tokens = tokenize_text("hello world test");
-        assert_eq!(tokens.len(), 3);
-        assert_eq!(tokens[0].text, "hello");
-        assert_eq!(tokens[1].text, "world");
-        assert_eq!(tokens[2].text, "test");
-        
-        let tokens = tokenize_text("This.");
-        assert_eq!(tokens.len(), 2);
-        assert_eq!(tokens[0].text, "This");
-        assert_eq!(tokens[1].text, ".");
-    }
 
-    #[test]
-    fn test_word_level_revision_groups() {
-        let (ins, del) = count_word_level_revision_groups("hello world", "hello world");
-        assert_eq!(ins, 0);
-        assert_eq!(del, 0);
-        
-        let (ins, del) = count_word_level_revision_groups("hello world", "hello");
-        assert_eq!(ins, 0);
-        assert_eq!(del, 1);
-        
-        let (ins, del) = count_word_level_revision_groups("hello", "hello world");
-        assert_eq!(ins, 1);
-        assert_eq!(del, 0);
-    }
-    
-    #[test]
-    fn test_image_comparison() {
-        let text1 = "DRAWING12345678";
-        let text2 = "DRAWINGabcdef01";
-        
-        let (ins, del) = count_word_level_revision_groups(text1, text2);
-        println!("Image comparison: {} ins, {} del", ins, del);
-        assert_eq!(ins + del, 2, "Different image should be 1 del + 1 ins");
-    }
 }

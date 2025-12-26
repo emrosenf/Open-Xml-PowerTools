@@ -95,6 +95,17 @@ impl XmlDocument {
         node.ancestors(&self.arena)
     }
 
+    /// Detach a node from its current parent (but keep its children)
+    pub fn detach(&mut self, node: NodeId) {
+        node.detach(&mut self.arena);
+    }
+
+    /// Append a child node to a parent (detaching it from any previous parent)
+    pub fn reparent(&mut self, parent: NodeId, child: NodeId) {
+        child.detach(&mut self.arena);
+        parent.append(child, &mut self.arena);
+    }
+
     pub fn elements_by_name<'a>(
         &'a self,
         parent: NodeId,

@@ -1,13 +1,31 @@
+mod atom_list;
+mod block_hash;
+mod coalesce;
+mod comparison_unit;
 mod comparer;
 mod document;
+mod lcs_algorithm;
 mod revision;
 mod revision_accepter;
 mod settings;
 mod types;
 
+pub use atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list};
+pub use block_hash::{
+    clone_block_level_content_for_hashing, compute_block_hash, hash_block_level_content,
+    HashingSettings,
+};
+pub use comparison_unit::{
+    get_comparison_unit_list, AncestorInfo, ComparisonCorrelationStatus, ComparisonUnit,
+    ComparisonUnitAtom, ComparisonUnitGroup, ComparisonUnitGroupContents, ComparisonUnitGroupType,
+    ComparisonUnitWord, ContentElement, WordSeparatorSettings, generate_unid,
+};
 pub use comparer::WmlComparer;
+pub use lcs_algorithm::{flatten_to_atoms, lcs, CorrelatedSequence, CorrelationStatus};
 pub use document::{
-    extract_all_text, extract_paragraph_text, find_document_body, find_paragraphs, WmlDocument,
+    extract_all_text, extract_paragraph_text,
+    find_document_body, find_paragraphs,
+    WmlDocument,
 };
 pub use revision::{
     count_revisions, create_deletion, create_insertion, create_paragraph,
@@ -17,6 +35,10 @@ pub use revision::{
     reset_revision_id_counter, RevisionSettings,
 };
 pub use revision_accepter::accept_revisions;
+pub use coalesce::{
+    produce_markup_from_atoms, mark_content_as_deleted_or_inserted, 
+    reset_coalesce_revision_id, CoalesceResult, pt_status, PT_STATUS_NS
+};
 pub use settings::WmlComparerSettings;
 pub use types::{
     RevisionCounts, WmlChange, WmlChangeDetails, WmlChangeListItem, WmlChangeListOptions,

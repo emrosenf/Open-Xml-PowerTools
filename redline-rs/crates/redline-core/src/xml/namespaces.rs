@@ -68,6 +68,53 @@ pub mod W {
     pub fn author() -> XName { XName::new(NS, "author") }
     pub fn id() -> XName { XName::new(NS, "id") }
     pub fn date() -> XName { XName::new(NS, "date") }
+    pub fn tblPr() -> XName { XName::new(NS, "tblPr") }
+    pub fn tblGrid() -> XName { XName::new(NS, "tblGrid") }
+    pub fn tblPrEx() -> XName { XName::new(NS, "tblPrEx") }
+    pub fn tcPr() -> XName { XName::new(NS, "tcPr") }
+    pub fn cr() -> XName { XName::new(NS, "cr") }
+    pub fn dayLong() -> XName { XName::new(NS, "dayLong") }
+    pub fn dayShort() -> XName { XName::new(NS, "dayShort") }
+    pub fn monthLong() -> XName { XName::new(NS, "monthLong") }
+    pub fn monthShort() -> XName { XName::new(NS, "monthShort") }
+    pub fn noBreakHyphen() -> XName { XName::new(NS, "noBreakHyphen") }
+    pub fn pgNum() -> XName { XName::new(NS, "pgNum") }
+    pub fn ptab() -> XName { XName::new(NS, "ptab") }
+    pub fn softHyphen() -> XName { XName::new(NS, "softHyphen") }
+    pub fn sym() -> XName { XName::new(NS, "sym") }
+    pub fn yearLong() -> XName { XName::new(NS, "yearLong") }
+    pub fn yearShort() -> XName { XName::new(NS, "yearShort") }
+    pub fn fldChar() -> XName { XName::new(NS, "fldChar") }
+    pub fn instrText() -> XName { XName::new(NS, "instrText") }
+    pub fn fldSimple() -> XName { XName::new(NS, "fldSimple") }
+    pub fn object() -> XName { XName::new(NS, "object") }
+    pub fn commentRangeStart() -> XName { XName::new(NS, "commentRangeStart") }
+    pub fn commentRangeEnd() -> XName { XName::new(NS, "commentRangeEnd") }
+    pub fn lastRenderedPageBreak() -> XName { XName::new(NS, "lastRenderedPageBreak") }
+    pub fn proofErr() -> XName { XName::new(NS, "proofErr") }
+    pub fn permEnd() -> XName { XName::new(NS, "permEnd") }
+    pub fn permStart() -> XName { XName::new(NS, "permStart") }
+    pub fn footnoteRef() -> XName { XName::new(NS, "footnoteRef") }
+    pub fn endnoteRef() -> XName { XName::new(NS, "endnoteRef") }
+    pub fn separator() -> XName { XName::new(NS, "separator") }
+    pub fn continuationSeparator() -> XName { XName::new(NS, "continuationSeparator") }
+    pub fn sdtPr() -> XName { XName::new(NS, "sdtPr") }
+    pub fn sdtEndPr() -> XName { XName::new(NS, "sdtEndPr") }
+    pub fn smartTag() -> XName { XName::new(NS, "smartTag") }
+    pub fn smartTagPr() -> XName { XName::new(NS, "smartTagPr") }
+    pub fn ruby() -> XName { XName::new(NS, "ruby") }
+    pub fn rubyPr() -> XName { XName::new(NS, "rubyPr") }
+    pub fn gridSpan() -> XName { XName::new(NS, "gridSpan") }
+    pub fn val() -> XName { XName::new(NS, "val") }
+    // rsid attributes (revision session IDs) - stripped during hashing
+    pub fn rsid() -> XName { XName::new(NS, "rsid") }
+    pub fn rsidDel() -> XName { XName::new(NS, "rsidDel") }
+    pub fn rsidP() -> XName { XName::new(NS, "rsidP") }
+    pub fn rsidR() -> XName { XName::new(NS, "rsidR") }
+    pub fn rsidRDefault() -> XName { XName::new(NS, "rsidRDefault") }
+    pub fn rsidRPr() -> XName { XName::new(NS, "rsidRPr") }
+    pub fn rsidSect() -> XName { XName::new(NS, "rsidSect") }
+    pub fn rsidTr() -> XName { XName::new(NS, "rsidTr") }
 }
 
 pub mod S {
@@ -138,6 +185,7 @@ pub mod PT {
     
     pub fn Unid() -> XName { XName::new(NS, "Unid") }
     pub fn SHA1Hash() -> XName { XName::new(NS, "SHA1Hash") }
+    pub fn CorrelatedSHA1Hash() -> XName { XName::new(NS, "CorrelatedSHA1Hash") }
 }
 
 pub mod M {
@@ -158,6 +206,17 @@ pub mod V {
     
     pub fn textbox() -> XName { XName::new(NS, "textbox") }
     pub fn imagedata() -> XName { XName::new(NS, "imagedata") }
+    pub fn group() -> XName { XName::new(NS, "group") }
+    pub fn shape() -> XName { XName::new(NS, "shape") }
+    pub fn rect() -> XName { XName::new(NS, "rect") }
+    pub fn shapetype() -> XName { XName::new(NS, "shapetype") }
+    pub fn fill() -> XName { XName::new(NS, "fill") }
+    pub fn stroke() -> XName { XName::new(NS, "stroke") }
+    pub fn shadow() -> XName { XName::new(NS, "shadow") }
+    pub fn path() -> XName { XName::new(NS, "path") }
+    pub fn formulas() -> XName { XName::new(NS, "formulas") }
+    pub fn handles() -> XName { XName::new(NS, "handles") }
+    pub fn textpath() -> XName { XName::new(NS, "textpath") }
 }
 
 pub mod WP {
@@ -181,6 +240,15 @@ pub mod O {
     pub const NS: &str = "urn:schemas-microsoft-com:office:office";
     
     pub fn relid() -> XName { XName::new(NS, "relid") }
+    pub fn lock() -> XName { XName::new(NS, "lock") }
+    pub fn extrusion() -> XName { XName::new(NS, "extrusion") }
+}
+
+pub mod W10 {
+    use super::XName;
+    pub const NS: &str = "urn:schemas-microsoft-com:office:word";
+    
+    pub fn wrap() -> XName { XName::new(NS, "wrap") }
 }
 
 #[cfg(test)]
