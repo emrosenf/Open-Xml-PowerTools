@@ -240,15 +240,22 @@ fn create_paragraph_units(doc: &XmlDocument, paragraphs: &[NodeId]) -> Vec<Parag
         .enumerate()
         .map(|(index, &para)| {
             let text = extract_paragraph_text(doc, para);
-            let hash = compute_sha1_hash(&text);
+            let normalized = normalize_whitespace(&text);
+            let hash = compute_sha1_hash(&normalized);
             
             ParagraphUnit {
                 hash,
-                correlated_hash: None, // Will be set during HashBlockLevelContent
-                text,
+                correlated_hash: None,
+                text: normalized,
                 index,
             }
         })
+        .collect()
+}
+
+fn normalize_whitespace(text: &str) -> String {
+    text.chars()
+        .map(|c| if c.is_whitespace() { ' ' } else { c })
         .collect()
 }
 
