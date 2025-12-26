@@ -17,10 +17,15 @@
 //! 6. FlattenToComparisonUnitAtomList (flatten with status)
 //! 7. ProduceNewWmlMarkupFromCorrelatedSequence (generate result document)
 
+use super::atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list};
+use super::coalesce::coalesce;
+use super::comparison_unit::{get_comparison_unit_list, WordSeparatorSettings, ComparisonUnitAtom, ComparisonCorrelationStatus};
 use super::document::{
     extract_paragraph_text, find_document_body, find_paragraphs, find_footnotes_root, 
     find_endnotes_root, find_note_paragraphs, WmlDocument,
 };
+use super::lcs_algorithm::{lcs, flatten_to_atoms};
+use super::preprocess::{preprocess_markup, PreProcessSettings};
 use super::revision::{count_revisions, reset_revision_id_counter};
 use super::settings::WmlComparerSettings;
 use super::types::WmlComparisonResult;
@@ -56,7 +61,66 @@ impl Hashable for ParagraphUnit {
 pub struct WmlComparer;
 
 impl WmlComparer {
+    /// Port of C# WmlComparer.Compare() and CompareInternal() (lines 141-291)
     pub fn compare(
+        source1: &WmlDocument,
+        source2: &WmlDocument,
+        settings: Option<&WmlComparerSettings>,
+    ) -> Result<WmlComparisonResult> {
+        let settings = settings.cloned().unwrap_or_default();
+        reset_revision_id_counter(1);
+
+        let mut doc1 = source1.main_document()?;
+        let mut doc2 = source2.main_document()?;
+        
+        let body1 = find_document_body(&doc1).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in document 1".to_string()))?;
+        let body2 = find_document_body(&doc2).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in document 2".to_string()))?;
+        
+        let preprocess_settings = PreProcessSettings::for_comparison();
+        preprocess_markup(&mut doc1, body1, &preprocess_settings)
+            .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
+        preprocess_markup(&mut doc2, body2, &preprocess_settings)
+            .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
+
+        let atoms1 = create_comparison_unit_atom_list(&doc1, body1, "main");
+        let atoms2 = create_comparison_unit_atom_list(&doc2, body2, "main");
+        
+        if atoms1.is_empty() && atoms2.is_empty() {
+            let result_bytes = source2.to_bytes()?;
+            return Ok(WmlComparisonResult {
+                document: result_bytes,
+                changes: Vec::new(),
+                insertions: 0,
+                deletions: 0,
+                format_changes: 0,
+                revision_count: 0,
+            });
+        }
+
+        let word_settings = WordSeparatorSettings::default();
+        let units1 = get_comparison_unit_list(atoms1, &word_settings);
+        let units2 = get_comparison_unit_list(atoms2, &word_settings);
+
+        let correlated = lcs(units1, units2, &settings);
+        let flattened_atoms = flatten_to_atoms(&correlated);
+        let result = coalesce(&flattened_atoms, &settings);
+        
+        let (insertions, deletions) = count_revision_atoms(&flattened_atoms);
+
+        let result_bytes = source2.to_bytes()?;
+
+        Ok(WmlComparisonResult {
+            document: result_bytes,
+            changes: Vec::new(),
+            insertions,
+            deletions,
+            format_changes: 0,
+            revision_count: insertions + deletions,
+        })
+    }
+
+    /// Legacy compare implementation for backward compatibility
+    pub fn compare_legacy(
         source1: &WmlDocument,
         source2: &WmlDocument,
         settings: Option<&WmlComparerSettings>,
@@ -333,6 +397,26 @@ fn count_revisions_smart(
                 }
                 i += 1;
             }
+        }
+    }
+    
+    (insertions, deletions)
+}
+
+#[allow(dead_code)]
+fn count_revision_atoms(atoms: &[ComparisonUnitAtom]) -> (usize, usize) {
+    let mut insertions = 0;
+    let mut deletions = 0;
+    
+    for atom in atoms {
+        match atom.correlation_status {
+            ComparisonCorrelationStatus::Inserted => insertions += 1,
+            ComparisonCorrelationStatus::Deleted => deletions += 1,
+            ComparisonCorrelationStatus::FormatChanged => {
+                insertions += 1;
+                deletions += 1;
+            }
+            _ => {}
         }
     }
     
