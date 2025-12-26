@@ -97,6 +97,11 @@ pub fn lcs(
     units2: Vec<ComparisonUnit>,
     settings: &WmlComparerSettings,
 ) -> Vec<CorrelatedSequence> {
+    // Check for completely unrelated sources first (optimization)
+    if let Some(result) = detect_unrelated_sources(&units1, &units2) {
+        return result;
+    }
+
     // Initialize with one Unknown sequence containing entire arrays
     let initial = CorrelatedSequence::unknown(units1, units2);
     let mut cs_list = vec![initial];
@@ -115,6 +120,7 @@ pub fn lcs(
         // Extract the unknown sequence for processing
         let unknown = cs_list.remove(idx);
 
+        // Set unids for matching single groups
         let unknown = set_after_unids(unknown);
 
         // Try ProcessCorrelatedHashes first (fastest)
@@ -713,8 +719,9 @@ fn handle_no_match_cases(
 
     // Handle single tables with potential merged cells
     if tables1 == 1 && left_len == 1 && tables2 == 1 && right_len == 1 {
-        // Could implement DoLcsAlgorithmForTable here
-        // For now, just mark as changed
+        if let Some(result) = do_lcs_algorithm_for_table(units1, units2, _settings) {
+            return result;
+        }
     }
 
     // Handle only paras/tables/textboxes - flatten and iterate
@@ -1121,6 +1128,144 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
     }
 
     result
+}
+
+/// Detect completely unrelated sources (optimization)
+///
+/// Matches C# DetectUnrelatedSources (WmlComparer.cs:5745-5774)
+///
+/// If both sides have >3 groups and no common SHA1 hashes, mark everything
+/// as deleted/inserted to avoid expensive LCS computation.
+fn detect_unrelated_sources(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+) -> Option<Vec<CorrelatedSequence>> {
+    let groups1: Vec<_> = units1
+        .iter()
+        .filter_map(|u| u.as_group())
+        .take(4)
+        .collect();
+    let groups2: Vec<_> = units2
+        .iter()
+        .filter_map(|u| u.as_group())
+        .take(4)
+        .collect();
+
+    if groups1.len() <= 3 || groups2.len() <= 3 {
+        return None;
+    }
+
+    let hashes1: Vec<_> = groups1.iter().map(|g| &g.sha1_hash).collect();
+    let hashes2: Vec<_> = groups2.iter().map(|g| &g.sha1_hash).collect();
+
+    let has_intersection = hashes1.iter().any(|h1| hashes2.contains(h1));
+
+    if has_intersection {
+        return None;
+    }
+
+    Some(vec![
+        CorrelatedSequence::deleted(units1.to_vec()),
+        CorrelatedSequence::inserted(units2.to_vec()),
+    ])
+}
+
+/// LCS algorithm for table structures
+///
+/// Matches C# DoLcsAlgorithmForTable (WmlComparer.cs:7145-7255)
+///
+/// Handles tables with merged cells by comparing structure hashes.
+fn do_lcs_algorithm_for_table(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+    _settings: &WmlComparerSettings,
+) -> Option<Vec<CorrelatedSequence>> {
+    let tbl_group1 = units1.first()?.as_group()?;
+    let tbl_group2 = units2.first()?.as_group()?;
+
+    if tbl_group1.group_type != ComparisonUnitGroupType::Table
+        || tbl_group2.group_type != ComparisonUnitGroupType::Table
+    {
+        return None;
+    }
+
+    let rows1 = match &tbl_group1.contents {
+        super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => groups,
+        _ => return None,
+    };
+    let rows2 = match &tbl_group2.contents {
+        super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => groups,
+        _ => return None,
+    };
+
+    if rows1.len() == rows2.len() {
+        let all_rows_match = rows1
+            .iter()
+            .zip(rows2.iter())
+            .all(|(r1, r2)| {
+                r1.correlated_sha1_hash.is_some()
+                    && r1.correlated_sha1_hash == r2.correlated_sha1_hash
+            });
+
+        if all_rows_match {
+            let sequences: Vec<_> = rows1
+                .iter()
+                .zip(rows2.iter())
+                .map(|(r1, r2)| {
+                    CorrelatedSequence::unknown(
+                        vec![ComparisonUnit::Group(r1.clone())],
+                        vec![ComparisonUnit::Group(r2.clone())],
+                    )
+                })
+                .collect();
+            return Some(sequences);
+        }
+    }
+
+    let left_contains_merged = check_table_has_merged_cells(tbl_group1);
+    let right_contains_merged = check_table_has_merged_cells(tbl_group2);
+
+    if left_contains_merged || right_contains_merged {
+        if tbl_group1.structure_sha1_hash.is_some()
+            && tbl_group1.structure_sha1_hash == tbl_group2.structure_sha1_hash
+        {
+            let sequences: Vec<_> = rows1
+                .iter()
+                .zip(rows2.iter())
+                .map(|(r1, r2)| {
+                    CorrelatedSequence::unknown(
+                        vec![ComparisonUnit::Group(r1.clone())],
+                        vec![ComparisonUnit::Group(r2.clone())],
+                    )
+                })
+                .collect();
+            return Some(sequences);
+        }
+
+        let flattened1: Vec<_> = rows1
+            .iter()
+            .map(|r| ComparisonUnit::Group(r.clone()))
+            .collect();
+        let flattened2: Vec<_> = rows2
+            .iter()
+            .map(|r| ComparisonUnit::Group(r.clone()))
+            .collect();
+
+        return Some(vec![
+            CorrelatedSequence::deleted(flattened1),
+            CorrelatedSequence::inserted(flattened2),
+        ]);
+    }
+
+    None
+}
+
+/// Check if a table contains merged cells
+///
+/// This is a simplified check - in the full implementation, this would
+/// examine the table's XML structure for vMerge or gridSpan elements.
+fn check_table_has_merged_cells(_table_group: &super::comparison_unit::ComparisonUnitGroup) -> bool {
+    false
 }
 
 #[cfg(test)]

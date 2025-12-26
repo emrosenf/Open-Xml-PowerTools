@@ -237,9 +237,9 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     break;
                 }
                 
-                let unid = data
-                    .attributes()
-                    .and_then(|attrs| attrs.iter().find(|a| a.name == pt_unid))
+                let attrs = data.attributes().map(|a| a.to_vec()).unwrap_or_default();
+                let unid = attrs.iter()
+                    .find(|a| a.name == pt_unid)
                     .map(|a| a.value.clone())
                     .unwrap_or_default();
                 
@@ -247,6 +247,7 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     node_id: ancestor_id,
                     local_name: local.to_string(),
                     unid,
+                    attributes: attrs,
                 });
             }
         }

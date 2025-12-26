@@ -3,8 +3,12 @@ mod block_hash;
 mod coalesce;
 mod comparison_unit;
 mod comparer;
+mod consolidate;
 mod document;
+mod formatting;
+mod get_revisions;
 mod lcs_algorithm;
+mod order;
 mod revision;
 mod revision_accepter;
 mod revision_processor;
@@ -43,10 +47,10 @@ pub use revision_processor::{
     BlockContentInfo,
 };
 pub use coalesce::{
-    produce_markup_from_atoms, mark_content_as_deleted_or_inserted, 
-    reset_coalesce_revision_id, coalesce_adjacent_runs_with_identical_formatting,
-    coalesce_document, CoalesceResult, pt_status, PT_STATUS_NS
+    coalesce, CoalesceResult, pt_status, pt_unid, PT_STATUS_NS
 };
+pub use consolidate::{consolidate, consolidate_with_settings};
+pub use get_revisions::get_revisions;
 pub use settings::{
     WmlComparerSettings, WmlComparerConsolidateSettings, WmlRevisedDocumentInfo,
     WmlComparerRevisionType, WmlComparerRevision,
@@ -58,4 +62,8 @@ pub use simplify::{
 pub use types::{
     RevisionCounts, WmlChange, WmlChangeDetails, WmlChangeListItem, WmlChangeListOptions,
     WmlChangeType, WmlComparisonResult, WmlWordCount,
+};
+pub use formatting::{
+    compute_normalized_rpr, compute_formatting_signature, compute_formatting_signature_hash,
+    formatting_differs,
 };

@@ -2,8 +2,6 @@
 
 use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::W;
-use crate::xml::node::XmlNodeData;
-use crate::xml::xname::XName;
 use indextree::NodeId;
 
 #[derive(Debug, Clone, Default)]

@@ -78,6 +78,8 @@ pub struct AncestorInfo {
     pub local_name: String,
     /// Unique ID (Unid) for this element - used for correlation
     pub unid: String,
+    /// Attributes from the ancestor element (for reconstruction)
+    pub attributes: Vec<crate::xml::xname::XAttribute>,
 }
 
 /// Content element types for atoms
@@ -193,6 +195,13 @@ pub struct ComparisonUnitAtom {
     pub rev_track_element: Option<String>,
     /// Formatting change rPr from "before" document
     pub formatting_change_rpr_before: Option<String>,
+    
+    // Fields populated by AssembleAncestorUnidsInOrderToRebuildXmlTreeProperly
+    /// Ancestor Unids array (from C# AncestorUnids property)
+    /// This is populated after correlation and is used for tree reconstruction
+    pub ancestor_unids: Vec<String>,
+    /// Formatting change rPr "before" signature (for grouping)
+    pub formatting_change_rpr_before_signature: Option<String>,
 }
 
 impl ComparisonUnitAtom {
@@ -219,6 +228,8 @@ impl ComparisonUnitAtom {
             part_before: None,
             rev_track_element: None,
             formatting_change_rpr_before: None,
+            ancestor_unids: Vec::new(),
+            formatting_change_rpr_before_signature: None,
         }
     }
 
@@ -1193,6 +1204,7 @@ mod tests {
                 node_id: node,
                 local_name: "p".to_string(),
                 unid: "abc123".to_string(),
+                attributes: vec![],
             }],
             "main",
         );
