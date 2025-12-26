@@ -691,7 +691,60 @@ fn cleanup_pt_attributes(doc: &mut XmlDocument, root: NodeId) {
 use crate::util::group::group_adjacent;
 use crate::util::descendants::descendants_trimmed;
 
-/// Coalesce adjacent runs with identical formatting
+/// Coalesce adjacent runs in an entire document
+///
+/// This is the top-level function that processes all paragraphs in a document,
+/// matching the C# CoalesceAdjacentRunsWithIdenticalFormatting(XDocument) signature.
+///
+/// CRITICAL: This must be called AFTER mark_content_as_deleted_or_inserted to match C# behavior.
+pub fn coalesce_document(doc: &mut XmlDocument, doc_root: NodeId) {
+    // Process main document paragraphs (excluding those in txbxContent)
+    // This matches C# line 2338: var paras = xDoc.Root.DescendantsTrimmed(W.txbxContent).Where(d => d.Name == W.p);
+    let paras: Vec<NodeId> = descendants_trimmed(doc, doc_root, |d| {
+        d.name().map(|n| n == &W::txbxContent()).unwrap_or(false)
+    })
+    .filter(|&node| {
+        doc.get(node)
+            .and_then(|d| d.name())
+            .map(|n| n == &W::p())
+            .unwrap_or(false)
+    })
+    .collect();
+    
+    for para in paras {
+        coalesce_adjacent_runs_with_identical_formatting(doc, para);
+    }
+    
+    // Process txbxContent paragraphs recursively (C# lines 2344-2351)
+    let txbx_containers: Vec<NodeId> = doc
+        .descendants(doc_root)
+        .filter(|&node| {
+            doc.get(node)
+                .and_then(|d| d.name())
+                .map(|n| n == &W::txbxContent())
+                .unwrap_or(false)
+        })
+        .collect();
+    
+    for txbx in txbx_containers {
+        let txbx_paras: Vec<NodeId> = descendants_trimmed(doc, txbx, |d| {
+            d.name().map(|n| n == &W::txbxContent()).unwrap_or(false)
+        })
+        .filter(|&node| {
+            doc.get(node)
+                .and_then(|d| d.name())
+                .map(|n| n == &W::p())
+                .unwrap_or(false)
+        })
+        .collect();
+        
+        for para in txbx_paras {
+            coalesce_adjacent_runs_with_identical_formatting(doc, para);
+        }
+    }
+}
+
+/// Coalesce adjacent runs with identical formatting in a single container
 ///
 /// This ports the C# CoalesceAdjacentRunsWithIdenticalFormatting function which
 /// consolidates adjacent w:r, w:ins, and w:del elements that have identical formatting.

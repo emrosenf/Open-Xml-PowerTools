@@ -38,7 +38,7 @@ pub use revision_accepter::accept_revisions;
 pub use coalesce::{
     produce_markup_from_atoms, mark_content_as_deleted_or_inserted, 
     reset_coalesce_revision_id, coalesce_adjacent_runs_with_identical_formatting,
-    CoalesceResult, pt_status, PT_STATUS_NS
+    coalesce_document, CoalesceResult, pt_status, PT_STATUS_NS
 };
 pub use settings::WmlComparerSettings;
 pub use types::{
