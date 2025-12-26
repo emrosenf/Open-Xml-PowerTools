@@ -316,18 +316,32 @@ fn has_textbox(doc: &XmlDocument, node: NodeId) -> bool {
 
 pub fn find_paragraphs(doc: &XmlDocument, start: NodeId) -> Vec<NodeId> {
     let mut paragraphs = Vec::new();
-    
-    for node in doc.descendants(start) {
-        if let Some(data) = doc.get(node) {
-            if let Some(name) = data.name() {
-                if name.namespace.as_deref() == Some(W::NS) && name.local_name == "p" {
-                    paragraphs.push(node);
+    find_paragraphs_recursive(doc, start, &mut paragraphs, false);
+    paragraphs
+}
+
+fn find_paragraphs_recursive(doc: &XmlDocument, node: NodeId, paragraphs: &mut Vec<NodeId>, in_textbox: bool) {
+    if let Some(data) = doc.get(node) {
+        if let Some(name) = data.name() {
+            let ns = name.namespace.as_deref();
+            let local = name.local_name.as_str();
+            
+            if ns == Some(W::NS) && local == "txbxContent" {
+                for child in doc.children(node) {
+                    find_paragraphs_recursive(doc, child, paragraphs, true);
                 }
+                return;
+            }
+            
+            if ns == Some(W::NS) && local == "p" && !in_textbox {
+                paragraphs.push(node);
             }
         }
     }
     
-    paragraphs
+    for child in doc.children(node) {
+        find_paragraphs_recursive(doc, child, paragraphs, in_textbox);
+    }
 }
 
 pub fn extract_all_text(doc: &XmlDocument, body: NodeId) -> String {
@@ -342,6 +356,68 @@ pub fn extract_all_text(doc: &XmlDocument, body: NodeId) -> String {
     }
     
     texts.join("\n").trim().to_string()
+}
+
+pub fn find_footnotes_root(doc: &XmlDocument) -> Option<NodeId> {
+    let root = doc.root()?;
+    
+    for child in doc.descendants(root) {
+        if let Some(data) = doc.get(child) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(W::NS) && name.local_name == "footnotes" {
+                    return Some(child);
+                }
+            }
+        }
+    }
+    
+    None
+}
+
+pub fn find_endnotes_root(doc: &XmlDocument) -> Option<NodeId> {
+    let root = doc.root()?;
+    
+    for child in doc.descendants(root) {
+        if let Some(data) = doc.get(child) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(W::NS) && name.local_name == "endnotes" {
+                    return Some(child);
+                }
+            }
+        }
+    }
+    
+    None
+}
+
+pub fn find_note_paragraphs(doc: &XmlDocument, root: NodeId) -> Vec<NodeId> {
+    let mut paragraphs = Vec::new();
+    
+    for node in doc.descendants(root) {
+        if let Some(data) = doc.get(node) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(W::NS) 
+                    && (name.local_name == "footnote" || name.local_name == "endnote") 
+                {
+                    if let Some(attrs) = data.attributes() {
+                        let id = attrs.iter()
+                            .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
+                            .map(|a| a.value.as_str());
+                        if let Some(id_val) = id {
+                            if id_val == "0" || id_val == "-1" {
+                                continue;
+                            }
+                        }
+                    }
+                    for para in find_paragraphs(doc, node) {
+                        paragraphs.push(para);
+                    }
+                }
+            }
+        }
+    }
+    
+    paragraphs
 }
 
 #[cfg(test)]
