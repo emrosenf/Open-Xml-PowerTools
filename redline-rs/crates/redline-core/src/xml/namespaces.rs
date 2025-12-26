@@ -115,6 +115,9 @@ pub mod W {
     pub fn rsidRPr() -> XName { XName::new(NS, "rsidRPr") }
     pub fn rsidSect() -> XName { XName::new(NS, "rsidSect") }
     pub fn rsidTr() -> XName { XName::new(NS, "rsidTr") }
+    pub fn bdo() -> XName { XName::new(NS, "bdo") }
+    pub fn customXml() -> XName { XName::new(NS, "customXml") }
+    pub fn dir() -> XName { XName::new(NS, "dir") }
 }
 
 pub mod S {
