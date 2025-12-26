@@ -16,6 +16,7 @@ mod revision_processor;
 mod settings;
 mod simplify;
 mod types;
+mod repro_test;
 
 pub use atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list};
 pub use block_hash::{
@@ -32,6 +33,7 @@ pub use lcs_algorithm::{flatten_to_atoms, lcs, CorrelatedSequence, CorrelationSt
 pub use document::{
     extract_all_text, extract_paragraph_text,
     find_document_body, find_paragraphs,
+    find_footnotes_root, find_endnotes_root, find_note_by_id, find_note_paragraphs,
     WmlDocument,
 };
 pub use revision::{

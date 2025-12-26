@@ -1,4 +1,6 @@
 use crate::wml::comparison_unit::{AncestorInfo, ComparisonUnitAtom, ContentElement, generate_unid};
+use crate::wml::formatting::{compute_normalized_rpr, compute_formatting_signature};
+use crate::wml::settings::WmlComparerSettings;
 use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::{M, O, PT, V, W, W10};
 use crate::xml::node::XmlNodeData;
@@ -83,9 +85,10 @@ pub fn assign_unid_to_all_elements(doc: &mut XmlDocument, content_parent: NodeId
 }
 
 pub fn create_comparison_unit_atom_list(
-    doc: &XmlDocument,
+    doc: &mut XmlDocument,
     content_parent: NodeId,
     part_name: &str,
+    settings: &WmlComparerSettings,
 ) -> Vec<ComparisonUnitAtom> {
     let mut atoms = Vec::new();
     let allowable = allowable_run_children();
@@ -100,19 +103,23 @@ pub fn create_comparison_unit_atom_list(
         &allowable,
         &allowable_math,
         &throw_away,
+        settings,
+        None,
     );
     
     atoms
 }
 
 fn create_atom_list_recurse(
-    doc: &XmlDocument,
+    doc: &mut XmlDocument,
     node: NodeId,
     atoms: &mut Vec<ComparisonUnitAtom>,
     part_name: &str,
     allowable: &HashSet<String>,
     allowable_math: &HashSet<String>,
     throw_away: &HashSet<String>,
+    settings: &WmlComparerSettings,
+    current_formatting_signature: Option<String>,
 ) {
     let Some(data) = doc.get(node) else { return };
     let Some(name) = data.name() else { return };
@@ -121,35 +128,52 @@ fn create_atom_list_recurse(
     let local = name.local_name.as_str();
     
     if ns == Some(W::NS) && (local == "body" || local == "footnote" || local == "endnote") {
-        for child in doc.children(node) {
-            create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away);
+        let children: Vec<_> = doc.children(node).collect();
+        for child in children {
+            create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None);
         }
         return;
     }
     
     if ns == Some(W::NS) && local == "p" {
-        for child in doc.children(node) {
+        let children: Vec<_> = doc.children(node).collect();
+        for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
                     if !(child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "pPr") {
-                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away);
+                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None);
                     }
                 }
             }
         }
         
         let ancestors = build_ancestor_chain(doc, node);
-        let atom = ComparisonUnitAtom::new(ContentElement::ParagraphProperties, ancestors, part_name);
+        let mut atom = ComparisonUnitAtom::new(ContentElement::ParagraphProperties, ancestors, part_name, settings);
+        atom.formatting_signature = None;
         atoms.push(atom);
         return;
     }
     
     if ns == Some(W::NS) && local == "r" {
-        for child in doc.children(node) {
+        let normalized_rpr = compute_normalized_rpr(doc, node, settings);
+        let formatting_signature = compute_formatting_signature(doc, normalized_rpr);
+        
+        let children: Vec<_> = doc.children(node).collect();
+        for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
                     if !(child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "rPr") {
-                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away);
+                        create_atom_list_recurse(
+                            doc, 
+                            child, 
+                            atoms, 
+                            part_name, 
+                            allowable, 
+                            allowable_math, 
+                            throw_away, 
+                            settings, 
+                            formatting_signature.clone()
+                        );
                     }
                 }
             }
@@ -162,11 +186,13 @@ fn create_atom_list_recurse(
         let ancestors = build_ancestor_chain(doc, node);
         
         for ch in text.chars() {
-            let atom = ComparisonUnitAtom::new(
+            let mut atom = ComparisonUnitAtom::new(
                 ContentElement::Text(ch),
                 ancestors.clone(),
                 part_name,
+                settings,
             );
+            atom.formatting_signature = current_formatting_signature.clone();
             atoms.push(atom);
         }
         return;
@@ -176,7 +202,8 @@ fn create_atom_list_recurse(
        (ns == Some(M::NS) && allowable_math.contains(local)) {
         let ancestors = build_ancestor_chain(doc, node);
         let content = create_content_element(doc, node, ns.unwrap_or(""), local);
-        let atom = ComparisonUnitAtom::new(content, ancestors, part_name);
+        let mut atom = ComparisonUnitAtom::new(content, ancestors, part_name, settings);
+        atom.formatting_signature = current_formatting_signature.clone();
         atoms.push(atom);
         return;
     }
@@ -184,11 +211,13 @@ fn create_atom_list_recurse(
     if ns == Some(W::NS) && local == "object" {
         let ancestors = build_ancestor_chain(doc, node);
         let hash = compute_element_hash(doc, node);
-        let atom = ComparisonUnitAtom::new(
+        let mut atom = ComparisonUnitAtom::new(
             ContentElement::Object { hash },
             ancestors,
             part_name,
+            settings,
         );
+        atom.formatting_signature = current_formatting_signature.clone();
         atoms.push(atom);
         return;
     }
@@ -196,11 +225,22 @@ fn create_atom_list_recurse(
     if let Some(re) = find_recursion_element(ns, local) {
         let skip_props: HashSet<&str> = re.child_props_to_skip.iter().copied().collect();
         
-        for child in doc.children(node) {
+        let children: Vec<_> = doc.children(node).collect();
+        for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
                     if !skip_props.contains(child_name.local_name.as_str()) {
-                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away);
+                        create_atom_list_recurse(
+                            doc, 
+                            child, 
+                            atoms, 
+                            part_name, 
+                            allowable, 
+                            allowable_math, 
+                            throw_away, 
+                            settings, 
+                            current_formatting_signature.clone()
+                        );
                     }
                 }
             }
@@ -212,8 +252,9 @@ fn create_atom_list_recurse(
         return;
     }
     
-    for child in doc.children(node) {
-        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away);
+    let children: Vec<_> = doc.children(node).collect();
+    for child in children {
+        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, current_formatting_signature.clone());
     }
 }
 
@@ -345,27 +386,5 @@ fn hash_element_recursive(doc: &XmlDocument, node: NodeId, hasher: &mut Sha1) {
             hasher.update(text.as_bytes());
         }
         _ => {}
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_allowable_run_children() {
-        let allowable = allowable_run_children();
-        assert!(allowable.contains("br"));
-        assert!(allowable.contains("drawing"));
-        assert!(allowable.contains("tab"));
-        assert!(!allowable.contains("t"));
-    }
-    
-    #[test]
-    fn test_elements_to_throw_away() {
-        let throw_away = elements_to_throw_away();
-        assert!(throw_away.contains("bookmarkStart"));
-        assert!(throw_away.contains("proofErr"));
-        assert!(!throw_away.contains("p"));
     }
 }

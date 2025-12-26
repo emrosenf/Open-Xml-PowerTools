@@ -37,6 +37,10 @@ impl XmlDocument {
         id
     }
 
+    pub fn new_node(&mut self, data: XmlNodeData) -> NodeId {
+        self.arena.new_node(data)
+    }
+
     pub fn add_child(&mut self, parent: NodeId, data: XmlNodeData) -> NodeId {
         let child = self.arena.new_node(data);
         parent.append(child, &mut self.arena);
@@ -98,6 +102,18 @@ impl XmlDocument {
     /// Detach a node from its current parent (but keep its children)
     pub fn detach(&mut self, node: NodeId) {
         node.detach(&mut self.arena);
+    }
+
+    /// Insert an existing node before a sibling (detaching it from any previous parent)
+    pub fn insert_before(&mut self, sibling: NodeId, node: NodeId) {
+        node.detach(&mut self.arena);
+        sibling.insert_before(node, &mut self.arena);
+    }
+
+    /// Insert an existing node after a sibling (detaching it from any previous parent)
+    pub fn insert_after(&mut self, sibling: NodeId, node: NodeId) {
+        node.detach(&mut self.arena);
+        sibling.insert_after(node, &mut self.arena);
     }
 
     /// Append a child node to a parent (detaching it from any previous parent)

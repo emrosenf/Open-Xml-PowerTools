@@ -210,25 +210,88 @@ impl RevisionCounts {
     }
 }
 
+/// Count revisions by grouping adjacent revision elements with the same type and attributes
+/// This matches the C# GetRevisions algorithm which uses GroupAdjacent
 pub fn count_revisions(doc: &XmlDocument, start: NodeId) -> RevisionCounts {
     let mut counts = RevisionCounts::default();
     
-    for node_id in doc.descendants(start) {
-        if let Some(data) = doc.get(node_id) {
-            if let Some(name) = data.name() {
-                if name.namespace.as_deref() == Some(W::NS) {
-                    match name.local_name.as_str() {
-                        "ins" => counts.insertions += 1,
-                        "del" => counts.deletions += 1,
-                        "rPrChange" | "pPrChange" => counts.format_changes += 1,
-                        _ => {}
-                    }
+    // First pass: collect all paragraphs and their revision children
+    // The C# groups by correlation status + revision attributes (author, date)
+    // For simplicity, we group adjacent revision elements of the same type with same author/date
+    
+    count_revisions_in_subtree(doc, start, &mut counts, None);
+    
+    counts
+}
+
+/// Get a grouping key for a revision element (type + author + date, excluding id)
+fn get_revision_key(doc: &XmlDocument, node: NodeId) -> Option<String> {
+    let data = doc.get(node)?;
+    let name = data.name()?;
+    
+    if name.namespace.as_deref() != Some(W::NS) {
+        return None;
+    }
+    
+    let rev_type = match name.local_name.as_str() {
+        "ins" => "ins",
+        "del" => "del",
+        "rPrChange" => "rPrChange",
+        "pPrChange" => "pPrChange",
+        _ => return None,
+    };
+    
+    // Build key from type + author + date (but NOT id)
+    let mut key = rev_type.to_string();
+    if let Some(attrs) = data.attributes() {
+        for attr in attrs {
+            if attr.name.namespace.as_deref() == Some(W::NS) {
+                match attr.name.local_name.as_str() {
+                    "author" => key.push_str(&format!("|author={}", attr.value)),
+                    "date" => key.push_str(&format!("|date={}", attr.value)),
+                    _ => {}
                 }
             }
         }
     }
+    Some(key)
+}
+
+/// Recursively count revisions, grouping adjacent siblings with same key
+fn count_revisions_in_subtree(
+    doc: &XmlDocument,
+    node: NodeId,
+    counts: &mut RevisionCounts,
+    _parent_key: Option<&str>,
+) {
+    let children: Vec<_> = doc.children(node).collect();
+    let mut last_key: Option<String> = None;
     
-    counts
+    for child in children {
+        if let Some(key) = get_revision_key(doc, child) {
+            // Only count if this is a new revision group (different key from last)
+            let is_new_group = last_key.as_ref() != Some(&key);
+            
+            if is_new_group {
+                // Count this as a new revision
+                if key.starts_with("ins") {
+                    counts.insertions += 1;
+                } else if key.starts_with("del") {
+                    counts.deletions += 1;
+                } else if key.starts_with("rPrChange") || key.starts_with("pPrChange") {
+                    counts.format_changes += 1;
+                }
+            }
+            
+            last_key = Some(key);
+            
+            // Don't recurse into revision elements - their content is part of the revision
+        } else {
+            // Not a revision element - reset the grouping and recurse
+            last_key = None;
+            count_revisions_in_subtree(doc, child, counts, None);
+        }
+    }
 }
 
 #[cfg(test)]

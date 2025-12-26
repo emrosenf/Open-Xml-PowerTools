@@ -4,12 +4,38 @@ use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::{MC, M, W};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
+use std::io::Write;
 
 pub struct WmlDocument {
     package: OoxmlPackage,
 }
 
 impl WmlDocument {
+    /// Create a minimal WML document package from main XML content (useful for testing)
+    pub fn from_main_xml(main_xml: &[u8]) -> Result<Self> {
+        let mut buffer = std::io::Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buffer);
+            
+            // Add [Content_Types].xml
+            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default())?;
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#)?;
+
+            // Add word/document.xml
+            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())?;
+            zip.write_all(main_xml)?;
+            
+            zip.finish()?;
+        }
+        
+        Self::from_bytes(&buffer.into_inner())
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let package = OoxmlPackage::open(bytes)?;
         Ok(Self { package })
@@ -50,6 +76,40 @@ impl WmlDocument {
             Some(_) => Ok(Some(self.package.get_xml_part("word/styles.xml")?)),
             None => Ok(None),
         }
+    }
+
+    pub fn revisions(&self) -> crate::wml::revision::RevisionCounts {
+        use crate::wml::revision::{count_revisions, RevisionCounts};
+        let mut total_counts = RevisionCounts::default();
+
+        if let Ok(doc) = self.main_document() {
+            if let Some(root) = doc.root() {
+                let counts = count_revisions(&doc, root);
+                total_counts.insertions += counts.insertions;
+                total_counts.deletions += counts.deletions;
+                total_counts.format_changes += counts.format_changes;
+            }
+        }
+
+        if let Ok(Some(doc)) = self.footnotes() {
+            if let Some(root) = doc.root() {
+                let counts = count_revisions(&doc, root);
+                total_counts.insertions += counts.insertions;
+                total_counts.deletions += counts.deletions;
+                total_counts.format_changes += counts.format_changes;
+            }
+        }
+
+        if let Ok(Some(doc)) = self.endnotes() {
+            if let Some(root) = doc.root() {
+                let counts = count_revisions(&doc, root);
+                total_counts.insertions += counts.insertions;
+                total_counts.deletions += counts.deletions;
+                total_counts.format_changes += counts.format_changes;
+            }
+        }
+
+        total_counts
     }
 }
 
@@ -422,6 +482,30 @@ pub fn find_note_paragraphs(doc: &XmlDocument, root: NodeId) -> Vec<NodeId> {
     }
     
     paragraphs
+}
+
+pub fn find_note_by_id(doc: &XmlDocument, root: NodeId, id: &str) -> Option<NodeId> {
+    for node in doc.descendants(root) {
+        if let Some(data) = doc.get(node) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(W::NS) 
+                    && (name.local_name == "footnote" || name.local_name == "endnote") 
+                {
+                    if let Some(attrs) = data.attributes() {
+                        let node_id = attrs.iter()
+                            .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
+                            .map(|a| a.value.as_str());
+                        if let Some(id_val) = node_id {
+                            if id_val == id {
+                                return Some(node);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]

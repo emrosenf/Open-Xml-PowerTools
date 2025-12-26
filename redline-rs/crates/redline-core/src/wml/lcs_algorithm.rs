@@ -12,7 +12,7 @@
 
 use super::comparison_unit::{
     ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom, ComparisonUnitGroupType,
-    generate_unid,
+    ContentElement, generate_unid,
 };
 use super::settings::WmlComparerSettings;
 
@@ -456,16 +456,44 @@ fn find_common_at_beginning_and_end(
         break;
     }
 
-    // Check if only paragraph mark
-    let is_only_paragraph_mark = if count_common_at_end == 1 {
+    // Check if only paragraph mark (C# lines 4672-4726)
+    let mut is_only_paragraph_mark = false;
+    
+    // C# lines 4673-4694: countCommonAtEnd == 1 case
+    if count_common_at_end == 1 {
         let first_common_idx1 = units1.len() - count_common_at_end;
-        units1[first_common_idx1]
-            .as_word()
-            .map(|w| w.is_paragraph_mark())
-            .unwrap_or(false)
-    } else {
-        false
-    };
+        if let Some(word) = units1[first_common_idx1].as_word() {
+            if word.atoms.len() == 1 {
+                if let Some(atom) = word.atoms.first() {
+                    if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+                        is_only_paragraph_mark = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    // C# lines 4696-4726: countCommonAtEnd == 2 case
+    if count_common_at_end == 2 {
+        let first_common_idx1 = units1.len() - count_common_at_end;
+        let second_common_idx1 = units1.len() - 1;
+        
+        if let (Some(first_word), Some(second_word)) = (
+            units1[first_common_idx1].as_word(),
+            units1[second_common_idx1].as_word(),
+        ) {
+            if first_word.atoms.len() == 1 && second_word.atoms.len() == 1 {
+                if let (Some(_first_atom), Some(second_atom)) = (
+                    first_word.atoms.first(),
+                    second_word.atoms.first(),
+                ) {
+                    if matches!(second_atom.content_element, ContentElement::ParagraphProperties) {
+                        is_only_paragraph_mark = true;
+                    }
+                }
+            }
+        }
+    }
 
     // Apply detail threshold (unless it's just a paragraph mark)
     if !is_only_paragraph_mark && count_common_at_end > 0 {
@@ -475,38 +503,129 @@ fn find_common_at_beginning_and_end(
         }
     }
 
-    if count_common_at_end > 0 {
-        let mut result = Vec::new();
-
-        let prefix_len1 = units1.len() - count_common_at_end;
-        let prefix_len2 = units2.len() - count_common_at_end;
-
-        // Handle prefix (different content)
-        if prefix_len1 > 0 && prefix_len2 == 0 {
-            result.push(CorrelatedSequence::deleted(
-                units1[..prefix_len1].to_vec(),
-            ));
-        } else if prefix_len1 == 0 && prefix_len2 > 0 {
-            result.push(CorrelatedSequence::inserted(
-                units2[..prefix_len2].to_vec(),
-            ));
-        } else if prefix_len1 > 0 && prefix_len2 > 0 {
-            result.push(CorrelatedSequence::unknown(
-                units1[..prefix_len1].to_vec(),
-                units2[..prefix_len2].to_vec(),
-            ));
-        }
-
-        // Add Equal sequence for common suffix
-        result.push(CorrelatedSequence::equal(
-            units1[prefix_len1..].to_vec(),
-            units2[prefix_len2..].to_vec(),
-        ));
-
-        return Some(result);
+    // C# line 4734: If only paragraph mark, don't use it as common end
+    if is_only_paragraph_mark {
+        count_common_at_end = 0;
     }
 
-    None
+    // C# line 4737-4738: If no common at end, return None
+    if count_common_at_end == 0 {
+        return None;
+    }
+
+    // C# lines 4740-4868: Handle "remaining in paragraph" logic
+    // If countCommonAtEnd != 0, and if it contains a paragraph mark, then if there are
+    // comparison units in the same paragraph before the common at end (in either version)
+    // then we want to put all of those comparison units into a single unknown, where they
+    // must be resolved against each other.
+
+    let mut remaining_in_left_paragraph = 0usize;
+    let mut remaining_in_right_paragraph = 0usize;
+
+    // C# lines 4748-4753: Get common end sequence
+    let common_end_start = units1.len() - count_common_at_end;
+    let common_end_seq: Vec<_> = units1[common_end_start..].to_vec();
+
+    // C# lines 4755-4795: Check if first of common end is a Word and contains paragraph marks
+    if let Some(first_of_common) = common_end_seq.first() {
+        if first_of_common.as_word().is_some() {
+            // Check if any unit in common end seq has a paragraph mark (pPr)
+            let has_paragraph_mark = common_end_seq.iter().any(|cu| {
+                if let Some(word) = cu.as_word() {
+                    if let Some(first_atom) = word.atoms.first() {
+                        return matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                    }
+                }
+                false
+            });
+
+            if has_paragraph_mark {
+                // C# lines 4767-4780: Calculate remainingInLeftParagraph
+                // Count units before common end that are in the same paragraph (no pPr)
+                remaining_in_left_paragraph = units1[..common_end_start]
+                    .iter()
+                    .rev()
+                    .take_while(|cu| {
+                        if let Some(word) = cu.as_word() {
+                            if let Some(first_atom) = word.atoms.first() {
+                                // Continue while NOT a paragraph mark
+                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                            }
+                            // No atoms means continue
+                            return true;
+                        }
+                        // Not a word, stop
+                        false
+                    })
+                    .count();
+
+                // C# lines 4781-4794: Calculate remainingInRightParagraph
+                let common_end_start2 = units2.len() - count_common_at_end;
+                remaining_in_right_paragraph = units2[..common_end_start2]
+                    .iter()
+                    .rev()
+                    .take_while(|cu| {
+                        if let Some(word) = cu.as_word() {
+                            if let Some(first_atom) = word.atoms.first() {
+                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                            }
+                            return true;
+                        }
+                        false
+                    })
+                    .count();
+            }
+        }
+    }
+
+    // C# lines 4798-4867: Build new sequence with proper splits
+    let mut new_sequence = Vec::new();
+
+    // C# lines 4800-4801: Calculate boundaries
+    let before_common_paragraph_left = units1.len() - remaining_in_left_paragraph - count_common_at_end;
+    let before_common_paragraph_right = units2.len() - remaining_in_right_paragraph - count_common_at_end;
+
+    // C# lines 4803-4830: Handle "before common paragraph" segment
+    if before_common_paragraph_left != 0 && before_common_paragraph_right == 0 {
+        new_sequence.push(CorrelatedSequence::deleted(
+            units1[..before_common_paragraph_left].to_vec(),
+        ));
+    } else if before_common_paragraph_left == 0 && before_common_paragraph_right != 0 {
+        new_sequence.push(CorrelatedSequence::inserted(
+            units2[..before_common_paragraph_right].to_vec(),
+        ));
+    } else if before_common_paragraph_left != 0 && before_common_paragraph_right != 0 {
+        new_sequence.push(CorrelatedSequence::unknown(
+            units1[..before_common_paragraph_left].to_vec(),
+            units2[..before_common_paragraph_right].to_vec(),
+        ));
+    }
+    // else both == 0: nothing to do
+
+    // C# lines 4832-4859: Handle "remaining in paragraph" segment
+    if remaining_in_left_paragraph != 0 && remaining_in_right_paragraph == 0 {
+        new_sequence.push(CorrelatedSequence::deleted(
+            units1[before_common_paragraph_left..before_common_paragraph_left + remaining_in_left_paragraph].to_vec(),
+        ));
+    } else if remaining_in_left_paragraph == 0 && remaining_in_right_paragraph != 0 {
+        new_sequence.push(CorrelatedSequence::inserted(
+            units2[before_common_paragraph_right..before_common_paragraph_right + remaining_in_right_paragraph].to_vec(),
+        ));
+    } else if remaining_in_left_paragraph != 0 && remaining_in_right_paragraph != 0 {
+        new_sequence.push(CorrelatedSequence::unknown(
+            units1[before_common_paragraph_left..before_common_paragraph_left + remaining_in_left_paragraph].to_vec(),
+            units2[before_common_paragraph_right..before_common_paragraph_right + remaining_in_right_paragraph].to_vec(),
+        ));
+    }
+    // else both == 0: nothing to do
+
+    // C# lines 4861-4865: Add Equal sequence for common end
+    new_sequence.push(CorrelatedSequence::equal(
+        units1[units1.len() - count_common_at_end..].to_vec(),
+        units2[units2.len() - count_common_at_end..].to_vec(),
+    ));
+
+    Some(new_sequence)
 }
 
 /// Full LCS algorithm with edge case handling
@@ -616,6 +735,48 @@ fn do_lcs_algorithm(
     if best_length == 1 && best_i2 >= 0 {
         if let Some(word) = units2[best_i2 as usize].as_word() {
             if word.text() == " " {
+                best_i1 = -1;
+                best_i2 = -1;
+                best_length = 0;
+            }
+        }
+    }
+
+    // C# lines 6295-6330: Don't match only word break characters
+    if best_length > 0 && best_length <= 3 && best_i1 >= 0 {
+        let common_seq: Vec<_> = units1[best_i1 as usize..best_i1 as usize + best_length].to_vec();
+        // Check if all are ComparisonUnitWord
+        let all_are_words = common_seq.iter().all(|cs| cs.as_word().is_some());
+        if all_are_words {
+            // Check if any word has content other than word split chars
+            let has_content_other_than_split = common_seq.iter().any(|cs| {
+                if let Some(word) = cs.as_word() {
+                    // Check if any atom is not text
+                    let has_non_text = word.atoms.iter().any(|atom| {
+                        !matches!(atom.content_element, ContentElement::Text(_))
+                    });
+                    if has_non_text {
+                        return true;
+                    }
+                    // Check if text is not just word separator
+                    let has_non_separator = word.atoms.iter().any(|atom| {
+                        if let ContentElement::Text(c) = atom.content_element {
+                            // Chinese/Japanese/Korean characters (CJK)
+                            let is_cjk = (c as u32) >= 0x4e00 && (c as u32) <= 0x9fff;
+                            if is_cjk {
+                                return false; // CJK chars are word separators
+                            }
+                            // Check common word separators
+                            !settings.is_word_separator(c)
+                        } else {
+                            true // Non-text atoms count as content
+                        }
+                    });
+                    return has_non_separator;
+                }
+                true
+            });
+            if !has_content_other_than_split {
                 best_i1 = -1;
                 best_i2 = -1;
                 best_length = 0;
@@ -1065,12 +1226,18 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
     for seq in correlated {
         match seq.status {
             CorrelationStatus::Equal => {
-                // For Equal status, get atoms from units1 (both sides are equivalent)
-                if let Some(units) = &seq.units1 {
-                    for unit in units {
-                        for atom in unit.descendant_atoms() {
-                            let mut cloned = atom.clone();
+                // For Equal status, get atoms from units1 (original) and units2 (modified)
+                // In C#, it uses units2 as the basis but preserves link to units1
+                if let (Some(units1), Some(units2)) = (&seq.units1, &seq.units2) {
+                    for (u1, u2) in units1.iter().zip(units2.iter()) {
+                        let atoms1 = u1.descendant_atoms();
+                        let atoms2 = u2.descendant_atoms();
+                        
+                        for (a1, a2) in atoms1.iter().zip(atoms2.iter()) {
+                            let mut cloned = (*a2).clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Equal;
+                            cloned.comparison_unit_atom_before = Some(Box::new((*a1).clone()));
+                            cloned.ancestor_elements_before = Some(a1.ancestor_elements.clone());
                             result.push(cloned);
                         }
                     }
@@ -1276,9 +1443,10 @@ mod tests {
     };
 
     fn make_word(text: &str) -> ComparisonUnitWord {
+        let settings = WmlComparerSettings::default();
         let atoms: Vec<_> = text
             .chars()
-            .map(|c| ComparisonUnitAtom::new(ContentElement::Text(c), vec![], "main"))
+            .map(|c| ComparisonUnitAtom::new(ContentElement::Text(c), vec![], "main", &settings))
             .collect();
         ComparisonUnitWord::new(atoms)
     }

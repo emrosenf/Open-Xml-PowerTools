@@ -210,27 +210,46 @@ impl ComparisonUnitAtom {
         content_element: ContentElement,
         ancestor_elements: Vec<AncestorInfo>,
         part_name: &str,
+        settings: &crate::wml::settings::WmlComparerSettings,
     ) -> Self {
         let hash_string = content_element.hash_string();
         let sha1_hash = compute_sha1(&hash_string);
+
+        // Find revision tracking element from ancestors (C# lines 8282-8292)
+        let mut correlation_status = ComparisonCorrelationStatus::Equal;
+        let mut rev_track_element = None;
+        
+        for ancestor in ancestor_elements.iter().rev() {
+            if ancestor.local_name == "ins" {
+                correlation_status = ComparisonCorrelationStatus::Inserted;
+                rev_track_element = Some("ins".to_string());
+                break;
+            } else if ancestor.local_name == "del" {
+                correlation_status = ComparisonCorrelationStatus::Deleted;
+                rev_track_element = Some("del".to_string());
+                break;
+            }
+        }
 
         Self {
             content_element,
             sha1_hash,
             ancestor_elements,
-            correlation_status: ComparisonCorrelationStatus::Nil,
-            formatting_signature: None,
+            correlation_status,
+            formatting_signature: None, // Will be populated below if needed
             normalized_rpr: None,
             part_name: part_name.to_string(),
             content_element_before: None,
             comparison_unit_atom_before: None,
             ancestor_elements_before: None,
             part_before: None,
-            rev_track_element: None,
+            rev_track_element,
             formatting_change_rpr_before: None,
             ancestor_unids: Vec::new(),
             formatting_change_rpr_before_signature: None,
         }
+        // TODO: Compute NormalizedRPr and FormattingSignature using formatting module
+        // This requires access to the XmlDocument to find the rPr element
     }
 
     /// Get the Unid of the nth ancestor (0 = closest to body)
@@ -533,11 +552,8 @@ impl ComparisonUnitGroup {
         group_type: ComparisonUnitGroupType,
         level: usize,
     ) -> Self {
-        let sha1_hash = if let Some(first_word) = words.first() {
-            first_word.sha1_hash.clone()
-        } else {
-            compute_sha1("")
-        };
+        let hash_input: String = words.iter().map(|w| w.sha1_hash.as_str()).collect();
+        let sha1_hash = compute_sha1(&hash_input);
 
         Self {
             group_type,
@@ -556,11 +572,8 @@ impl ComparisonUnitGroup {
         group_type: ComparisonUnitGroupType,
         level: usize,
     ) -> Self {
-        let sha1_hash = if let Some(first_group) = groups.first() {
-            first_group.sha1_hash.clone()
-        } else {
-            compute_sha1("")
-        };
+        let hash_input: String = groups.iter().map(|g| g.sha1_hash.as_str()).collect();
+        let sha1_hash = compute_sha1(&hash_input);
 
         Self {
             group_type,
@@ -1194,10 +1207,12 @@ mod tests {
     fn test_atom_creation() {
         use crate::xml::arena::XmlDocument;
         use crate::xml::node::XmlNodeData;
+        use crate::wml::settings::WmlComparerSettings;
         
         let mut doc = XmlDocument::new();
         let node = doc.add_root(XmlNodeData::Text("test".to_string()));
         
+        let settings = WmlComparerSettings::default();
         let atom = ComparisonUnitAtom::new(
             ContentElement::Text('H'),
             vec![AncestorInfo {
@@ -1207,6 +1222,7 @@ mod tests {
                 attributes: vec![],
             }],
             "main",
+            &settings,
         );
 
         assert!(!atom.sha1_hash.is_empty());
@@ -1215,9 +1231,11 @@ mod tests {
 
     #[test]
     fn test_word_creation() {
+        use crate::wml::settings::WmlComparerSettings;
+        let settings = WmlComparerSettings::default();
         let atoms = vec![
-            ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main"),
-            ComparisonUnitAtom::new(ContentElement::Text('i'), vec![], "main"),
+            ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings),
+            ComparisonUnitAtom::new(ContentElement::Text('i'), vec![], "main", &settings),
         ];
 
         let word = ComparisonUnitWord::new(atoms);
@@ -1227,8 +1245,10 @@ mod tests {
 
     #[test]
     fn test_group_creation() {
+        use crate::wml::settings::WmlComparerSettings;
+        let settings = WmlComparerSettings::default();
         let atoms = vec![
-            ComparisonUnitAtom::new(ContentElement::Text('A'), vec![], "main"),
+            ComparisonUnitAtom::new(ContentElement::Text('A'), vec![], "main", &settings),
         ];
         let word = ComparisonUnitWord::new(atoms);
         let group = ComparisonUnitGroup::from_words(
