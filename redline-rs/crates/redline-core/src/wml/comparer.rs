@@ -103,11 +103,16 @@ impl WmlComparer {
 
         let correlated = lcs(units1, units2, &settings);
         let flattened_atoms = flatten_to_atoms(&correlated);
-        let result = coalesce(&flattened_atoms, &settings);
+        let coalesce_result = coalesce(&flattened_atoms, &settings);
         
         let (insertions, deletions) = count_revision_atoms(&flattened_atoms);
 
-        let result_bytes = source2.to_bytes()?;
+        // Create output document by copying source2 and replacing main document part
+        // with the coalesced comparison result (C# lines 266-275)
+        let source2_bytes = source2.to_bytes()?;
+        let mut result_doc = WmlDocument::from_bytes(&source2_bytes)?;
+        result_doc.package_mut().put_xml_part("word/document.xml", &coalesce_result.document)?;
+        let result_bytes = result_doc.to_bytes()?;
 
         Ok(WmlComparisonResult {
             document: result_bytes,
