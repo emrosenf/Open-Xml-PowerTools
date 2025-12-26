@@ -614,11 +614,11 @@ fn wrap_run_in_revision(
     let rev_name = if is_deletion { W::del() } else { W::ins() };
     let rev_id = get_next_revision_id();
     
-    let date_str = settings.date_time_for_revisions.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let author = settings.author_for_revisions.as_deref().unwrap_or("Unknown");
     let rev_attrs = vec![
-        XAttribute::new(W::author(), &settings.author_for_revisions),
+        XAttribute::new(W::author(), author),
         XAttribute::new(W::id(), &rev_id.to_string()),
-        XAttribute::new(W::date(), &date_str),
+        XAttribute::new(W::date(), &settings.date_time_for_revisions),
     ];
     
     let rev_elem = doc.add_before(run_id, XmlNodeData::element_with_attrs(rev_name, rev_attrs));
@@ -649,12 +649,12 @@ fn transform_ppr_for_revisions(
         let rpr_id = get_or_create_rpr(doc, ppr_id);
         let rev_name = if status_val == "Deleted" { W::del() } else { W::ins() };
         let rev_id = get_next_revision_id();
-        let date_str = settings.date_time_for_revisions.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+        let author = settings.author_for_revisions.as_deref().unwrap_or("Unknown");
         
         let rev_attrs = vec![
-            XAttribute::new(W::author(), &settings.author_for_revisions),
+            XAttribute::new(W::author(), author),
             XAttribute::new(W::id(), &rev_id.to_string()),
-            XAttribute::new(W::date(), &date_str),
+            XAttribute::new(W::date(), &settings.date_time_for_revisions),
         ];
         
         doc.add_child(rpr_id, XmlNodeData::element_with_attrs(rev_name, rev_attrs));

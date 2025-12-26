@@ -7,7 +7,9 @@ mod document;
 mod lcs_algorithm;
 mod revision;
 mod revision_accepter;
+mod revision_processor;
 mod settings;
+mod simplify;
 mod types;
 
 pub use atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list};
@@ -35,12 +37,24 @@ pub use revision::{
     reset_revision_id_counter, RevisionSettings,
 };
 pub use revision_accepter::accept_revisions;
+pub use revision_processor::{
+    accept_revisions as accept_revisions_processor,
+    reject_revisions,
+    BlockContentInfo,
+};
 pub use coalesce::{
     produce_markup_from_atoms, mark_content_as_deleted_or_inserted, 
     reset_coalesce_revision_id, coalesce_adjacent_runs_with_identical_formatting,
     coalesce_document, CoalesceResult, pt_status, PT_STATUS_NS
 };
-pub use settings::WmlComparerSettings;
+pub use settings::{
+    WmlComparerSettings, WmlComparerConsolidateSettings, WmlRevisedDocumentInfo,
+    WmlComparerRevisionType, WmlComparerRevision,
+};
+pub use simplify::{
+    SimplifyMarkupSettings, simplify_markup, merge_adjacent_superfluous_runs,
+    transform_element_to_single_character_runs,
+};
 pub use types::{
     RevisionCounts, WmlChange, WmlChangeDetails, WmlChangeListItem, WmlChangeListOptions,
     WmlChangeType, WmlComparisonResult, WmlWordCount,

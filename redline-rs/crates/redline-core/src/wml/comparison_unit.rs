@@ -179,6 +179,20 @@ pub struct ComparisonUnitAtom {
     pub normalized_rpr: Option<String>,
     /// Part name this atom belongs to (main, footnotes, endnotes)
     pub part_name: String,
+    
+    // Fields for "before" document tracking (Equal/FormatChanged atoms)
+    /// Content element from "before" document
+    pub content_element_before: Option<ContentElement>,
+    /// Reference to comparison unit atom from "before" document
+    pub comparison_unit_atom_before: Option<Box<ComparisonUnitAtom>>,
+    /// Ancestor elements from "before" document
+    pub ancestor_elements_before: Option<Vec<AncestorInfo>>,
+    /// Part name from "before" document
+    pub part_before: Option<String>,
+    /// Revision tracking element (w:ins or w:del)
+    pub rev_track_element: Option<String>,
+    /// Formatting change rPr from "before" document
+    pub formatting_change_rpr_before: Option<String>,
 }
 
 impl ComparisonUnitAtom {
@@ -199,6 +213,12 @@ impl ComparisonUnitAtom {
             formatting_signature: None,
             normalized_rpr: None,
             part_name: part_name.to_string(),
+            content_element_before: None,
+            comparison_unit_atom_before: None,
+            ancestor_elements_before: None,
+            part_before: None,
+            rev_track_element: None,
+            formatting_change_rpr_before: None,
         }
     }
 
@@ -257,11 +277,95 @@ impl ComparisonUnitAtom {
             .find(|a| a.local_name == "tbl")
             .map(|a| a.unid.as_str())
     }
+
+    /// Format as string with indentation
+    /// Corresponds to C# ToString(int indent) (WmlComparer.cs:8496)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        const XNAME_PAD: usize = 16;
+        let indent_str = " ".repeat(indent);
+        let hash_short = if self.sha1_hash.len() >= 8 {
+            &self.sha1_hash[..8]
+        } else {
+            &self.sha1_hash
+        };
+        
+        let correlation_status_str = if self.correlation_status != ComparisonCorrelationStatus::Nil {
+            format!("[{:8}] ", format!("{}", self.correlation_status))
+        } else {
+            String::new()
+        };
+
+        let element_name = match &self.content_element {
+            ContentElement::Text(_) => "t",
+            ContentElement::ParagraphProperties => "pPr",
+            ContentElement::RunProperties => "rPr",
+            ContentElement::Break => "br",
+            ContentElement::Tab => "tab",
+            ContentElement::Drawing { .. } => "drawing",
+            ContentElement::Picture { .. } => "pict",
+            ContentElement::Math { .. } => "oMath",
+            ContentElement::FootnoteReference { .. } => "footnoteRef",
+            ContentElement::EndnoteReference { .. } => "endnoteRef",
+            ContentElement::TextboxStart => "txbxStart",
+            ContentElement::TextboxEnd => "txbxEnd",
+            ContentElement::FieldBegin => "fldBegin",
+            ContentElement::FieldSeparator => "fldSep",
+            ContentElement::FieldEnd => "fldEnd",
+            ContentElement::SimpleField { .. } => "fldSimple",
+            ContentElement::Symbol { .. } => "sym",
+            ContentElement::Object { .. } => "object",
+            ContentElement::Unknown { name } => name.as_str(),
+        };
+
+        let padded_name = format!("{} ", element_name).chars()
+            .chain(std::iter::repeat('-'))
+            .take(XNAME_PAD)
+            .collect::<String>();
+
+        let display_val = self.content_element.display_value();
+        let value_part = if !display_val.is_empty() {
+            format!(": {} ", display_val)
+        } else {
+            ":   ".to_string()
+        };
+
+        let ancestors_str = self.ancestor_elements
+            .iter()
+            .map(|a| {
+                let unid_short = if a.unid.len() >= 8 {
+                    &a.unid[..8]
+                } else {
+                    &a.unid
+                };
+                format!("{}[{}]/", a.local_name, unid_short)
+            })
+            .collect::<String>()
+            .trim_end_matches('/')
+            .to_string();
+
+        format!(
+            "{}Atom {} {} {}SHA1:{} Ancestors:{}",
+            indent_str, padded_name, value_part, correlation_status_str, hash_short, ancestors_str
+        )
+    }
 }
 
 impl Hashable for ComparisonUnitAtom {
     fn hash(&self) -> &str {
         &self.sha1_hash
+    }
+}
+
+impl ComparisonUnitAtom {
+    /// Format a list of comparison unit atoms as a string
+    /// Corresponds to C# ComparisonUnitAtomListToString (WmlComparer.cs:8582)
+    pub fn comparison_unit_atom_list_to_string(atoms: &[ComparisonUnitAtom], indent: usize) -> String {
+        let mut result = String::new();
+        for (i, atom) in atoms.iter().enumerate() {
+            let indent_str = " ".repeat(indent);
+            result.push_str(&format!("{}[{:06}] {}\n", indent_str, i + 1, atom.to_string_with_indent(0)));
+        }
+        result
     }
 }
 
@@ -277,10 +381,56 @@ pub struct ComparisonUnitWord {
     pub correlation_status: ComparisonCorrelationStatus,
 }
 
+// Static sets for relationship tracking - corresponds to C# FrozenSets (lines 8224-8268)
+// In Rust, we use lazy_static or const arrays. For O(1) lookup, we'd use HashSet at runtime.
+// For now, keeping as const arrays since the C# uses FrozenSet for immutable lookup.
+const ELEMENTS_WITH_RELATIONSHIP_IDS: &[&str] = &[
+    "blip",          // A.blip
+    "hlinkClick",    // A.hlinkClick
+    "relIds",        // A.relIds, DGM.relIds
+    "chart",         // C.chart
+    "externalData",  // C.externalData
+    "userShapes",    // C.userShapes
+    "OLEObject",     // O.OLEObject
+    "fill",          // VML.fill
+    "imagedata",     // VML.imagedata
+    "stroke",        // VML.stroke
+    "altChunk",      // W.altChunk
+    "attachedTemplate", // W.attachedTemplate
+    "control",       // W.control
+    "dataSource",    // W.dataSource
+    "embedBold",     // W.embedBold
+    "embedBoldItalic", // W.embedBoldItalic
+    "embedItalic",   // W.embedItalic
+    "embedRegular",  // W.embedRegular
+    "footerReference", // W.footerReference
+    "headerReference", // W.headerReference
+    "headerSource",  // W.headerSource
+    "hyperlink",     // W.hyperlink
+    "printerSettings", // W.printerSettings
+    "recipientData", // W.recipientData
+    "saveThroughXslt", // W.saveThroughXslt
+    "sourceFileName", // W.sourceFileName
+    "src",           // W.src
+    "subDoc",        // W.subDoc
+    "toolbarData",   // WNE.toolbarData
+];
+
+const RELATIONSHIP_ATTRIBUTE_NAMES: &[&str] = &[
+    "embed",  // R.embed
+    "link",   // R.link
+    "id",     // R.id
+    "cs",     // R.cs
+    "dm",     // R.dm
+    "lo",     // R.lo
+    "qs",     // R.qs
+    "href",   // R.href
+    "pict",   // R.pict
+];
+
 impl ComparisonUnitWord {
     /// Create a new word from a list of atoms
     pub fn new(atoms: Vec<ComparisonUnitAtom>) -> Self {
-        // Concatenate all atom hashes and hash the result
         let hash_input: String = atoms.iter().map(|a| a.sha1_hash.as_str()).collect();
         let sha1_hash = compute_sha1(&hash_input);
 
@@ -311,6 +461,24 @@ impl ComparisonUnitWord {
                 self.atoms[0].content_element,
                 ContentElement::ParagraphProperties
             )
+    }
+
+    /// Format as string with indentation
+    /// Corresponds to C# ToString(int indent) (WmlComparer.cs:8270)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        let indent_str = " ".repeat(indent);
+        let hash_short = if self.sha1_hash.len() >= 8 {
+            &self.sha1_hash[..8]
+        } else {
+            &self.sha1_hash
+        };
+        
+        let mut result = format!("{}Word SHA1:{}\n", indent_str, hash_short);
+        for atom in &self.atoms {
+            result.push_str(&atom.to_string_with_indent(indent + 2));
+            result.push('\n');
+        }
+        result
     }
 }
 
@@ -440,6 +608,51 @@ impl ComparisonUnitGroup {
                 groups.first().and_then(|g| g.first_atom())
             }
         }
+    }
+
+    /// Get the first comparison unit atom from a comparison unit (group or word)
+    /// Corresponds to C# GetFirstComparisonUnitAtomOfGroup (WmlComparer.cs:8642)
+    pub fn get_first_comparison_unit_atom_of_group(unit: &ComparisonUnit) -> Option<ComparisonUnitAtom> {
+        match unit {
+            ComparisonUnit::Word(w) => w.atoms.first().cloned(),
+            ComparisonUnit::Group(g) => {
+                match &g.contents {
+                    ComparisonUnitGroupContents::Words(words) => {
+                        words.first().and_then(|w| w.atoms.first().cloned())
+                    }
+                    ComparisonUnitGroupContents::Groups(groups) => {
+                        groups.first().and_then(|g| {
+                            Self::get_first_comparison_unit_atom_of_group(&ComparisonUnit::Group(g.clone()))
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    /// Format as string with indentation
+    /// Corresponds to C# ToString(int indent) (WmlComparer.cs:8661)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        let indent_str = " ".repeat(indent);
+        let mut result = format!(
+            "{}Group Type: {} SHA1:{}\n",
+            indent_str, self.group_type, self.sha1_hash
+        );
+        
+        match &self.contents {
+            ComparisonUnitGroupContents::Words(words) => {
+                for word in words {
+                    result.push_str(&word.to_string_with_indent(indent + 2));
+                }
+            }
+            ComparisonUnitGroupContents::Groups(groups) => {
+                for group in groups {
+                    result.push_str(&group.to_string_with_indent(indent + 2));
+                }
+            }
+        }
+        
+        result
     }
 }
 
@@ -802,12 +1015,84 @@ impl ComparisonUnit {
         }
     }
 
-    /// Get all descendant atoms
+    /// Get all descendants (including groups and words)
+    /// Corresponds to C# Descendants() (WmlComparer.cs:8163)
+    pub fn descendants(&self) -> Vec<ComparisonUnit> {
+        let mut result = Vec::new();
+        self.descendants_internal(&mut result);
+        result
+    }
+
+    fn descendants_internal(&self, result: &mut Vec<ComparisonUnit>) {
+        match self {
+            ComparisonUnit::Word(_) => {
+            }
+            ComparisonUnit::Group(g) => {
+                match &g.contents {
+                    ComparisonUnitGroupContents::Words(words) => {
+                        for word in words {
+                            result.push(ComparisonUnit::Word(word.clone()));
+                        }
+                    }
+                    ComparisonUnitGroupContents::Groups(groups) => {
+                        for group in groups {
+                            result.push(ComparisonUnit::Group(group.clone()));
+                            ComparisonUnit::Group(group.clone()).descendants_internal(result);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Get all descendant content atoms
+    /// Corresponds to C# DescendantContentAtoms() (WmlComparer.cs:8170)
+    pub fn descendant_content_atoms(&self) -> Vec<ComparisonUnitAtom> {
+        self.descendants()
+            .into_iter()
+            .filter_map(|cu| match cu {
+                ComparisonUnit::Word(w) => Some(w.atoms),
+                _ => None,
+            })
+            .flatten()
+            .collect()
+    }
+
+    /// Get all descendant atoms (as references)
     pub fn descendant_atoms(&self) -> Vec<&ComparisonUnitAtom> {
         match self {
             ComparisonUnit::Word(w) => w.atoms.iter().collect(),
             ComparisonUnit::Group(g) => g.descendant_atoms(),
         }
+    }
+
+    /// Get count of descendant content atoms
+    /// Corresponds to C# DescendantContentAtomsCount (WmlComparer.cs:8177)
+    pub fn descendant_content_atoms_count(&self) -> usize {
+        match self {
+            ComparisonUnit::Word(w) => w.atoms.len(),
+            ComparisonUnit::Group(g) => g.descendant_atom_count(),
+        }
+    }
+
+    /// Format as string with indentation
+    /// Corresponds to C# ToString(int indent) (WmlComparer.cs:8198)
+    pub fn to_string_with_indent(&self, indent: usize) -> String {
+        match self {
+            ComparisonUnit::Word(w) => w.to_string_with_indent(indent),
+            ComparisonUnit::Group(g) => g.to_string_with_indent(indent),
+        }
+    }
+
+    /// Format a list of comparison units as a string
+    /// Corresponds to C# ComparisonUnitListToString (WmlComparer.cs:8200)
+    pub fn comparison_unit_list_to_string(units: &[ComparisonUnit]) -> String {
+        let mut result = String::from("Dump Comparision Unit List To String\n");
+        for unit in units {
+            result.push_str(&unit.to_string_with_indent(2));
+            result.push('\n');
+        }
+        result
     }
 
     /// Check if this is a group

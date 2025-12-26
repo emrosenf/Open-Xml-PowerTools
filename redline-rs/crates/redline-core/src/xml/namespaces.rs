@@ -49,6 +49,9 @@ pub mod W {
     pub fn tc() -> XName { XName::new(NS, "tc") }
     pub fn bookmarkStart() -> XName { XName::new(NS, "bookmarkStart") }
     pub fn bookmarkEnd() -> XName { XName::new(NS, "bookmarkEnd") }
+    pub fn bookmark_start() -> XName { XName::new(NS, "bookmarkStart") }
+    pub fn bookmark_end() -> XName { XName::new(NS, "bookmarkEnd") }
+    pub fn name() -> XName { XName::new(NS, "name") }
     pub fn sectPr() -> XName { XName::new(NS, "sectPr") }
     pub fn sdt() -> XName { XName::new(NS, "sdt") }
     pub fn sdtContent() -> XName { XName::new(NS, "sdtContent") }
@@ -94,6 +97,27 @@ pub mod W {
     pub fn proofErr() -> XName { XName::new(NS, "proofErr") }
     pub fn permEnd() -> XName { XName::new(NS, "permEnd") }
     pub fn permStart() -> XName { XName::new(NS, "permStart") }
+    pub fn perm_end() -> XName { XName::new(NS, "permEnd") }
+    pub fn perm_start() -> XName { XName::new(NS, "permStart") }
+    pub fn proof_err() -> XName { XName::new(NS, "proofErr") }
+    pub fn no_proof() -> XName { XName::new(NS, "noProof") }
+    pub fn soft_hyphen() -> XName { XName::new(NS, "softHyphen") }
+    pub fn last_rendered_page_break() -> XName { XName::new(NS, "lastRenderedPageBreak") }
+    pub fn comment_range_start() -> XName { XName::new(NS, "commentRangeStart") }
+    pub fn comment_range_end() -> XName { XName::new(NS, "commentRangeEnd") }
+    pub fn comment_reference() -> XName { XName::new(NS, "commentReference") }
+    pub fn annotation_ref() -> XName { XName::new(NS, "annotationRef") }
+    pub fn endnote_reference() -> XName { XName::new(NS, "endnoteReference") }
+    pub fn footnote_reference() -> XName { XName::new(NS, "footnoteReference") }
+    pub fn fld_data() -> XName { XName::new(NS, "fldData") }
+    pub fn fld_char() -> XName { XName::new(NS, "fldChar") }
+    pub fn instr_text() -> XName { XName::new(NS, "instrText") }
+    pub fn fld_simple() -> XName { XName::new(NS, "fldSimple") }
+    pub fn r_style() -> XName { XName::new(NS, "rStyle") }
+    pub fn web_hidden() -> XName { XName::new(NS, "webHidden") }
+    pub fn r_pr() -> XName { XName::new(NS, "rPr") }
+    pub fn p_pr() -> XName { XName::new(NS, "pPr") }
+    pub fn w() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w") }
     pub fn footnoteRef() -> XName { XName::new(NS, "footnoteRef") }
     pub fn endnoteRef() -> XName { XName::new(NS, "endnoteRef") }
     pub fn separator() -> XName { XName::new(NS, "separator") }
@@ -102,12 +126,15 @@ pub mod W {
     pub fn sdtEndPr() -> XName { XName::new(NS, "sdtEndPr") }
     pub fn smartTag() -> XName { XName::new(NS, "smartTag") }
     pub fn smartTagPr() -> XName { XName::new(NS, "smartTagPr") }
+    pub fn smart_tag() -> XName { XName::new(NS, "smartTag") }
+    pub fn sdt_content() -> XName { XName::new(NS, "sdtContent") }
     pub fn ruby() -> XName { XName::new(NS, "ruby") }
     pub fn rubyPr() -> XName { XName::new(NS, "rubyPr") }
     pub fn gridSpan() -> XName { XName::new(NS, "gridSpan") }
     pub fn val() -> XName { XName::new(NS, "val") }
     // rsid attributes (revision session IDs) - stripped during hashing
     pub fn rsid() -> XName { XName::new(NS, "rsid") }
+    pub fn rsids() -> XName { XName::new(NS, "rsids") }
     pub fn rsidDel() -> XName { XName::new(NS, "rsidDel") }
     pub fn rsidP() -> XName { XName::new(NS, "rsidP") }
     pub fn rsidR() -> XName { XName::new(NS, "rsidR") }
@@ -115,6 +142,13 @@ pub mod W {
     pub fn rsidRPr() -> XName { XName::new(NS, "rsidRPr") }
     pub fn rsidSect() -> XName { XName::new(NS, "rsidSect") }
     pub fn rsidTr() -> XName { XName::new(NS, "rsidTr") }
+    pub fn rsid_del() -> XName { XName::new(NS, "rsidDel") }
+    pub fn rsid_p() -> XName { XName::new(NS, "rsidP") }
+    pub fn rsid_r() -> XName { XName::new(NS, "rsidR") }
+    pub fn rsid_r_default() -> XName { XName::new(NS, "rsidRDefault") }
+    pub fn rsid_r_pr() -> XName { XName::new(NS, "rsidRPr") }
+    pub fn rsid_sect() -> XName { XName::new(NS, "rsidSect") }
+    pub fn rsid_tr() -> XName { XName::new(NS, "rsidTr") }
     pub fn bdo() -> XName { XName::new(NS, "bdo") }
     pub fn customXml() -> XName { XName::new(NS, "customXml") }
     pub fn dir() -> XName { XName::new(NS, "dir") }
@@ -163,6 +197,7 @@ pub mod R {
     pub const NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     
     pub fn id() -> XName { XName::new(NS, "id") }
+    pub fn r() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "r") }
 }
 
 pub mod MC {
@@ -172,10 +207,15 @@ pub mod MC {
     pub fn AlternateContent() -> XName { XName::new(NS, "AlternateContent") }
     pub fn Choice() -> XName { XName::new(NS, "Choice") }
     pub fn Fallback() -> XName { XName::new(NS, "Fallback") }
+    pub fn mc() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "mc") }
+    pub fn ignorable() -> XName { XName::new(NS, "Ignorable") }
 }
 
 pub mod CP {
+    use super::XName;
     pub const NS: &str = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties";
+    
+    pub fn revision() -> XName { XName::new(NS, "revision") }
 }
 
 pub mod DC {
@@ -196,6 +236,7 @@ pub mod M {
     pub const NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/math";
     
     pub fn f() -> XName { XName::new(NS, "f") }
+    pub fn m() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "m") }
     pub fn fPr() -> XName { XName::new(NS, "fPr") }
     pub fn ctrlPr() -> XName { XName::new(NS, "ctrlPr") }
     pub fn oMath() -> XName { XName::new(NS, "oMath") }
@@ -228,11 +269,14 @@ pub mod WP {
     
     pub fn extent() -> XName { XName::new(NS, "extent") }
     pub fn docPr() -> XName { XName::new(NS, "docPr") }
+    pub fn wp() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wp") }
 }
 
 pub mod W14 {
     use super::XName;
     pub const NS: &str = "http://schemas.microsoft.com/office/word/2010/wordml";
+    
+    pub fn w14() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w14") }
     
     pub fn paraId() -> XName { XName::new(NS, "paraId") }
     pub fn textId() -> XName { XName::new(NS, "textId") }
@@ -245,6 +289,7 @@ pub mod O {
     pub fn relid() -> XName { XName::new(NS, "relid") }
     pub fn lock() -> XName { XName::new(NS, "lock") }
     pub fn extrusion() -> XName { XName::new(NS, "extrusion") }
+    pub fn o() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "o") }
 }
 
 pub mod W10 {
@@ -252,6 +297,95 @@ pub mod W10 {
     pub const NS: &str = "urn:schemas-microsoft-com:office:word";
     
     pub fn wrap() -> XName { XName::new(NS, "wrap") }
+    pub fn w10() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w10") }
+}
+
+pub mod EP {
+    use super::XName;
+    pub const NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties";
+    
+    pub fn total_time() -> XName { XName::new(NS, "TotalTime") }
+}
+
+pub mod DCTERMS {
+    use super::XName;
+    pub const NS: &str = "http://purl.org/dc/terms/";
+    
+    pub fn created() -> XName { XName::new(NS, "created") }
+    pub fn modified() -> XName { XName::new(NS, "modified") }
+}
+
+pub mod VML {
+    use super::XName;
+    pub const NS: &str = "urn:schemas-microsoft-com:vml";
+    
+    pub fn vml() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "v") }
+    pub fn shape() -> XName { XName::new(NS, "shape") }
+    pub fn shapetype() -> XName { XName::new(NS, "shapetype") }
+}
+
+pub mod W15 {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2012/wordml";
+    
+    pub fn w15() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w15") }
+}
+
+pub mod W16SE {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2015/wordml/symex";
+    
+    pub fn w16se() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w16se") }
+}
+
+pub mod WNE {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2006/wordml";
+    
+    pub fn wne() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wne") }
+}
+
+pub mod WP14 {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing";
+    
+    pub fn wp14() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wp14") }
+}
+
+pub mod WPC {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas";
+    
+    pub fn wpc() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wpc") }
+}
+
+pub mod WPG {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2010/wordprocessingGroup";
+    
+    pub fn wpg() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wpg") }
+}
+
+pub mod WPI {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2010/wordprocessingInk";
+    
+    pub fn wpi() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wpi") }
+}
+
+pub mod WPS {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape";
+    
+    pub fn wps() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "wps") }
+}
+
+pub mod XSI {
+    use super::XName;
+    pub const NS: &str = "http://www.w3.org/2001/XMLSchema-instance";
+    
+    pub fn schema_location() -> XName { XName::new(NS, "schemaLocation") }
+    pub fn no_namespace_schema_location() -> XName { XName::new(NS, "noNamespaceSchemaLocation") }
 }
 
 #[cfg(test)]
