@@ -16,6 +16,13 @@
 4. **100% of specified tests pass** after porting
 5. **Attribute order preservation** in all XML operations (critical for hash stability)
 
+**Porting Methodology (CRITICAL):**
+- **Translation-first**: Port C# code line-by-line, preserving structure and naming
+- **No behavior inference**: Never guess what C# does from test outputs
+- **Tests validate, not guide**: Run tests only after implementation is complete
+- **When stuck**: Read C# source, not test expectations
+- **Naming convention**: Rust functions should mirror C# method names (e.g., `CreateComparisonUnitAtomList` → `create_comparison_unit_atom_list`)
+
 ---
 
 ## 1. Source Code Inventory
@@ -466,12 +473,23 @@ features = ["console"]
 
 **Goal:** Build the foundational modules that all comparers depend on.
 
+**Status:** ✅ COMPLETE (as of 2025-12-26)
+
+The following modules are implemented and working:
+- `xml/xml_document.rs` - Arena-based mutable XML tree with indextree
+- `xml/namespaces.rs` - All OOXML namespace constants (W, S, P, A, R, MC, etc.)
+- `package/` - OOXML package read/write via zip crate
+- `hash/` - SHA1/SHA256 matching C# output
+- `util/lcs.rs` - Generic LCS algorithm
+- `wml/document.rs` - WmlDocument wrapper with part access
+- `error.rs` - Error types with thiserror
+
 **Deliverables:**
-- [ ] Core crate builds
-- [ ] XML DOM with mutation support
-- [ ] OOXML package layer
-- [ ] All utility functions
-- [ ] Stable hash outputs verified against C#
+- [x] Core crate builds
+- [x] XML DOM with mutation support
+- [x] OOXML package layer
+- [x] All utility functions
+- [x] Stable hash outputs verified against C#
 
 #### 1.1 Error Handling (`error.rs`) — 1 day
 ```rust
