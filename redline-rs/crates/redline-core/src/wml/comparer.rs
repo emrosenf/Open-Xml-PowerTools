@@ -27,6 +27,7 @@ use super::document::{
 use super::lcs_algorithm::{self, lcs, flatten_to_atoms, CorrelatedSequence};
 use super::preprocess::{preprocess_markup, PreProcessSettings};
 use super::revision::{count_revisions, reset_revision_id_counter};
+use super::revision_accepter::accept_revisions;
 use super::settings::WmlComparerSettings;
 use super::types::WmlComparisonResult;
 use crate::error::Result;
@@ -83,6 +84,15 @@ impl WmlComparer {
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
         preprocess_markup(&mut doc2, body2, &preprocess_settings)
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
+
+        // C# WmlComparer.cs:255-256 - Accept revisions before comparison
+        // This ensures documents with tracked changes are compared by their final content
+        let mut doc1 = accept_revisions(&doc1, body1);
+        let mut doc2 = accept_revisions(&doc2, body2);
+        
+        // Find body nodes in the accepted documents
+        let body1 = find_document_body(&doc1).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 1".to_string()))?;
+        let body2 = find_document_body(&doc2).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 2".to_string()))?;
 
         let atoms1 = create_comparison_unit_atom_list(&mut doc1, body1, "main", &settings);
         let atoms2 = create_comparison_unit_atom_list(&mut doc2, body2, "main", &settings);
