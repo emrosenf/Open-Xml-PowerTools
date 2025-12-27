@@ -456,43 +456,70 @@ fn reconcile_formatting_changes(atoms: &mut [ComparisonUnitAtom], settings: &Wml
     }
 }
 
+/// Port of C# GetRevisions grouping logic (WmlComparer.cs:3909-3926)
+///
+/// Uses GroupAdjacent to group atoms by a key that combines:
+/// 1. CorrelationStatus (as string: "Equal", "Inserted", "Deleted", etc.)
+/// 2. For non-Equal status, also includes RevTrackElement info (type, author, date - excluding id)
+///
+/// This means adjacent atoms with the same (status, author, date) count as ONE revision.
+/// The revision count = number of groups where key != "Equal".
+///
+/// Returns (insertions, deletions)
+/// Note: Format changes are counted separately from the final XML document (not from atoms)
 fn count_revisions_from_atoms(atoms: &[ComparisonUnitAtom]) -> (usize, usize) {
-    // C# GetRevisions uses GroupAdjacent to group atoms by:
-    // 1. CorrelationStatus (Equal, Inserted, Deleted)
-    // 2. For non-Equal status, also by RevTrackElement (serialized, minus id/Unid)
-    //
-    // This means all atoms within a contiguous deleted region count as ONE deletion,
-    // regardless of paragraph boundaries. Only count when status changes.
+    use crate::util::group_adjacent;
     
+    // C# GetRevisions key function (lines 3910-3921):
+    // - For Equal: key = "Equal"
+    // - For non-Equal: key = status.ToString() + serialized RevTrackElement (minus id/Unid)
+    //
+    // The RevTrackElement serialization in C# creates an XElement with:
+    // - The element name (w:ins or w:del)
+    // - Attributes except w:id and PtOpenXml.Unid
+    // - The xmlns:w namespace declaration
+    //
+    // Since our atoms don't store the full RevTrackElement, we use the rev_track_element
+    // field (which is "ins" or "del") combined with the correlation status.
+    // Since all revisions are generated with the same settings (author/date),
+    // adjacent atoms with the same status will naturally have the same author/date.
+    
+    // Key function for grouping - takes &&ComparisonUnitAtom since we're iterating over references
+    let key_fn = |atom: &&ComparisonUnitAtom| -> String {
+        match atom.correlation_status {
+            ComparisonCorrelationStatus::Equal => "Equal".to_string(),
+            ComparisonCorrelationStatus::Inserted => {
+                // C#: "Inserted<w:ins ... />" (serialized element)
+                // We use "Inserted|ins" since author/date are uniform
+                format!("Inserted|{}", atom.rev_track_element.as_deref().unwrap_or("ins"))
+            }
+            ComparisonCorrelationStatus::Deleted => {
+                format!("Deleted|{}", atom.rev_track_element.as_deref().unwrap_or("del"))
+            }
+            ComparisonCorrelationStatus::FormatChanged => "FormatChanged".to_string(),
+            status => status.to_string(),
+        }
+    };
+    
+    // Use group_adjacent to group atoms by key
+    let groups = group_adjacent(atoms.iter(), key_fn);
+    
+    // Count revisions: number of groups where key starts with "Inserted" or "Deleted"
+    // Note: FormatChanged is intentionally NOT counted here - format changes are
+    // detected from the final XML document by looking for w:rPrChange and w:pPrChange elements
     let mut insertions = 0;
     let mut deletions = 0;
-    let mut last_status = ComparisonCorrelationStatus::Equal;
-
-    for atom in atoms {
-        // Only count a new revision when status actually changes
-        if atom.correlation_status != last_status {
-            match atom.correlation_status {
-                ComparisonCorrelationStatus::Inserted => {
-                    insertions += 1;
-                }
-                ComparisonCorrelationStatus::Deleted => {
-                    deletions += 1;
-                }
-                ComparisonCorrelationStatus::FormatChanged => {
-                    // Format changes are counted separately from XML after coalesce
-                }
-                ComparisonCorrelationStatus::Equal
-                | ComparisonCorrelationStatus::Nil
-                | ComparisonCorrelationStatus::Normal
-                | ComparisonCorrelationStatus::Unknown
-                | ComparisonCorrelationStatus::Group => {
-                    // These don't contribute to revision counts
-                }
+    
+    for group in &groups {
+        if let Some(first) = group.first() {
+            match first.correlation_status {
+                ComparisonCorrelationStatus::Inserted => insertions += 1,
+                ComparisonCorrelationStatus::Deleted => deletions += 1,
+                _ => {}
             }
         }
-        last_status = atom.correlation_status;
     }
-
+    
     (insertions, deletions)
 }
 
@@ -880,6 +907,7 @@ fn compare_atoms_internal(
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, &settings);
     
     // Format changes are counted from XML as they're added during mark_content_as_deleted_or_inserted
+    // This matches C# GetFormattingRevisionList which scans the final XML for rPrChange/pPrChange
     let format_changes = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
     
     // Return flattened atoms for note reference collection
