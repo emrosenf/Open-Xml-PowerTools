@@ -131,6 +131,7 @@ pub mod W {
     pub fn ruby() -> XName { XName::new(NS, "ruby") }
     pub fn rubyPr() -> XName { XName::new(NS, "rubyPr") }
     pub fn gridSpan() -> XName { XName::new(NS, "gridSpan") }
+    pub fn vMerge() -> XName { XName::new(NS, "vMerge") }
     pub fn val() -> XName { XName::new(NS, "val") }
     // rsid attributes (revision session IDs) - stripped during hashing
     pub fn rsid() -> XName { XName::new(NS, "rsid") }
@@ -229,6 +230,7 @@ pub mod PT {
     pub fn Unid() -> XName { XName::new(NS, "Unid") }
     pub fn SHA1Hash() -> XName { XName::new(NS, "SHA1Hash") }
     pub fn CorrelatedSHA1Hash() -> XName { XName::new(NS, "CorrelatedSHA1Hash") }
+    pub fn StructureSHA1Hash() -> XName { XName::new(NS, "StructureSHA1Hash") }
 }
 
 pub mod M {

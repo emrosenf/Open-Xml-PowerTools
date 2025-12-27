@@ -2,7 +2,7 @@ use crate::wml::comparison_unit::{AncestorInfo, ComparisonUnitAtom, ContentEleme
 use crate::wml::formatting::{compute_normalized_rpr, compute_formatting_signature};
 use crate::wml::settings::WmlComparerSettings;
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{M, O, PT, V, W, W10};
+use crate::xml::namespaces::{M, MC, O, PT, V, W, W10};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
@@ -252,6 +252,58 @@ fn create_atom_list_recurse(
         return;
     }
     
+    // Handle mc:AlternateContent - only process one branch to avoid duplicates
+    // Word documents often contain both DrawingML (mc:Choice) and VML (mc:Fallback) 
+    // representations of the same content (like textboxes). We prefer Fallback for
+    // compatibility, matching C# WmlComparer FlattenAlternateContent behavior.
+    // See C# WmlComparer.cs:500-541
+    if ns == Some(MC::NS) && local == "AlternateContent" {
+        let children: Vec<_> = doc.children(node).collect();
+        
+        // First try mc:Fallback (VML representation - more compatible)
+        let fallback_node = children.iter().find(|&&child| {
+            doc.get(child)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(MC::NS) && n.local_name == "Fallback")
+                .unwrap_or(false)
+        }).copied();
+        
+        if let Some(fallback) = fallback_node {
+            let fallback_children: Vec<_> = doc.children(fallback).collect();
+            for fallback_child in fallback_children {
+                create_atom_list_recurse(
+                    doc, fallback_child, atoms, part_name, 
+                    allowable, allowable_math, throw_away, 
+                    settings, current_formatting_signature.clone()
+                );
+            }
+            return;
+        }
+        
+        // No Fallback found, try mc:Choice
+        let choice_node = children.iter().find(|&&child| {
+            doc.get(child)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(MC::NS) && n.local_name == "Choice")
+                .unwrap_or(false)
+        }).copied();
+        
+        if let Some(choice) = choice_node {
+            let choice_children: Vec<_> = doc.children(choice).collect();
+            for choice_child in choice_children {
+                create_atom_list_recurse(
+                    doc, choice_child, atoms, part_name, 
+                    allowable, allowable_math, throw_away, 
+                    settings, current_formatting_signature.clone()
+                );
+            }
+            return;
+        }
+        
+        // Neither found - skip this AlternateContent entirely
+        return;
+    }
+    
     let children: Vec<_> = doc.children(node).collect();
     for child in children {
         create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, current_formatting_signature.clone());
@@ -289,6 +341,7 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     local_name: local.to_string(),
                     unid,
                     attributes: attrs,
+                    has_merged_cells: false,  // Stub - not implemented yet
                 });
             }
         }

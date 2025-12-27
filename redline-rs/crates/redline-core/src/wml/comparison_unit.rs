@@ -80,6 +80,10 @@ pub struct AncestorInfo {
     pub unid: String,
     /// Attributes from the ancestor element (for reconstruction)
     pub attributes: Vec<crate::xml::xname::XAttribute>,
+    /// Whether this table cell has merged cell properties (vMerge or gridSpan)
+    /// Used by DoLcsAlgorithmForTable to detect merged cells
+    #[allow(dead_code)]
+    pub has_merged_cells: bool,
 }
 
 /// Content element types for atoms
@@ -618,6 +622,19 @@ impl ComparisonUnitGroup {
             }
             ComparisonUnitGroupContents::Groups(groups) => {
                 groups.iter().map(|g| g.descendant_atom_count()).sum()
+            }
+        }
+    }
+
+    /// Get contents as a vector of ComparisonUnit
+    /// Used for cell content flattening in P0-3b
+    pub fn contents_as_units(&self) -> Vec<ComparisonUnit> {
+        match &self.contents {
+            ComparisonUnitGroupContents::Words(words) => {
+                words.iter().map(|w| ComparisonUnit::Word(w.clone())).collect()
+            }
+            ComparisonUnitGroupContents::Groups(groups) => {
+                groups.iter().map(|g| ComparisonUnit::Group(g.clone())).collect()
             }
         }
     }
@@ -1220,6 +1237,7 @@ mod tests {
                 local_name: "p".to_string(),
                 unid: "abc123".to_string(),
                 attributes: vec![],
+                has_merged_cells: false,
             }],
             "main",
             &settings,
