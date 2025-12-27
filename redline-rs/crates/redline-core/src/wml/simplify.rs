@@ -123,6 +123,10 @@ fn simplify_markup_for_part(doc: &mut XmlDocument, root: NodeId, settings: &Simp
     if settings.remove_smart_tags {
         remove_smart_tags(doc, root);
     }
+    
+    if settings.remove_hyperlinks {
+        remove_hyperlinks(doc, root);
+    }
 }
 
 fn remove_rsid_transform(doc: &mut XmlDocument, root: NodeId) {
@@ -188,6 +192,36 @@ fn remove_smart_tags(doc: &mut XmlDocument, root: NodeId) {
             }
         }
         doc.remove(smart_tag);
+    }
+}
+
+/// Remove hyperlinks by unwrapping their content
+/// 
+/// Corresponds to C# MarkupSimplifier.cs line 370-372:
+/// ```csharp
+/// if (settings.RemoveHyperlinks && (element.Name == W.hyperlink))
+///     return element.Elements();
+/// ```
+fn remove_hyperlinks(doc: &mut XmlDocument, root: NodeId) {
+    let hyperlink_nodes: Vec<NodeId> = doc
+        .descendants(root)
+        .filter(|&node_id| {
+            doc.get(node_id)
+                .and_then(|data| data.name())
+                .map(|n| *n == W::hyperlink())
+                .unwrap_or(false)
+        })
+        .collect();
+    
+    for hyperlink in hyperlink_nodes {
+        let children: Vec<NodeId> = doc.children(hyperlink).collect();
+        
+        if let Some(parent) = doc.parent(hyperlink) {
+            for child in children {
+                doc.reparent(parent, child);
+            }
+        }
+        doc.remove(hyperlink);
     }
 }
 

@@ -25,7 +25,7 @@
 
 use crate::package::OoxmlPackage;
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{A, R, V, W};
+use crate::xml::namespaces::{A, R, V, W, WP14};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
@@ -295,6 +295,11 @@ fn compute_xml_structure_hash(doc: &XmlDocument, node: NodeId) -> String {
 }
 
 /// Recursively hash XML element structure.
+/// 
+/// Skips:
+/// - PT namespace attributes (Unid, SHA1Hash)
+/// - Relationship attributes (r:embed, r:id, r:link) which vary between saves
+/// - WP14 namespace attributes (anchorId, editId) which are edit-tracking IDs
 fn hash_xml_element_recursive(
     doc: &XmlDocument, 
     node: NodeId, 
@@ -308,10 +313,22 @@ fn hash_xml_element_recursive(
         XmlNodeData::Element { name, attributes } => {
             hasher.update(name.local_name.as_bytes());
             for attr in attributes {
-                if &attr.name != pt_unid && &attr.name != pt_sha1 {
-                    hasher.update(attr.name.local_name.as_bytes());
-                    hasher.update(attr.value.as_bytes());
+                // Skip PT namespace attributes
+                if &attr.name == pt_unid || &attr.name == pt_sha1 {
+                    continue;
                 }
+                // Skip relationship attributes (r:embed, r:id, r:link, etc.)
+                // These change between document saves even for identical images
+                if attr.name.namespace.as_deref() == Some(R::NS) {
+                    continue;
+                }
+                // Skip WP14 namespace attributes (anchorId, editId)
+                // These are edit-tracking IDs that change between saves
+                if attr.name.namespace.as_deref() == Some(WP14::NS) {
+                    continue;
+                }
+                hasher.update(attr.name.local_name.as_bytes());
+                hasher.update(attr.value.as_bytes());
             }
             for child in doc.children(node) {
                 hash_xml_element_recursive(doc, child, hasher, pt_unid, pt_sha1);
