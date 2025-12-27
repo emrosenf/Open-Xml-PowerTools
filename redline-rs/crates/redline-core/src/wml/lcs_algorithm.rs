@@ -805,45 +805,208 @@ fn do_lcs_algorithm(
         return handle_no_match_cases(units1, units2, settings);
     }
 
-    // Build result with prefix, match, and suffix
-    let best_i1 = best_i1 as usize;
-    let best_i2 = best_i2 as usize;
-    let mut result = Vec::new();
+    // Build result with paragraph-aware prefix, match, and suffix
+    // C# WmlComparer.cs lines 6927-7130
+    let current_i1 = best_i1 as usize;
+    let current_i2 = best_i2 as usize;
+    let current_longest_common_sequence_length = best_length;
+    let mut new_sequence = Vec::new();
 
-    // Prefix
-    if best_i1 > 0 && best_i2 == 0 {
-        result.push(CorrelatedSequence::deleted(units1[..best_i1].to_vec()));
-    } else if best_i1 == 0 && best_i2 > 0 {
-        result.push(CorrelatedSequence::inserted(units2[..best_i2].to_vec()));
-    } else if best_i1 > 0 && best_i2 > 0 {
-        result.push(CorrelatedSequence::unknown(
-            units1[..best_i1].to_vec(),
-            units2[..best_i2].to_vec(),
-        ));
+    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // C# lines 6927-6987: Calculate paragraph boundaries
+    // Here we have the longest common subsequence.
+    // But it may start in the middle of a paragraph.
+    // Therefore need to dispose of the content from the beginning of the longest common subsequence to the beginning of the paragraph.
+    // This should be in a separate unknown region.
+    // If currentLongestCommonSequenceLength != 0, and if it contains a paragraph mark, then if there are comparison units 
+    // in the same paragraph before the common (in either version) then we want to put all of those comparison units into 
+    // a single unknown, where they must be resolved against each other. We don't want those comparison units to go into 
+    // the middle unknown comparison unit.
+
+    let mut remaining_in_left_paragraph = 0usize;
+    let mut remaining_in_right_paragraph = 0usize;
+
+    if current_longest_common_sequence_length != 0 {
+        // C# lines 6940-6944: Get the common sequence
+        let common_seq: Vec<_> = units1[current_i1..current_i1 + current_longest_common_sequence_length].to_vec();
+        
+        // C# lines 6946-6955: Check if first of common seq is a Word and contains paragraph marks
+        if let Some(first_of_common) = common_seq.first() {
+            if first_of_common.as_word().is_some() {
+                // Are there any paragraph marks in the common seq?
+                let has_paragraph_mark = common_seq.iter().any(|cu| {
+                    if let Some(word) = cu.as_word() {
+                        if let Some(first_atom) = word.atoms.first() {
+                            return matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                        }
+                    }
+                    false
+                });
+
+                if has_paragraph_mark {
+                    // C# lines 6957-6970: Calculate remainingInLeftParagraph
+                    // Count units before LCS match that are in the same paragraph (no pPr)
+                    remaining_in_left_paragraph = units1[..current_i1]
+                        .iter()
+                        .rev()
+                        .take_while(|cu| {
+                            if let Some(word) = cu.as_word() {
+                                if let Some(first_atom) = word.atoms.first() {
+                                    // Continue while NOT a paragraph mark
+                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                                }
+                                // No atoms means continue
+                                return true;
+                            }
+                            // Not a word, stop
+                            false
+                        })
+                        .count();
+
+                    // C# lines 6971-6984: Calculate remainingInRightParagraph
+                    remaining_in_right_paragraph = units2[..current_i2]
+                        .iter()
+                        .rev()
+                        .take_while(|cu| {
+                            if let Some(word) = cu.as_word() {
+                                if let Some(first_atom) = word.atoms.first() {
+                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                                }
+                                return true;
+                            }
+                            false
+                        })
+                        .count();
+                }
+            }
+        }
     }
 
-    // Match
-    result.push(CorrelatedSequence::equal(
-        units1[best_i1..best_i1 + best_length].to_vec(),
-        units2[best_i2..best_i2 + best_length].to_vec(),
-    ));
+    // C# lines 6989-6991: Calculate boundaries
+    let count_before_current_paragraph_left = current_i1 - remaining_in_left_paragraph;
+    let count_before_current_paragraph_right = current_i2 - remaining_in_right_paragraph;
 
-    // Suffix
-    let end_i1 = best_i1 + best_length;
-    let end_i2 = best_i2 + best_length;
-
-    if end_i1 < units1.len() && end_i2 == units2.len() {
-        result.push(CorrelatedSequence::deleted(units1[end_i1..].to_vec()));
-    } else if end_i1 == units1.len() && end_i2 < units2.len() {
-        result.push(CorrelatedSequence::inserted(units2[end_i2..].to_vec()));
-    } else if end_i1 < units1.len() && end_i2 < units2.len() {
-        result.push(CorrelatedSequence::unknown(
-            units1[end_i1..].to_vec(),
-            units2[end_i2..].to_vec(),
+    // C# lines 6992-7028: Handle content BEFORE the current paragraph
+    // This is content that belongs to a previous paragraph
+    if count_before_current_paragraph_left > 0 && count_before_current_paragraph_right == 0 {
+        new_sequence.push(CorrelatedSequence::deleted(
+            units1[..count_before_current_paragraph_left].to_vec(),
+        ));
+    } else if count_before_current_paragraph_left == 0 && count_before_current_paragraph_right > 0 {
+        new_sequence.push(CorrelatedSequence::inserted(
+            units2[..count_before_current_paragraph_right].to_vec(),
+        ));
+    } else if count_before_current_paragraph_left > 0 && count_before_current_paragraph_right > 0 {
+        new_sequence.push(CorrelatedSequence::unknown(
+            units1[..count_before_current_paragraph_left].to_vec(),
+            units2[..count_before_current_paragraph_right].to_vec(),
         ));
     }
+    // else both == 0: nothing to do (C# 7025-7028)
 
-    result
+    // C# lines 7030-7069: Handle content WITHIN the current paragraph but before the LCS match
+    if remaining_in_left_paragraph > 0 && remaining_in_right_paragraph == 0 {
+        new_sequence.push(CorrelatedSequence::deleted(
+            units1[count_before_current_paragraph_left..count_before_current_paragraph_left + remaining_in_left_paragraph].to_vec(),
+        ));
+    } else if remaining_in_left_paragraph == 0 && remaining_in_right_paragraph > 0 {
+        new_sequence.push(CorrelatedSequence::inserted(
+            units2[count_before_current_paragraph_right..count_before_current_paragraph_right + remaining_in_right_paragraph].to_vec(),
+        ));
+    } else if remaining_in_left_paragraph > 0 && remaining_in_right_paragraph > 0 {
+        new_sequence.push(CorrelatedSequence::unknown(
+            units1[count_before_current_paragraph_left..count_before_current_paragraph_left + remaining_in_left_paragraph].to_vec(),
+            units2[count_before_current_paragraph_right..count_before_current_paragraph_right + remaining_in_right_paragraph].to_vec(),
+        ));
+    }
+    // else both == 0: nothing to do (C# 7066-7069)
+
+    // C# lines 7071-7081: Add the Equal sequence for the LCS match
+    let middle_equal = CorrelatedSequence::equal(
+        units1[current_i1..current_i1 + current_longest_common_sequence_length].to_vec(),
+        units2[current_i2..current_i2 + current_longest_common_sequence_length].to_vec(),
+    );
+    new_sequence.push(middle_equal.clone());
+
+    // C# lines 7084-7093: Calculate remaining content after LCS
+    let end_i1 = current_i1 + current_longest_common_sequence_length;
+    let end_i2 = current_i2 + current_longest_common_sequence_length;
+
+    let remaining1: Vec<_> = units1[end_i1..].to_vec();
+    let remaining2: Vec<_> = units2[end_i2..].to_vec();
+
+    // C# lines 7095-7122: Post-LCS paragraph extension
+    // Here is the point that we want to make a new unknown from this point to the end of the paragraph
+    // that contains the equal parts. This will never hurt anything, and will in many cases result in
+    // a better difference.
+    if let Some(last_unit) = middle_equal.units1.as_ref().and_then(|u| u.last()) {
+        if let Some(left_cuw) = last_unit.as_word() {
+            // Get the last content atom from the word
+            let last_atom = left_cuw.atoms.last();
+            
+            // If the middleEqual did not end with a paragraph mark (C# 7103)
+            let ends_with_para = last_atom
+                .map(|a| matches!(a.content_element, ContentElement::ParagraphProperties))
+                .unwrap_or(false);
+            
+            if !ends_with_para {
+                // C# lines 7105-7106: Find next paragraph marks in remaining content
+                let idx1 = find_index_of_next_para_mark(&remaining1);
+                let idx2 = find_index_of_next_para_mark(&remaining2);
+
+                // C# lines 7108-7112: Create Unknown for content up to next paragraph mark
+                if idx1 > 0 || idx2 > 0 {
+                    new_sequence.push(CorrelatedSequence::unknown(
+                        remaining1[..idx1].to_vec(),
+                        remaining2[..idx2].to_vec(),
+                    ));
+                }
+
+                // C# lines 7114-7118: Create Unknown for content after paragraph mark
+                if idx1 < remaining1.len() || idx2 < remaining2.len() {
+                    new_sequence.push(CorrelatedSequence::unknown(
+                        remaining1[idx1..].to_vec(),
+                        remaining2[idx2..].to_vec(),
+                    ));
+                }
+
+                return new_sequence;
+            }
+        }
+    }
+
+    // C# lines 7124-7128: Default case - create single Unknown for all remaining content
+    if !remaining1.is_empty() && remaining2.is_empty() {
+        new_sequence.push(CorrelatedSequence::deleted(remaining1));
+    } else if remaining1.is_empty() && !remaining2.is_empty() {
+        new_sequence.push(CorrelatedSequence::inserted(remaining2));
+    } else if !remaining1.is_empty() && !remaining2.is_empty() {
+        new_sequence.push(CorrelatedSequence::unknown(remaining1, remaining2));
+    }
+
+    new_sequence
+}
+
+/// Find index of next paragraph mark in comparison unit array
+///
+/// Matches C# FindIndexOfNextParaMark (WmlComparer.cs:7133-7143)
+///
+/// Returns the index of the first comparison unit that ends with a paragraph mark (w:pPr).
+/// If no paragraph mark is found, returns the length of the array (meaning all remaining content
+/// should be included).
+fn find_index_of_next_para_mark(units: &[ComparisonUnit]) -> usize {
+    for (i, unit) in units.iter().enumerate() {
+        if let Some(word) = unit.as_word() {
+            // Get the last atom from the word (C# uses DescendantContentAtoms().LastOrDefault())
+            if let Some(last_atom) = word.atoms.last() {
+                if matches!(last_atom.content_element, ContentElement::ParagraphProperties) {
+                    return i;
+                }
+            }
+        }
+    }
+    // No paragraph mark found, return length (include all remaining content)
+    units.len()
 }
 
 /// Handle cases where no LCS match was found
