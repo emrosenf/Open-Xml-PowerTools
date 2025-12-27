@@ -904,6 +904,36 @@ fn handle_no_match_cases(
         }
     }
 
+    // Handle matching cells - flatten cell contents
+    // C# WmlComparer.cs lines 6771-6824
+    if let (Some(first1), Some(first2)) = (units1.first(), units2.first()) {
+        if let (Some(group1), Some(group2)) = (first1.as_group(), first2.as_group()) {
+            if group1.group_type == ComparisonUnitGroupType::Cell
+                && group2.group_type == ComparisonUnitGroupType::Cell
+            {
+                let mut result = Vec::new();
+
+                let left_contents = group1.contents_as_units();
+                let right_contents = group2.contents_as_units();
+
+                result.push(CorrelatedSequence::unknown(left_contents, right_contents));
+
+                let remainder_left: Vec<_> = units1.iter().skip(1).cloned().collect();
+                let remainder_right: Vec<_> = units2.iter().skip(1).cloned().collect();
+
+                if !remainder_left.is_empty() && remainder_right.is_empty() {
+                    result.push(CorrelatedSequence::deleted(remainder_left));
+                } else if remainder_left.is_empty() && !remainder_right.is_empty() {
+                    result.push(CorrelatedSequence::inserted(remainder_right));
+                } else if !remainder_left.is_empty() && !remainder_right.is_empty() {
+                    result.push(CorrelatedSequence::unknown(remainder_left, remainder_right));
+                }
+
+                return result;
+            }
+        }
+    }
+
     // C# WmlComparer.cs lines 6827-6869: Word/row conflict resolution
     if let (Some(_), Some(right_group)) = (
         units1.first().and_then(|u| u.as_word()),
@@ -963,6 +993,52 @@ fn handle_no_match_cases(
             }
         }
     }
+
+    }
+
+    if let (Some(left_group), Some(_)) = (
+        units1.first().and_then(|u| u.as_group()),
+        units2.first().and_then(|u| u.as_word()),
+    ) {
+        if left_group.group_type == ComparisonUnitGroupType::Row {
+            return vec![
+                CorrelatedSequence::deleted(units1.to_vec()),
+                CorrelatedSequence::inserted(units2.to_vec()),
+            ];
+        }
+    }
+
+    // C# WmlComparer.cs lines 6871-6909: Paragraph mark priority logic
+    // This determines the order of Deleted/Inserted sequences based on whether
+    // each side ends with a paragraph mark (w:pPr).
+    if !units1.is_empty() && !units2.is_empty() {
+        // Get the last content atom from each side
+        // C# equivalent: unknown.ComparisonUnitArray1.Select(cu => cu.DescendantContentAtoms().Last()).LastOrDefault()
+        let last_atom_left = units1
+            .iter()
+            .filter_map(|cu| cu.descendant_atoms().last().cloned())
+            .last();
+        let last_atom_right = units2
+            .iter()
+            .filter_map(|cu| cu.descendant_atoms().last().cloned())
+            .last();
+
+        if let (Some(left), Some(right)) = (last_atom_left, last_atom_right) {
+            let left_is_ppr = matches!(left.content_element, ContentElement::ParagraphProperties);
+            let right_is_ppr = matches!(right.content_element, ContentElement::ParagraphProperties);
+
+            if left_is_ppr && !right_is_ppr {
+                // Left ends with pPr, right doesn't → Insert first, then Delete
+                return vec![
+                    CorrelatedSequence::inserted(units2.to_vec()),
+                    CorrelatedSequence::deleted(units1.to_vec()),
+                ];
+            } else if !left_is_ppr && right_is_ppr {
+                // Right ends with pPr, left doesn't → Delete first, then Insert
+                return vec![
+                    CorrelatedSequence::deleted(units1.to_vec()),
+                    CorrelatedSequence::inserted(units2.to_vec()),
+                ];
 
     // Default: mark everything as deleted and inserted
     vec![
