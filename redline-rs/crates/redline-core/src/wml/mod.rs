@@ -26,7 +26,7 @@ pub use block_hash::{
 pub use comparison_unit::{
     get_comparison_unit_list, AncestorInfo, ComparisonCorrelationStatus, ComparisonUnit,
     ComparisonUnitAtom, ComparisonUnitGroup, ComparisonUnitGroupContents, ComparisonUnitGroupType,
-    ComparisonUnitWord, ContentElement, WordSeparatorSettings, generate_unid,
+    ComparisonUnitWord, ContentElement, ContentType, WordSeparatorSettings, generate_unid,
 };
 pub use comparer::WmlComparer;
 pub use lcs_algorithm::{flatten_to_atoms, lcs, CorrelatedSequence, CorrelationStatus};

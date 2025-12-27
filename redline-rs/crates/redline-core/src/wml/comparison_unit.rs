@@ -9,11 +9,30 @@
 //!   - ComparisonUnitGroup - hierarchical grouping (Paragraph, Table, Row, Cell, Textbox)
 //!
 //! Key features:
-//! - Each unit has a SHA1 hash for comparison
+//! - Each unit has a SHA1 hash for comparison (identity_hash)
 //! - Atoms track ancestor elements with Unids for tree reconstruction
 //! - Groups have CorrelatedSHA1Hash for efficient block-level matching
+//!
+//! ## Canonical Atom Model (RUST-1)
+//!
+//! The canonical atom model ensures consistent identity across all comparison stages:
+//!
+//! 1. **identity_hash()** - Stable SHA1 hash computed from:
+//!    - Element local name (e.g., "t" for text, "pPr" for paragraph properties)
+//!    - Content value (text characters, or hash for drawings/objects)
+//!    - Settings-based normalization (case insensitivity, space conflation)
+//!
+//! 2. **content_type()** - Enum representing the atom's content category:
+//!    - Text, Drawing, Field, ParagraphMark, etc.
+//!
+//! 3. **formatting_signature()** - Hash of normalized rPr for format change detection
+//!
+//! 4. **ancestor_unids()** - For tree reconstruction during result assembly
+//!
+//! The `PartialEq` implementation uses identity_hash for comparison, not structural equality.
 
 use crate::util::lcs::Hashable;
+use crate::wml::settings::WmlComparerSettings;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
 use std::fmt;
@@ -86,6 +105,40 @@ pub struct AncestorInfo {
     pub has_merged_cells: bool,
 }
 
+/// Content type classification for atoms
+/// Corresponds to the different types of content that can appear in a document
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ContentType {
+    /// Text content (w:t, w:delText)
+    Text,
+    /// Paragraph properties marker (w:pPr)
+    ParagraphMark,
+    /// Drawing/image content (w:drawing)
+    Drawing,
+    /// Picture/VML content (w:pict)
+    Picture,
+    /// Math content (m:oMath, m:oMathPara)
+    Math,
+    /// Field content (w:fldChar, w:fldSimple)
+    Field,
+    /// Symbol content (w:sym)
+    Symbol,
+    /// Object content (w:object)
+    Object,
+    /// Footnote reference (w:footnoteReference)
+    FootnoteReference,
+    /// Endnote reference (w:endnoteReference)
+    EndnoteReference,
+    /// Break content (w:br, w:cr)
+    Break,
+    /// Tab content (w:tab, w:ptab)
+    Tab,
+    /// Textbox marker
+    Textbox,
+    /// Unknown/other content
+    Unknown,
+}
+
 /// Content element types for atoms
 #[derive(Debug, Clone, PartialEq)]
 pub enum ContentElement {
@@ -130,29 +183,119 @@ pub enum ContentElement {
 }
 
 impl ContentElement {
-    /// Get hash string for this content element
-    pub fn hash_string(&self) -> String {
+    /// Get content type classification for this element
+    pub fn content_type(&self) -> ContentType {
         match self {
-            ContentElement::Text(ch) => format!("t{}", ch),
-            ContentElement::ParagraphProperties => "pPr".to_string(),
-            ContentElement::RunProperties => "rPr".to_string(),
-            ContentElement::Break => "br".to_string(),
-            ContentElement::Tab => "tab".to_string(),
-            ContentElement::Drawing { hash } => format!("drawing{}", hash),
-            ContentElement::Picture { hash } => format!("pict{}", hash),
-            ContentElement::Math { hash } => format!("math{}", hash),
-            ContentElement::FootnoteReference { .. } => "footnoteReference".to_string(),
-            ContentElement::EndnoteReference { .. } => "endnoteReference".to_string(),
-            ContentElement::TextboxStart => "txbxStart".to_string(),
-            ContentElement::TextboxEnd => "txbxEnd".to_string(),
-            ContentElement::FieldBegin => "fldBegin".to_string(),
-            ContentElement::FieldSeparator => "fldSep".to_string(),
-            ContentElement::FieldEnd => "fldEnd".to_string(),
-            ContentElement::SimpleField { instruction } => format!("fldSimple{}", instruction),
-            ContentElement::Symbol { font, char_code } => format!("sym{}:{}", font, char_code),
-            ContentElement::Object { hash } => format!("object{}", hash),
-            ContentElement::Unknown { name } => format!("unknown{}", name),
+            ContentElement::Text(_) => ContentType::Text,
+            ContentElement::ParagraphProperties => ContentType::ParagraphMark,
+            ContentElement::RunProperties => ContentType::Unknown, // rPr atoms are rare
+            ContentElement::Break => ContentType::Break,
+            ContentElement::Tab => ContentType::Tab,
+            ContentElement::Drawing { .. } => ContentType::Drawing,
+            ContentElement::Picture { .. } => ContentType::Picture,
+            ContentElement::Math { .. } => ContentType::Math,
+            ContentElement::FootnoteReference { .. } => ContentType::FootnoteReference,
+            ContentElement::EndnoteReference { .. } => ContentType::EndnoteReference,
+            ContentElement::TextboxStart | ContentElement::TextboxEnd => ContentType::Textbox,
+            ContentElement::FieldBegin | ContentElement::FieldSeparator | 
+            ContentElement::FieldEnd | ContentElement::SimpleField { .. } => ContentType::Field,
+            ContentElement::Symbol { .. } => ContentType::Symbol,
+            ContentElement::Object { .. } => ContentType::Object,
+            ContentElement::Unknown { .. } => ContentType::Unknown,
         }
+    }
+
+    /// Get the element local name for hash computation
+    /// Corresponds to C# contentElement.Name.LocalName
+    pub fn local_name(&self) -> &'static str {
+        match self {
+            ContentElement::Text(_) => "t",
+            ContentElement::ParagraphProperties => "pPr",
+            ContentElement::RunProperties => "rPr",
+            ContentElement::Break => "br",
+            ContentElement::Tab => "tab",
+            ContentElement::Drawing { .. } => "drawing",
+            ContentElement::Picture { .. } => "pict",
+            ContentElement::Math { .. } => "oMath",
+            ContentElement::FootnoteReference { .. } => "footnoteReference",
+            ContentElement::EndnoteReference { .. } => "endnoteReference",
+            ContentElement::TextboxStart => "txbxContent", // start marker
+            ContentElement::TextboxEnd => "txbxContent",   // end marker
+            ContentElement::FieldBegin => "fldChar",
+            ContentElement::FieldSeparator => "fldChar",
+            ContentElement::FieldEnd => "fldChar",
+            ContentElement::SimpleField { .. } => "fldSimple",
+            ContentElement::Symbol { .. } => "sym",
+            ContentElement::Object { .. } => "object",
+            ContentElement::Unknown { name } => {
+                // Return a static str for unknown - we'll use "unknown"
+                // since we can't return a &'static str from a dynamic String
+                let _ = name; // suppress unused warning
+                "unknown"
+            },
+        }
+    }
+
+    /// Get the text value for hash computation
+    /// Corresponds to C# contentElement.Value
+    /// For text elements, this is the character; for drawings, it's the content hash
+    pub fn text_value(&self) -> String {
+        match self {
+            ContentElement::Text(ch) => ch.to_string(),
+            ContentElement::ParagraphProperties => String::new(), // pPr has no text value
+            ContentElement::RunProperties => String::new(),
+            ContentElement::Break => String::new(),
+            ContentElement::Tab => String::new(),
+            ContentElement::Drawing { hash } => hash.clone(),
+            ContentElement::Picture { hash } => hash.clone(),
+            ContentElement::Math { hash } => hash.clone(),
+            ContentElement::FootnoteReference { id } => id.clone(),
+            ContentElement::EndnoteReference { id } => id.clone(),
+            ContentElement::TextboxStart => String::new(),
+            ContentElement::TextboxEnd => String::new(),
+            ContentElement::FieldBegin => "begin".to_string(),
+            ContentElement::FieldSeparator => "separate".to_string(),
+            ContentElement::FieldEnd => "end".to_string(),
+            ContentElement::SimpleField { instruction } => instruction.clone(),
+            ContentElement::Symbol { font, char_code } => format!("{}:{}", font, char_code),
+            ContentElement::Object { hash } => hash.clone(),
+            ContentElement::Unknown { name } => name.clone(),
+        }
+    }
+
+    /// Get hash string for this content element (used for SHA1 computation)
+    /// 
+    /// This is a faithful port of C# GetSha1HashStringForElement (WmlComparer.cs:8468-8477)
+    /// The hash string is: localName + textValue
+    /// 
+    /// For text: "t" + character
+    /// For drawings: "drawing" + contentHash
+    /// For pPr: "pPr" (empty text value)
+    pub fn hash_string(&self) -> String {
+        format!("{}{}", self.local_name(), self.text_value())
+    }
+
+    /// Get hash string with settings-based normalization
+    /// 
+    /// This is the full C# GetSha1HashStringForElement implementation:
+    /// - Applies case transformation if CaseInsensitive
+    /// - Applies space normalization if ConflateBreakingAndNonbreakingSpaces
+    pub fn hash_string_with_settings(&self, settings: &WmlComparerSettings) -> String {
+        let mut text = self.text_value();
+        
+        if settings.case_insensitive {
+            // C#: text = text.ToUpper(settings.CultureInfo)
+            // We use simple to_uppercase since we don't have full CultureInfo support
+            text = text.to_uppercase();
+        }
+        
+        if settings.conflate_breaking_and_nonbreaking_spaces {
+            // C#: text = text.Replace(' ', '\x00a0')
+            // Replace regular space with non-breaking space
+            text = text.replace(' ', "\u{00a0}");
+        }
+        
+        format!("{}{}", self.local_name(), text)
     }
 
     /// Get display value for this content element
@@ -169,17 +312,30 @@ impl ContentElement {
 
 /// Atomic comparison unit - the smallest unit of comparison
 /// Corresponds to C# ComparisonUnitAtom (WmlComparer.cs:8280)
+///
+/// ## Canonical Identity Model
+///
+/// The atom's identity is defined by its `sha1_hash` (identity_hash), which is computed from:
+/// - Element local name (e.g., "t" for text)
+/// - Content value (text character or content hash)
+/// - Settings-based normalization
+///
+/// Two atoms are considered equal if they have the same identity hash.
+/// This enables consistent LCS matching across all comparison stages.
 #[derive(Debug, Clone)]
 pub struct ComparisonUnitAtom {
     /// The content element this atom represents
     pub content_element: ContentElement,
-    /// SHA1 hash of the content
+    /// SHA1 hash of the content - THE CANONICAL IDENTITY
+    /// Computed using GetSha1HashStringForElement logic:
+    /// SHA1(localName + textValue [with case/space normalization])
     pub sha1_hash: String,
     /// Ancestor elements from body to this element (body → leaf order)
     pub ancestor_elements: Vec<AncestorInfo>,
     /// Correlation status
     pub correlation_status: ComparisonCorrelationStatus,
     /// Formatting signature (for TrackFormattingChanges)
+    /// This is the serialized normalized rPr element
     pub formatting_signature: Option<String>,
     /// Normalized run properties (for format change detection)
     pub normalized_rpr: Option<String>,
@@ -208,18 +364,82 @@ pub struct ComparisonUnitAtom {
     pub formatting_change_rpr_before_signature: Option<String>,
 }
 
+/// Implement PartialEq based on identity hash, not structural equality
+/// This matches C# behavior where atoms are compared by SHA1Hash
+impl PartialEq for ComparisonUnitAtom {
+    fn eq(&self, other: &Self) -> bool {
+        self.sha1_hash == other.sha1_hash
+    }
+}
+
+impl Eq for ComparisonUnitAtom {}
+
 impl ComparisonUnitAtom {
     /// Create a new atom with the given content element and ancestors
+    /// 
+    /// This is a faithful port of C# ComparisonUnitAtom constructor (WmlComparer.cs:8347-8378)
+    /// 
+    /// The identity hash is computed from:
+    /// - Element local name + text value (with settings normalization)
+    /// - Uses pre-computed SHA1Hash attribute if present (from preprocessing)
     pub fn new(
         content_element: ContentElement,
         ancestor_elements: Vec<AncestorInfo>,
         part_name: &str,
-        settings: &crate::wml::settings::WmlComparerSettings,
+        settings: &WmlComparerSettings,
     ) -> Self {
-        let hash_string = content_element.hash_string();
+        // Compute identity hash using C# GetSha1HashStringForElement logic
+        let hash_string = content_element.hash_string_with_settings(settings);
         let sha1_hash = compute_sha1(&hash_string);
 
-        // Find revision tracking element from ancestors (C# lines 8282-8292)
+        // Find revision tracking element from ancestors (C# lines 8352-8363)
+        // Search from leaf to body (reverse order)
+        let mut correlation_status = ComparisonCorrelationStatus::Equal;
+        let mut rev_track_element = None;
+        
+        // C#: revTrackElement = ancestors.FirstOrDefault(a => a.Name == W.del || a.Name == W.ins);
+        for ancestor in ancestor_elements.iter().rev() {
+            if ancestor.local_name == "ins" {
+                correlation_status = ComparisonCorrelationStatus::Inserted;
+                rev_track_element = Some("ins".to_string());
+                break;
+            } else if ancestor.local_name == "del" {
+                correlation_status = ComparisonCorrelationStatus::Deleted;
+                rev_track_element = Some("del".to_string());
+                break;
+            }
+        }
+
+        Self {
+            content_element,
+            sha1_hash,
+            ancestor_elements,
+            correlation_status,
+            formatting_signature: None, // Populated separately via set_formatting_signature
+            normalized_rpr: None,
+            part_name: part_name.to_string(),
+            content_element_before: None,
+            comparison_unit_atom_before: None,
+            ancestor_elements_before: None,
+            part_before: None,
+            rev_track_element,
+            formatting_change_rpr_before: None,
+            ancestor_unids: Vec::new(),
+            formatting_change_rpr_before_signature: None,
+        }
+    }
+    
+    /// Create a new atom with a pre-computed SHA1 hash
+    /// 
+    /// This is used when the hash has been pre-computed during preprocessing
+    /// (C# lines 8364-8368: checks for PtOpenXml.SHA1Hash attribute)
+    pub fn new_with_hash(
+        content_element: ContentElement,
+        ancestor_elements: Vec<AncestorInfo>,
+        part_name: &str,
+        sha1_hash: String,
+    ) -> Self {
+        // Find revision tracking element from ancestors
         let mut correlation_status = ComparisonCorrelationStatus::Equal;
         let mut rev_track_element = None;
         
@@ -240,7 +460,7 @@ impl ComparisonUnitAtom {
             sha1_hash,
             ancestor_elements,
             correlation_status,
-            formatting_signature: None, // Will be populated below if needed
+            formatting_signature: None,
             normalized_rpr: None,
             part_name: part_name.to_string(),
             content_element_before: None,
@@ -252,8 +472,39 @@ impl ComparisonUnitAtom {
             ancestor_unids: Vec::new(),
             formatting_change_rpr_before_signature: None,
         }
-        // TODO: Compute NormalizedRPr and FormattingSignature using formatting module
-        // This requires access to the XmlDocument to find the rPr element
+    }
+    
+    /// Get the canonical identity hash for this atom
+    /// This is the primary identifier used for LCS comparison
+    pub fn identity_hash(&self) -> &str {
+        &self.sha1_hash
+    }
+    
+    /// Get the content type classification
+    pub fn content_type(&self) -> ContentType {
+        self.content_element.content_type()
+    }
+    
+    /// Get the formatting signature (hash of normalized rPr)
+    /// Returns None if formatting tracking is disabled or no rPr exists
+    pub fn formatting_signature(&self) -> Option<&str> {
+        self.formatting_signature.as_deref()
+    }
+    
+    /// Set the formatting signature for this atom
+    pub fn set_formatting_signature(&mut self, signature: Option<String>) {
+        self.formatting_signature = signature;
+    }
+    
+    /// Get ancestor Unids for tree reconstruction
+    /// These are populated by AssembleAncestorUnidsInOrderToRebuildXmlTreeProperly
+    pub fn ancestor_unids(&self) -> &[String] {
+        &self.ancestor_unids
+    }
+    
+    /// Set ancestor Unids for tree reconstruction
+    pub fn set_ancestor_unids(&mut self, unids: Vec<String>) {
+        self.ancestor_unids = unids;
     }
 
     /// Get the Unid of the nth ancestor (0 = closest to body)
@@ -1287,5 +1538,254 @@ mod tests {
         assert_eq!(unid1.len(), 32);
         assert_eq!(unid2.len(), 32);
         assert_ne!(unid1, unid2);
+    }
+
+    // ===== Canonical Atom Model Tests (RUST-1) =====
+
+    #[test]
+    fn test_content_type_classification() {
+        // Text
+        let text = ContentElement::Text('a');
+        assert_eq!(text.content_type(), ContentType::Text);
+        
+        // Paragraph mark
+        let ppr = ContentElement::ParagraphProperties;
+        assert_eq!(ppr.content_type(), ContentType::ParagraphMark);
+        
+        // Drawing
+        let drawing = ContentElement::Drawing { hash: "abc".to_string() };
+        assert_eq!(drawing.content_type(), ContentType::Drawing);
+        
+        // Field
+        let field = ContentElement::FieldBegin;
+        assert_eq!(field.content_type(), ContentType::Field);
+        
+        // Picture
+        let pict = ContentElement::Picture { hash: "xyz".to_string() };
+        assert_eq!(pict.content_type(), ContentType::Picture);
+    }
+
+    #[test]
+    fn test_content_element_local_name() {
+        assert_eq!(ContentElement::Text('a').local_name(), "t");
+        assert_eq!(ContentElement::ParagraphProperties.local_name(), "pPr");
+        assert_eq!(ContentElement::Drawing { hash: "x".to_string() }.local_name(), "drawing");
+        assert_eq!(ContentElement::Picture { hash: "x".to_string() }.local_name(), "pict");
+        assert_eq!(ContentElement::Break.local_name(), "br");
+        assert_eq!(ContentElement::Tab.local_name(), "tab");
+        assert_eq!(ContentElement::FieldBegin.local_name(), "fldChar");
+        assert_eq!(ContentElement::Symbol { font: "f".to_string(), char_code: "c".to_string() }.local_name(), "sym");
+    }
+
+    #[test]
+    fn test_content_element_text_value() {
+        // Text element has single character value
+        assert_eq!(ContentElement::Text('H').text_value(), "H");
+        assert_eq!(ContentElement::Text(' ').text_value(), " ");
+        
+        // ParagraphProperties has empty text value
+        assert_eq!(ContentElement::ParagraphProperties.text_value(), "");
+        
+        // Drawing has hash as text value
+        assert_eq!(ContentElement::Drawing { hash: "abc123".to_string() }.text_value(), "abc123");
+        
+        // Field characters have type as value
+        assert_eq!(ContentElement::FieldBegin.text_value(), "begin");
+        assert_eq!(ContentElement::FieldEnd.text_value(), "end");
+    }
+
+    #[test]
+    fn test_hash_string_matches_c_sharp_format() {
+        // C# format: localName + textValue
+        
+        // Text: "t" + char
+        let text = ContentElement::Text('H');
+        assert_eq!(text.hash_string(), "tH");
+        
+        // ParagraphProperties: "pPr" + "" = "pPr"
+        let ppr = ContentElement::ParagraphProperties;
+        assert_eq!(ppr.hash_string(), "pPr");
+        
+        // Drawing: "drawing" + hash
+        let drawing = ContentElement::Drawing { hash: "abc123".to_string() };
+        assert_eq!(drawing.hash_string(), "drawingabc123");
+        
+        // Symbol: "sym" + font:char
+        let sym = ContentElement::Symbol { font: "Symbol".to_string(), char_code: "F020".to_string() };
+        assert_eq!(sym.hash_string(), "symSymbol:F020");
+    }
+
+    #[test]
+    fn test_hash_string_with_case_insensitive() {
+        let text_lower = ContentElement::Text('a');
+        let text_upper = ContentElement::Text('A');
+        
+        // Without case insensitivity, different hashes
+        let settings_default = WmlComparerSettings::default().with_case_insensitive(false);
+        assert_ne!(
+            text_lower.hash_string_with_settings(&settings_default),
+            text_upper.hash_string_with_settings(&settings_default)
+        );
+        
+        // With case insensitivity, same hashes (both uppercase)
+        let settings_ci = WmlComparerSettings::default().with_case_insensitive(true);
+        assert_eq!(
+            text_lower.hash_string_with_settings(&settings_ci),
+            text_upper.hash_string_with_settings(&settings_ci)
+        );
+        assert_eq!(text_lower.hash_string_with_settings(&settings_ci), "tA");
+    }
+
+    #[test]
+    fn test_hash_string_with_space_conflation() {
+        let text_space = ContentElement::Text(' ');
+        let text_nbsp = ContentElement::Text('\u{00a0}'); // Non-breaking space
+        
+        // Default settings have conflation enabled
+        let settings = WmlComparerSettings::default();
+        
+        // Regular space gets converted to NBSP
+        let space_hash = text_space.hash_string_with_settings(&settings);
+        let nbsp_hash = text_nbsp.hash_string_with_settings(&settings);
+        
+        // After conflation, both should have NBSP character
+        assert_eq!(space_hash, "t\u{00a0}");
+        assert_eq!(space_hash, nbsp_hash);
+    }
+
+    #[test]
+    fn test_atom_identity_hash() {
+        let settings = WmlComparerSettings::default();
+        
+        let atom = ComparisonUnitAtom::new(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        // identity_hash() returns the sha1_hash
+        assert_eq!(atom.identity_hash(), atom.sha1_hash.as_str());
+        assert!(!atom.identity_hash().is_empty());
+    }
+
+    #[test]
+    fn test_atom_equality_based_on_identity_hash() {
+        let settings = WmlComparerSettings::default();
+        
+        // Same content element → same identity hash → equal
+        let atom1 = ComparisonUnitAtom::new(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            &settings,
+        );
+        let atom2 = ComparisonUnitAtom::new(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        assert_eq!(atom1, atom2); // PartialEq based on sha1_hash
+        
+        // Different content element → different identity hash → not equal
+        let atom3 = ComparisonUnitAtom::new(
+            ContentElement::Text('X'),
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        assert_ne!(atom1, atom3);
+    }
+
+    #[test]
+    fn test_atom_with_precomputed_hash() {
+        let atom = ComparisonUnitAtom::new_with_hash(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            "precomputed_hash_abc123".to_string(),
+        );
+        
+        assert_eq!(atom.identity_hash(), "precomputed_hash_abc123");
+    }
+
+    #[test]
+    fn test_drawings_in_same_scheme_as_text() {
+        let settings = WmlComparerSettings::default();
+        
+        // Both text and drawings use the same hash computation scheme:
+        // SHA1(localName + textValue)
+        
+        let text_atom = ComparisonUnitAtom::new(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        let drawing_atom = ComparisonUnitAtom::new(
+            ContentElement::Drawing { hash: "image_hash_123".to_string() },
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        // Both have non-empty identity hashes
+        assert!(!text_atom.identity_hash().is_empty());
+        assert!(!drawing_atom.identity_hash().is_empty());
+        
+        // Different content → different hashes
+        assert_ne!(text_atom.identity_hash(), drawing_atom.identity_hash());
+        
+        // Same drawing hash → same identity hash
+        let drawing_atom2 = ComparisonUnitAtom::new(
+            ContentElement::Drawing { hash: "image_hash_123".to_string() },
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        assert_eq!(drawing_atom, drawing_atom2);
+    }
+
+    #[test]
+    fn test_formatting_signature_methods() {
+        let settings = WmlComparerSettings::default();
+        
+        let mut atom = ComparisonUnitAtom::new(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        // Initially None
+        assert!(atom.formatting_signature().is_none());
+        
+        // Set formatting signature
+        atom.set_formatting_signature(Some("<w:rPr><w:b/></w:rPr>".to_string()));
+        assert_eq!(atom.formatting_signature(), Some("<w:rPr><w:b/></w:rPr>"));
+    }
+
+    #[test]
+    fn test_ancestor_unids_methods() {
+        let settings = WmlComparerSettings::default();
+        
+        let mut atom = ComparisonUnitAtom::new(
+            ContentElement::Text('H'),
+            vec![],
+            "main",
+            &settings,
+        );
+        
+        // Initially empty
+        assert!(atom.ancestor_unids().is_empty());
+        
+        // Set ancestor unids
+        atom.set_ancestor_unids(vec!["unid1".to_string(), "unid2".to_string()]);
+        assert_eq!(atom.ancestor_unids(), &["unid1".to_string(), "unid2".to_string()]);
     }
 }
