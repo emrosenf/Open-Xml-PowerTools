@@ -994,53 +994,8 @@ fn handle_no_match_cases(
         }
     }
 
-    }
-
-    if let (Some(left_group), Some(_)) = (
-        units1.first().and_then(|u| u.as_group()),
-        units2.first().and_then(|u| u.as_word()),
-    ) {
-        if left_group.group_type == ComparisonUnitGroupType::Row {
-            return vec![
-                CorrelatedSequence::deleted(units1.to_vec()),
-                CorrelatedSequence::inserted(units2.to_vec()),
-            ];
-        }
-    }
-
-    // C# WmlComparer.cs lines 6871-6909: Paragraph mark priority logic
-    // This determines the order of Deleted/Inserted sequences based on whether
-    // each side ends with a paragraph mark (w:pPr).
-    if !units1.is_empty() && !units2.is_empty() {
-        // Get the last content atom from each side
-        // C# equivalent: unknown.ComparisonUnitArray1.Select(cu => cu.DescendantContentAtoms().Last()).LastOrDefault()
-        let last_atom_left = units1
-            .iter()
-            .filter_map(|cu| cu.descendant_atoms().last().cloned())
-            .last();
-        let last_atom_right = units2
-            .iter()
-            .filter_map(|cu| cu.descendant_atoms().last().cloned())
-            .last();
-
-        if let (Some(left), Some(right)) = (last_atom_left, last_atom_right) {
-            let left_is_ppr = matches!(left.content_element, ContentElement::ParagraphProperties);
-            let right_is_ppr = matches!(right.content_element, ContentElement::ParagraphProperties);
-
-            if left_is_ppr && !right_is_ppr {
-                // Left ends with pPr, right doesn't → Insert first, then Delete
-                return vec![
-                    CorrelatedSequence::inserted(units2.to_vec()),
-                    CorrelatedSequence::deleted(units1.to_vec()),
-                ];
-            } else if !left_is_ppr && right_is_ppr {
-                // Right ends with pPr, left doesn't → Delete first, then Insert
-                return vec![
-                    CorrelatedSequence::deleted(units1.to_vec()),
-                    CorrelatedSequence::inserted(units2.to_vec()),
-                ];
-
     // Default: mark everything as deleted and inserted
+
     vec![
         CorrelatedSequence::deleted(units1.to_vec()),
         CorrelatedSequence::inserted(units2.to_vec()),
