@@ -6,7 +6,6 @@
 
 use crate::wml::atom_list::assign_unid_to_all_elements;
 use crate::wml::block_hash::hash_block_level_content;
-use crate::wml::revision_processor::{accept_revisions, reject_revisions};
 use crate::wml::simplify::{simplify_markup, SimplifyMarkupSettings};
 use crate::xml::arena::XmlDocument;
 use indextree::NodeId;
