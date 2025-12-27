@@ -303,93 +303,734 @@ fn is_props_element(doc: &XmlDocument, node: NodeId) -> bool {
     }).unwrap_or(false)
 }
 
-pub fn coalesce_adjacent_runs(doc: &mut XmlDocument, root: NodeId, settings: &WmlComparerSettings) {
-    let mut paras = Vec::new();
-    collect_paragraphs(doc, root, &mut paras);
-    for para in paras {
-        coalesce_paragraph_runs(doc, para, settings);
+/// Additional run container element names that should be processed recursively.
+/// These are elements that can contain runs like paragraphs.
+/// From C# AdditionalRunContainerNames set.
+static ADDITIONAL_RUN_CONTAINER_NAMES: &[&str] = &[
+    "bdo", "customXml", "dir", "fld", "hyperlink", "sdtContent", "smartTag",
+];
+
+/// Coalesce adjacent runs with identical formatting - faithful port of C# CoalesceAdjacentRunsWithIdenticalFormatting.
+/// 
+/// This function merges adjacent w:r, w:ins, and w:del elements that have identical formatting
+/// into single elements. This is a post-processing step after document comparison to clean up
+/// the output and reduce redundant markup.
+/// 
+/// # Algorithm (from C# PtOpenXmlUtil.cs lines 799-991)
+/// 1. For each element in the run container:
+///    - w:r with single w:t child: Key = "Wt" + rPr.ToString()
+///    - w:r with single w:instrText child: Key = "WinstrText" + rPr.ToString()
+///    - w:ins with valid structure: Key = "Wins2" + author + date + id + rPr strings
+///    - w:del with valid structure: Key = "Wdel" + author + date + rPr strings
+///    - Anything else: Key = "DontConsolidate"
+/// 2. GroupAdjacent by key
+/// 3. For each group with same key, merge text content
+/// 4. Process w:txbxContent and additional run containers recursively
+pub fn coalesce_adjacent_runs_with_identical_formatting(doc: &mut XmlDocument, run_container: NodeId) {
+    // Step 1: Group adjacent elements by consolidation key
+    let children: Vec<_> = doc.children(run_container).collect();
+    if children.is_empty() {
+        return;
+    }
+
+    // Compute keys for all children once (cache to avoid recomputation)
+    let keys: Vec<String> = children.iter().map(|&c| get_consolidation_key(doc, c)).collect();
+
+    // Step 2: Group adjacent elements with same key
+    let groups = group_adjacent_by_key(&children, &keys);
+
+    // Step 3: Process each group - merge if consolidatable, keep original otherwise
+    let mut new_children: Vec<NodeId> = Vec::new();
+    for (key, group) in groups {
+        if key == DONT_CONSOLIDATE {
+            // Keep original elements unchanged
+            new_children.extend(group);
+        } else if group.len() == 1 {
+            // Single element, no merging needed
+            new_children.push(group[0]);
+        } else {
+            // Merge group into single element
+            let merged = merge_consolidated_group(doc, &key, &group);
+            new_children.push(merged);
+        }
+    }
+
+    // Step 4: Replace children with new consolidated children
+    for &child in &children {
+        doc.detach(child);
+    }
+    for &child in &new_children {
+        doc.reparent(run_container, child);
+    }
+
+    // Step 5: Process w:txbxContent recursively (C# lines 971-977)
+    process_textbox_content(doc, run_container);
+
+    // Step 6: Process additional run containers recursively (C# lines 979-988)
+    process_additional_run_containers(doc, run_container);
+}
+
+/// Wrapper that processes all paragraphs in a document tree.
+/// This is the entry point for coalescing after document comparison.
+pub fn coalesce_adjacent_runs(doc: &mut XmlDocument, root: NodeId, _settings: &WmlComparerSettings) {
+    let mut paragraphs = Vec::new();
+    collect_run_containers(doc, root, &mut paragraphs);
+    for para in paragraphs {
+        coalesce_adjacent_runs_with_identical_formatting(doc, para);
     }
 }
 
-fn collect_paragraphs(doc: &XmlDocument, node: NodeId, result: &mut Vec<NodeId>) {
+/// Collect all paragraph elements (w:p) for processing
+fn collect_run_containers(doc: &XmlDocument, node: NodeId, result: &mut Vec<NodeId>) {
     if let Some(data) = doc.get(node) {
         if let Some(name) = data.name() {
             if name.namespace.as_deref() == Some(W::NS) && name.local_name == "p" {
                 result.push(node);
+                // Don't recurse into paragraph children for this collection
                 return;
             }
         }
     }
     let children: Vec<_> = doc.children(node).collect();
-    for child in children { collect_paragraphs(doc, child, result); }
-}
-
-fn coalesce_paragraph_runs(doc: &mut XmlDocument, para: NodeId, settings: &WmlComparerSettings) {
-    let children: Vec<_> = doc.children(para).collect();
-    if children.is_empty() { return; }
-    let mut new_children = Vec::new();
-    let mut i = 0;
-    while i < children.len() {
-        let current = children[i];
-        let key = get_consolidation_key(doc, current, settings);
-        if key == "DontConsolidate" {
-            new_children.push(current);
-            i += 1;
-            continue;
-        }
-        let mut group = vec![current];
-        let mut j = i + 1;
-        while j < children.len() {
-            let next = children[j];
-            if get_consolidation_key(doc, next, settings) == key {
-                group.push(next);
-                j += 1;
-            } else { break; }
-        }
-        if group.len() > 1 { new_children.push(merge_nodes(doc, &group)); } else { new_children.push(current); }
-        i = j;
+    for child in children {
+        collect_run_containers(doc, child, result);
     }
-    for &child in &children { doc.detach(child); }
-    for &child in &new_children { doc.reparent(para, child); }
 }
 
-fn get_consolidation_key(doc: &mut XmlDocument, node: NodeId, settings: &WmlComparerSettings) -> String {
-    let Some(data) = doc.get(node) else { return "DontConsolidate".to_string() };
-    let Some(name) = data.name() else { return "DontConsolidate".to_string() };
-    if name.namespace.as_deref() != Some(W::NS) { return "DontConsolidate".to_string(); }
+/// Process w:txbxContent elements recursively (C# lines 971-977)
+fn process_textbox_content(doc: &mut XmlDocument, node: NodeId) {
+    let txbx_elements: Vec<_> = collect_descendants_by_name(doc, node, W::NS, "txbxContent");
+    for txbx in txbx_elements {
+        // Find all paragraphs within this textbox (trimmed - don't recurse into nested txbxContent)
+        let paras = collect_descendants_trimmed(doc, txbx, W::NS, "p", W::NS, "txbxContent");
+        for para in paras {
+            coalesce_adjacent_runs_with_identical_formatting(doc, para);
+        }
+    }
+}
+
+/// Process additional run containers recursively (C# lines 979-988)
+fn process_additional_run_containers(doc: &mut XmlDocument, node: NodeId) {
+    let containers: Vec<_> = collect_additional_run_containers(doc, node);
+    for container in containers {
+        coalesce_adjacent_runs_with_identical_formatting(doc, container);
+    }
+}
+
+/// Collect descendants that match a specific name
+fn collect_descendants_by_name(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> Vec<NodeId> {
+    let mut result = Vec::new();
+    for desc in doc.descendants(node) {
+        if let Some(data) = doc.get(desc) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(ns) && name.local_name == local {
+                    result.push(desc);
+                }
+            }
+        }
+    }
+    result
+}
+
+/// Collect descendants that match target name, but stop at trim elements (like DescendantsTrimmed in C#)
+fn collect_descendants_trimmed(
+    doc: &XmlDocument,
+    start: NodeId,
+    target_ns: &str,
+    target_local: &str,
+    trim_ns: &str,
+    trim_local: &str,
+) -> Vec<NodeId> {
+    let mut result = Vec::new();
+    let mut stack = vec![start];
+    
+    while let Some(current) = stack.pop() {
+        for child in doc.children(current) {
+            if let Some(data) = doc.get(child) {
+                if let Some(name) = data.name() {
+                    // Skip if this is a trim element
+                    if name.namespace.as_deref() == Some(trim_ns) && name.local_name == trim_local {
+                        continue;
+                    }
+                    // Check if this matches our target
+                    if name.namespace.as_deref() == Some(target_ns) && name.local_name == target_local {
+                        result.push(child);
+                    }
+                }
+            }
+            // Continue searching children
+            stack.push(child);
+        }
+    }
+    result
+}
+
+/// Collect additional run container elements for recursive processing
+fn collect_additional_run_containers(doc: &XmlDocument, node: NodeId) -> Vec<NodeId> {
+    let mut result = Vec::new();
+    for desc in doc.descendants(node) {
+        if let Some(data) = doc.get(desc) {
+            if let Some(name) = data.name() {
+                if ADDITIONAL_RUN_CONTAINER_NAMES.contains(&name.local_name.as_str()) {
+                    result.push(desc);
+                }
+            }
+        }
+    }
+    result
+}
+
+/// Sentinel value for elements that should not be consolidated
+const DONT_CONSOLIDATE: &str = "DontConsolidate";
+
+/// Generate consolidation key for an element - faithful port of C# logic (lines 806-910)
+/// 
+/// Key generation rules:
+/// - w:r with single w:t: "Wt" + rPr.ToString(SaveOptions.None)
+/// - w:r with single w:instrText: "WinstrText" + rPr.ToString(SaveOptions.None)
+/// - w:ins with valid structure: "Wins2" + author + date + id + rPr strings
+/// - w:del with valid structure: "Wdel" + author + date + rPr strings
+/// - Everything else: "DontConsolidate"
+fn get_consolidation_key(doc: &XmlDocument, node: NodeId) -> String {
+    let Some(data) = doc.get(node) else {
+        return DONT_CONSOLIDATE.to_string();
+    };
+    let Some(name) = data.name() else {
+        return DONT_CONSOLIDATE.to_string();
+    };
+    
+    // Only process WordprocessingML elements
+    if name.namespace.as_deref() != Some(W::NS) {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
     match name.local_name.as_str() {
-        "r" => {
-            let children: Vec<_> = doc.children(node).filter(|&c| !is_r_pr(doc, c)).collect();
-            if children.len() != 1 || !is_t(doc, children[0]) { return "DontConsolidate".to_string(); }
-            format!("Wt|{}", get_r_pr_signature(doc, node, settings))
-        }
-        "ins" => {
-            let run = find_child_by_name(doc, node, W::NS, "r");
-            if let Some(r) = run {
-                let children: Vec<_> = doc.children(r).filter(|&c| !is_r_pr(doc, c)).collect();
-                if children.len() == 1 && is_t(doc, children[0]) {
-                    let author = get_attr(doc, node, W::NS, "author").unwrap_or_default();
-                    let date = get_attr(doc, node, W::NS, "date").unwrap_or_default();
-                    let id = get_attr(doc, node, W::NS, "id").unwrap_or_default();
-                    return format!("Wins|{}|{}|{}|{}", author, date, id, get_r_pr_signature(doc, r, settings));
-                }
-            }
-            "DontConsolidate".to_string()
-        }
-        "del" => {
-            let run = find_child_by_name(doc, node, W::NS, "r");
-            if let Some(r) = run {
-                let children: Vec<_> = doc.children(r).filter(|&c| !is_r_pr(doc, c)).collect();
-                if children.len() == 1 && is_del_text(doc, children[0]) {
-                    let author = get_attr(doc, node, W::NS, "author").unwrap_or_default();
-                    let date = get_attr(doc, node, W::NS, "date").unwrap_or_default();
-                    return format!("Wdel|{}|{}|{}", author, date, get_r_pr_signature(doc, r, settings));
-                }
-            }
-            "DontConsolidate".to_string()
-        }
-        _ => "DontConsolidate".to_string()
+        "r" => get_run_consolidation_key(doc, node),
+        "ins" => get_ins_consolidation_key(doc, node),
+        "del" => get_del_consolidation_key(doc, node),
+        _ => DONT_CONSOLIDATE.to_string(),
     }
+}
+
+/// Get consolidation key for w:r element (C# lines 808-826)
+fn get_run_consolidation_key(doc: &XmlDocument, run: NodeId) -> String {
+    // Count non-rPr children - must be exactly 1
+    let non_rpr_children: Vec<_> = doc.children(run)
+        .filter(|&c| !is_element_named(doc, c, W::NS, "rPr"))
+        .collect();
+    
+    if non_rpr_children.len() != 1 {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    // Check for pt:AbstractNumId attribute (C# line 813-814)
+    if has_attribute(doc, run, PT_STATUS_NS, "AbstractNumId") {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    // Get rPr serialization
+    let rpr_string = get_rpr_string(doc, run);
+
+    // Check what kind of content child we have
+    let child = non_rpr_children[0];
+    if is_element_named(doc, child, W::NS, "t") {
+        format!("Wt{}", rpr_string)
+    } else if is_element_named(doc, child, W::NS, "instrText") {
+        format!("WinstrText{}", rpr_string)
+    } else {
+        DONT_CONSOLIDATE.to_string()
+    }
+}
+
+/// Get consolidation key for w:ins element (C# lines 828-887)
+fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
+    // If contains w:del, don't consolidate (C# line 830-832)
+    if has_child_element(doc, ins, W::NS, "del") {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    // Check grandchildren: ce.Elements().Elements().Count(e => e.Name != W.rPr) != 1
+    // And require at least one w:t grandchild
+    let grandchildren: Vec<_> = doc.children(ins)
+        .flat_map(|c| doc.children(c))
+        .collect();
+    
+    let non_rpr_grandchildren_count = grandchildren.iter()
+        .filter(|&&gc| !is_element_named(doc, gc, W::NS, "rPr"))
+        .count();
+    
+    if non_rpr_grandchildren_count != 1 {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    let has_t_grandchild = grandchildren.iter()
+        .any(|&gc| is_element_named(doc, gc, W::NS, "t"));
+    
+    if !has_t_grandchild {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    // Build key: "Wins2" + author + date + id + rPr strings
+    let author = get_attr(doc, ins, W::NS, "author").unwrap_or_default();
+    let date = format_date_for_key(&get_attr(doc, ins, W::NS, "date").unwrap_or_default());
+    let id = get_attr(doc, ins, W::NS, "id").unwrap_or_default();
+
+    // Concatenate rPr strings from all child runs (C# lines 883-886)
+    let rpr_strings: String = doc.children(ins)
+        .filter_map(|c| {
+            if is_element_named(doc, c, W::NS, "r") {
+                Some(get_rpr_string(doc, c))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("");
+
+    format!("Wins2{}{}{}{}", author, date, id, rpr_strings)
+}
+
+/// Get consolidation key for w:del element (C# lines 889-907)
+fn get_del_consolidation_key(doc: &XmlDocument, del: NodeId) -> String {
+    // Check ce.Elements(W.r).Elements().Count(e => e.Name != W.rPr) != 1
+    let r_children: Vec<_> = doc.children(del)
+        .filter(|&c| is_element_named(doc, c, W::NS, "r"))
+        .collect();
+    
+    let grandchildren: Vec<_> = r_children.iter()
+        .flat_map(|&r| doc.children(r))
+        .collect();
+    
+    let non_rpr_grandchildren_count = grandchildren.iter()
+        .filter(|&&gc| !is_element_named(doc, gc, W::NS, "rPr"))
+        .count();
+    
+    if non_rpr_grandchildren_count != 1 {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    // Require at least one w:delText grandchild
+    let has_del_text = grandchildren.iter()
+        .any(|&gc| is_element_named(doc, gc, W::NS, "delText"));
+    
+    if !has_del_text {
+        return DONT_CONSOLIDATE.to_string();
+    }
+
+    // Build key: "Wdel" + author + date + rPr strings (note: no id, unlike w:ins)
+    let author = get_attr(doc, del, W::NS, "author").unwrap_or_default();
+    let date = format_date_for_key(&get_attr(doc, del, W::NS, "date").unwrap_or_default());
+
+    // Concatenate rPr strings from all w:r children (C# lines 903-906)
+    let rpr_strings: String = r_children.iter()
+        .map(|&r| get_rpr_string(doc, r))
+        .collect::<Vec<_>>()
+        .join("");
+
+    format!("Wdel{}{}{}", author, date, rpr_strings)
+}
+
+/// Format date value for key generation.
+/// C# uses ((DateTime)date).ToString("s") which produces "yyyy-MM-ddTHH:mm:ss"
+fn format_date_for_key(date_str: &str) -> String {
+    // If the date is already in a compatible format, try to parse and reformat
+    // to match C#'s "s" (sortable) format: yyyy-MM-ddTHH:mm:ss
+    if date_str.is_empty() {
+        return String::new();
+    }
+    
+    // Try to parse ISO 8601 format and reformat without timezone
+    // Most Word dates are like "2023-01-15T10:30:00Z" or "2023-01-15T10:30:00+00:00"
+    if date_str.len() >= 19 {
+        // Take first 19 chars: "yyyy-MM-ddTHH:mm:ss"
+        return date_str.chars().take(19).collect();
+    }
+    
+    // Return as-is if not in expected format
+    date_str.to_string()
+}
+
+/// Get serialized rPr string for key generation.
+/// This should match C#'s rPr.ToString(SaveOptions.None) behavior.
+fn get_rpr_string(doc: &XmlDocument, run: NodeId) -> String {
+    let rpr = doc.children(run)
+        .find(|&c| is_element_named(doc, c, W::NS, "rPr"));
+    
+    match rpr {
+        Some(rpr_node) => serialize_element_for_key(doc, rpr_node),
+        None => String::new(),
+    }
+}
+
+/// Serialize an element to string for use in consolidation key.
+/// This aims to match C#'s XElement.ToString(SaveOptions.None) behavior:
+/// - No indentation or newlines
+/// - Attributes in document order
+/// - Namespace prefixes as stored
+fn serialize_element_for_key(doc: &XmlDocument, node: NodeId) -> String {
+    let mut result = String::new();
+    serialize_element_recursive(doc, node, &mut result);
+    result
+}
+
+/// Recursive helper for element serialization
+fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut String) {
+    let Some(data) = doc.get(node) else { return };
+    
+    match data {
+        XmlNodeData::Element { name, attributes } => {
+            result.push('<');
+            
+            // Add prefix if namespace is present
+            if let Some(ns) = &name.namespace {
+                if let Some(prefix) = get_prefix_for_ns(ns) {
+                    result.push_str(prefix);
+                    result.push(':');
+                }
+            }
+            result.push_str(&name.local_name);
+            
+            // Add attributes in document order
+            for attr in attributes {
+                result.push(' ');
+                if let Some(ns) = &attr.name.namespace {
+                    if let Some(prefix) = get_prefix_for_ns(ns) {
+                        result.push_str(prefix);
+                        result.push(':');
+                    }
+                }
+                result.push_str(&attr.name.local_name);
+                result.push_str("=\"");
+                result.push_str(&escape_xml_attr(&attr.value));
+                result.push('"');
+            }
+            
+            let children: Vec<_> = doc.children(node).collect();
+            if children.is_empty() {
+                result.push_str(" />");
+            } else {
+                result.push('>');
+                for child in children {
+                    serialize_element_recursive(doc, child, result);
+                }
+                result.push_str("</");
+                if let Some(ns) = &name.namespace {
+                    if let Some(prefix) = get_prefix_for_ns(ns) {
+                        result.push_str(prefix);
+                        result.push(':');
+                    }
+                }
+                result.push_str(&name.local_name);
+                result.push('>');
+            }
+        }
+        XmlNodeData::Text(text) => {
+            result.push_str(&escape_xml_text(text));
+        }
+        _ => {}
+    }
+}
+
+/// Get namespace prefix for common namespaces
+fn get_prefix_for_ns(ns: &str) -> Option<&'static str> {
+    match ns {
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main" => Some("w"),
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships" => Some("r"),
+        "http://schemas.openxmlformats.org/markup-compatibility/2006" => Some("mc"),
+        "http://powertools.codeplex.com/2011" => Some("pt14"),
+        "http://www.w3.org/XML/1998/namespace" => Some("xml"),
+        _ => None,
+    }
+}
+
+/// Escape XML attribute value
+fn escape_xml_attr(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+/// Escape XML text content
+fn escape_xml_text(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// Group adjacent elements by key
+fn group_adjacent_by_key(children: &[NodeId], keys: &[String]) -> Vec<(String, Vec<NodeId>)> {
+    if children.is_empty() {
+        return Vec::new();
+    }
+
+    let mut groups: Vec<(String, Vec<NodeId>)> = Vec::new();
+    let mut current_key = keys[0].clone();
+    let mut current_group = vec![children[0]];
+
+    for i in 1..children.len() {
+        if keys[i] == current_key {
+            current_group.push(children[i]);
+        } else {
+            groups.push((current_key, current_group));
+            current_key = keys[i].clone();
+            current_group = vec![children[i]];
+        }
+    }
+    groups.push((current_key, current_group));
+
+    groups
+}
+
+/// Merge a group of elements with identical formatting into a single element.
+/// This creates a new element with merged text content.
+fn merge_consolidated_group(doc: &mut XmlDocument, key: &str, group: &[NodeId]) -> NodeId {
+    // Determine element type from key prefix
+    let first = group[0];
+    
+    // Collect all text content from the group
+    let merged_text = collect_text_from_group(doc, group, key);
+    
+    // Get xml:space attribute based on merged text
+    let needs_preserve = needs_xml_space_preserve(&merged_text);
+    
+    if key.starts_with("Wt") || key.starts_with("WinstrText") {
+        // w:r merge
+        merge_run_group(doc, group, &merged_text, needs_preserve, key.starts_with("WinstrText"))
+    } else if key.starts_with("Wins2") {
+        // w:ins merge
+        merge_ins_group(doc, group, &merged_text, needs_preserve)
+    } else if key.starts_with("Wdel") {
+        // w:del merge
+        merge_del_group(doc, group, &merged_text, needs_preserve)
+    } else {
+        // Should not reach here, but return first element as fallback
+        first
+    }
+}
+
+/// Collect text content from a group of elements
+fn collect_text_from_group(doc: &XmlDocument, group: &[NodeId], _key: &str) -> String {
+    let mut text = String::new();
+    
+    for &node in group {
+        // Collect text from descendants (w:t, w:delText, or w:instrText)
+        for desc in doc.descendants(node) {
+            if let Some(data) = doc.get(desc) {
+                if let Some(name) = data.name() {
+                    let is_text_element = 
+                        (name.namespace.as_deref() == Some(W::NS)) &&
+                        (name.local_name == "t" || name.local_name == "delText" || name.local_name == "instrText");
+                    
+                    if is_text_element {
+                        // Get text content
+                        for child in doc.children(desc) {
+                            if let Some(XmlNodeData::Text(t)) = doc.get(child) {
+                                text.push_str(t);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    text
+}
+
+/// Check if xml:space="preserve" is needed
+fn needs_xml_space_preserve(text: &str) -> bool {
+    if text.is_empty() {
+        return false;
+    }
+    let chars: Vec<char> = text.chars().collect();
+    chars[0].is_whitespace() || chars[chars.len() - 1].is_whitespace()
+}
+
+/// Merge w:r elements (C# lines 928-944)
+fn merge_run_group(doc: &mut XmlDocument, group: &[NodeId], text: &str, preserve_space: bool, is_instr_text: bool) -> NodeId {
+    let first = group[0];
+    
+    // Get attributes and rPr from first element
+    let first_attrs = get_element_attributes(doc, first);
+    let first_rpr = find_child_by_name(doc, first, W::NS, "rPr");
+    
+    // Collect pt:Status attributes from first w:t of each run (C# lines 932-933)
+    let status_attrs: Vec<XAttribute> = if !is_instr_text {
+        group.iter()
+            .filter_map(|&r| {
+                let t = find_descendant_by_name(doc, r, W::NS, "t")?;
+                get_attribute(doc, t, PT_STATUS_NS, "Status")
+                    .map(|val| XAttribute::new(pt_status(), &val))
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    // Create new run element
+    let new_run = doc.new_node(XmlNodeData::element_with_attrs(W::r(), first_attrs));
+    
+    // Add rPr if present
+    if let Some(rpr) = first_rpr {
+        let cloned_rpr = clone_element_deep(doc, rpr);
+        doc.reparent(new_run, cloned_rpr);
+    }
+    
+    // Create text element (w:t or w:instrText)
+    let text_elem_name = if is_instr_text { W::instrText() } else { W::t() };
+    let mut text_attrs = status_attrs;
+    if preserve_space {
+        text_attrs.push(XAttribute::new(
+            XName::new("http://www.w3.org/XML/1998/namespace", "space"),
+            "preserve",
+        ));
+    }
+    
+    let text_elem = doc.add_child(new_run, XmlNodeData::element_with_attrs(text_elem_name, text_attrs));
+    doc.add_child(text_elem, XmlNodeData::Text(text.to_string()));
+    
+    new_run
+}
+
+/// Merge w:ins elements (C# lines 947-956)
+fn merge_ins_group(doc: &mut XmlDocument, group: &[NodeId], text: &str, preserve_space: bool) -> NodeId {
+    let first = group[0];
+    
+    // Get attributes from w:ins
+    let ins_attrs = get_element_attributes(doc, first);
+    
+    // Get first w:r and its attributes/rPr
+    let first_r = find_child_by_name(doc, first, W::NS, "r");
+    let r_attrs = first_r.map(|r| get_element_attributes(doc, r)).unwrap_or_default();
+    let r_rpr = first_r.and_then(|r| find_child_by_name(doc, r, W::NS, "rPr"));
+    
+    // Create new w:ins
+    let new_ins = doc.new_node(XmlNodeData::element_with_attrs(W::ins(), ins_attrs));
+    
+    // Create inner w:r
+    let new_r = doc.add_child(new_ins, XmlNodeData::element_with_attrs(W::r(), r_attrs));
+    
+    // Add rPr if present
+    if let Some(rpr) = r_rpr {
+        let cloned_rpr = clone_element_deep(doc, rpr);
+        doc.reparent(new_r, cloned_rpr);
+    }
+    
+    // Create w:t with text
+    let mut t_attrs = Vec::new();
+    if preserve_space {
+        t_attrs.push(XAttribute::new(
+            XName::new("http://www.w3.org/XML/1998/namespace", "space"),
+            "preserve",
+        ));
+    }
+    let t_elem = doc.add_child(new_r, XmlNodeData::element_with_attrs(W::t(), t_attrs));
+    doc.add_child(t_elem, XmlNodeData::Text(text.to_string()));
+    
+    new_ins
+}
+
+/// Merge w:del elements (C# lines 958-967)
+fn merge_del_group(doc: &mut XmlDocument, group: &[NodeId], text: &str, preserve_space: bool) -> NodeId {
+    let first = group[0];
+    
+    // Get attributes from w:del
+    let del_attrs = get_element_attributes(doc, first);
+    
+    // Get first w:r and its attributes/rPr
+    let first_r = find_child_by_name(doc, first, W::NS, "r");
+    let r_attrs = first_r.map(|r| get_element_attributes(doc, r)).unwrap_or_default();
+    let r_rpr = first_r.and_then(|r| find_child_by_name(doc, r, W::NS, "rPr"));
+    
+    // Create new w:del
+    let new_del = doc.new_node(XmlNodeData::element_with_attrs(W::del(), del_attrs));
+    
+    // Create inner w:r
+    let new_r = doc.add_child(new_del, XmlNodeData::element_with_attrs(W::r(), r_attrs));
+    
+    // Add rPr if present
+    if let Some(rpr) = r_rpr {
+        let cloned_rpr = clone_element_deep(doc, rpr);
+        doc.reparent(new_r, cloned_rpr);
+    }
+    
+    // Create w:delText with text
+    let mut dt_attrs = Vec::new();
+    if preserve_space {
+        dt_attrs.push(XAttribute::new(
+            XName::new("http://www.w3.org/XML/1998/namespace", "space"),
+            "preserve",
+        ));
+    }
+    let dt_elem = doc.add_child(new_r, XmlNodeData::element_with_attrs(W::delText(), dt_attrs));
+    doc.add_child(dt_elem, XmlNodeData::Text(text.to_string()));
+    
+    new_del
+}
+
+/// Get attributes from an element
+fn get_element_attributes(doc: &XmlDocument, node: NodeId) -> Vec<XAttribute> {
+    doc.get(node)
+        .and_then(|data| data.attributes())
+        .map(|attrs| attrs.to_vec())
+        .unwrap_or_default()
+}
+
+/// Get a specific attribute value
+fn get_attribute(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> Option<String> {
+    doc.get(node)?
+        .attributes()?
+        .iter()
+        .find(|a| a.name.namespace.as_deref() == Some(ns) && a.name.local_name == local)
+        .map(|a| a.value.clone())
+}
+
+/// Find first descendant with given name
+fn find_descendant_by_name(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> Option<NodeId> {
+    for desc in doc.descendants(node) {
+        if is_element_named(doc, desc, ns, local) {
+            return Some(desc);
+        }
+    }
+    None
+}
+
+/// Clone an element and all its children
+fn clone_element_deep(doc: &mut XmlDocument, source: NodeId) -> NodeId {
+    let source_data = doc.get(source).expect("Source node must exist").clone();
+    let cloned = doc.new_node(source_data);
+    
+    let children: Vec<_> = doc.children(source).collect();
+    for child in children {
+        let cloned_child = clone_element_deep(doc, child);
+        doc.reparent(cloned, cloned_child);
+    }
+    
+    cloned
+}
+
+/// Check if element has a specific name
+fn is_element_named(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> bool {
+    doc.get(node)
+        .and_then(|data| data.name())
+        .map(|name| name.namespace.as_deref() == Some(ns) && name.local_name == local)
+        .unwrap_or(false)
+}
+
+/// Check if element has a child with specific name
+fn has_child_element(doc: &XmlDocument, parent: NodeId, ns: &str, local: &str) -> bool {
+    doc.children(parent).any(|c| is_element_named(doc, c, ns, local))
+}
+
+/// Check if element has a specific attribute
+fn has_attribute(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> bool {
+    doc.get(node)
+        .and_then(|data| data.attributes())
+        .map(|attrs| attrs.iter().any(|a| 
+            a.name.namespace.as_deref() == Some(ns) && a.name.local_name == local
+        ))
+        .unwrap_or(false)
 }
 
 fn is_r_pr(doc: &XmlDocument, node: NodeId) -> bool {
@@ -781,12 +1422,15 @@ fn get_descendant_status(doc: &XmlDocument, node: NodeId) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::xml::parser;
+
     #[test]
     fn test_is_vml_related_element() {
         assert!(is_vml_related_element("pict"));
         assert!(is_vml_related_element("shape"));
         assert!(!is_vml_related_element("p"));
     }
+
     #[test]
     fn test_needs_xml_space() {
         assert!(needs_xml_space(" hello"));
@@ -795,6 +1439,257 @@ mod tests {
         assert!(!needs_xml_space("hello"));
         assert!(!needs_xml_space("hello world"));
         assert!(!needs_xml_space(""));
+    }
+
+    #[test]
+    fn test_needs_xml_space_preserve() {
+        assert!(needs_xml_space_preserve(" hello"));
+        assert!(needs_xml_space_preserve("hello "));
+        assert!(needs_xml_space_preserve(" hello "));
+        assert!(!needs_xml_space_preserve("hello"));
+        assert!(!needs_xml_space_preserve("hello world"));
+        assert!(!needs_xml_space_preserve(""));
+    }
+
+    #[test]
+    fn test_format_date_for_key() {
+        // Standard ISO date with timezone
+        assert_eq!(format_date_for_key("2023-01-15T10:30:00Z"), "2023-01-15T10:30:00");
+        // Date with offset
+        assert_eq!(format_date_for_key("2023-01-15T10:30:00+05:00"), "2023-01-15T10:30:00");
+        // Short date
+        assert_eq!(format_date_for_key("2023-01-15"), "2023-01-15");
+        // Empty
+        assert_eq!(format_date_for_key(""), "");
+    }
+
+    #[test]
+    fn test_group_adjacent_by_key() {
+        let mut doc = XmlDocument::new();
+        let r1 = doc.add_root(XmlNodeData::element(W::r()));
+        let r2 = doc.new_node(XmlNodeData::element(W::r()));
+        let r3 = doc.new_node(XmlNodeData::element(W::r()));
+        
+        let children = vec![r1, r2, r3];
+        let keys = vec!["KeyA".to_string(), "KeyA".to_string(), "KeyB".to_string()];
+        
+        let groups = group_adjacent_by_key(&children, &keys);
+        
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0].0, "KeyA");
+        assert_eq!(groups[0].1.len(), 2);
+        assert_eq!(groups[1].0, "KeyB");
+        assert_eq!(groups[1].1.len(), 1);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_simple_run_with_t() {
+        let mut doc = XmlDocument::new();
+        let run = doc.add_root(XmlNodeData::element(W::r()));
+        let t = doc.add_child(run, XmlNodeData::element(W::t()));
+        doc.add_child(t, XmlNodeData::Text("Hello".to_string()));
+        
+        let key = get_consolidation_key(&doc, run);
+        
+        assert!(key.starts_with("Wt"));
+        assert_ne!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_run_with_rpr_and_t() {
+        let mut doc = XmlDocument::new();
+        let run = doc.add_root(XmlNodeData::element(W::r()));
+        let rpr = doc.add_child(run, XmlNodeData::element(W::rPr()));
+        let b = doc.add_child(rpr, XmlNodeData::element(XName::new(W::NS, "b")));
+        let t = doc.add_child(run, XmlNodeData::element(W::t()));
+        doc.add_child(t, XmlNodeData::Text("Hello".to_string()));
+        
+        let key = get_consolidation_key(&doc, run);
+        
+        assert!(key.starts_with("Wt"));
+        assert!(key.contains("<w:b"));
+        assert_ne!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_run_with_instr_text() {
+        let mut doc = XmlDocument::new();
+        let run = doc.add_root(XmlNodeData::element(W::r()));
+        let it = doc.add_child(run, XmlNodeData::element(W::instrText()));
+        doc.add_child(it, XmlNodeData::Text("PAGEREF".to_string()));
+        
+        let key = get_consolidation_key(&doc, run);
+        
+        assert!(key.starts_with("WinstrText"));
+        assert_ne!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_run_with_multiple_children_returns_dont() {
+        let mut doc = XmlDocument::new();
+        let run = doc.add_root(XmlNodeData::element(W::r()));
+        let t = doc.add_child(run, XmlNodeData::element(W::t()));
+        doc.add_child(t, XmlNodeData::Text("Hello".to_string()));
+        doc.add_child(run, XmlNodeData::element(W::br()));
+        
+        let key = get_consolidation_key(&doc, run);
+        
+        assert_eq!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_ins_element() {
+        let mut doc = XmlDocument::new();
+        let ins = doc.add_root(XmlNodeData::element_with_attrs(W::ins(), vec![
+            XAttribute::new(W::author(), "Test Author"),
+            XAttribute::new(W::date(), "2023-01-15T10:30:00Z"),
+            XAttribute::new(W::id(), "1"),
+        ]));
+        let run = doc.add_child(ins, XmlNodeData::element(W::r()));
+        let t = doc.add_child(run, XmlNodeData::element(W::t()));
+        doc.add_child(t, XmlNodeData::Text("inserted".to_string()));
+        
+        let key = get_consolidation_key(&doc, ins);
+        
+        assert!(key.starts_with("Wins2"));
+        assert!(key.contains("Test Author"));
+        assert!(key.contains("2023-01-15T10:30:00"));
+        assert!(key.contains("1"));
+        assert_ne!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_del_element() {
+        let mut doc = XmlDocument::new();
+        let del = doc.add_root(XmlNodeData::element_with_attrs(W::del(), vec![
+            XAttribute::new(W::author(), "Test Author"),
+            XAttribute::new(W::date(), "2023-01-15T10:30:00Z"),
+        ]));
+        let run = doc.add_child(del, XmlNodeData::element(W::r()));
+        let dt = doc.add_child(run, XmlNodeData::element(W::delText()));
+        doc.add_child(dt, XmlNodeData::Text("deleted".to_string()));
+        
+        let key = get_consolidation_key(&doc, del);
+        
+        assert!(key.starts_with("Wdel"));
+        assert!(key.contains("Test Author"));
+        assert!(key.contains("2023-01-15T10:30:00"));
+        // Note: w:del does NOT include id in key (unlike w:ins)
+        assert_ne!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_get_consolidation_key_ins_with_del_child_returns_dont() {
+        let mut doc = XmlDocument::new();
+        let ins = doc.add_root(XmlNodeData::element(W::ins()));
+        doc.add_child(ins, XmlNodeData::element(W::del()));
+        
+        let key = get_consolidation_key(&doc, ins);
+        
+        assert_eq!(key, DONT_CONSOLIDATE);
+    }
+
+    #[test]
+    fn test_coalesce_adjacent_runs_merges_identical_runs() {
+        let mut doc = XmlDocument::new();
+        let para = doc.add_root(XmlNodeData::element(W::p()));
+        
+        // Create two runs with same formatting
+        let r1 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let t1 = doc.add_child(r1, XmlNodeData::element(W::t()));
+        doc.add_child(t1, XmlNodeData::Text("Hello".to_string()));
+        
+        let r2 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let t2 = doc.add_child(r2, XmlNodeData::element(W::t()));
+        doc.add_child(t2, XmlNodeData::Text(" World".to_string()));
+        
+        // Before coalescing: 2 runs
+        assert_eq!(doc.children(para).count(), 2);
+        
+        // Coalesce
+        coalesce_adjacent_runs_with_identical_formatting(&mut doc, para);
+        
+        // After coalescing: 1 run
+        let children: Vec<_> = doc.children(para).collect();
+        assert_eq!(children.len(), 1);
+        
+        // The merged run should contain "Hello World"
+        let merged_run = children[0];
+        let t_elem = doc.children(merged_run).find(|&c| is_element_named(&doc, c, W::NS, "t"));
+        assert!(t_elem.is_some());
+        
+        let text_node = doc.children(t_elem.unwrap()).next();
+        assert!(text_node.is_some());
+        if let Some(XmlNodeData::Text(text)) = doc.get(text_node.unwrap()) {
+            assert_eq!(text, "Hello World");
+        } else {
+            panic!("Expected text node");
+        }
+    }
+
+    #[test]
+    fn test_coalesce_does_not_merge_different_formatting() {
+        let mut doc = XmlDocument::new();
+        let para = doc.add_root(XmlNodeData::element(W::p()));
+        
+        // Create run with bold formatting
+        let r1 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let rpr1 = doc.add_child(r1, XmlNodeData::element(W::rPr()));
+        doc.add_child(rpr1, XmlNodeData::element(XName::new(W::NS, "b")));
+        let t1 = doc.add_child(r1, XmlNodeData::element(W::t()));
+        doc.add_child(t1, XmlNodeData::Text("Bold".to_string()));
+        
+        // Create run without formatting
+        let r2 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let t2 = doc.add_child(r2, XmlNodeData::element(W::t()));
+        doc.add_child(t2, XmlNodeData::Text("Normal".to_string()));
+        
+        // Before coalescing: 2 runs
+        assert_eq!(doc.children(para).count(), 2);
+        
+        // Coalesce
+        coalesce_adjacent_runs_with_identical_formatting(&mut doc, para);
+        
+        // After coalescing: still 2 runs (different formatting)
+        assert_eq!(doc.children(para).count(), 2);
+    }
+
+    #[test]
+    fn test_serialize_element_for_key() {
+        let mut doc = XmlDocument::new();
+        let rpr = doc.add_root(XmlNodeData::element(W::rPr()));
+        let b = doc.add_child(rpr, XmlNodeData::element(XName::new(W::NS, "b")));
+        
+        let serialized = serialize_element_for_key(&doc, rpr);
+        
+        assert!(serialized.contains("w:rPr"));
+        assert!(serialized.contains("w:b"));
+    }
+
+    #[test]
+    fn test_escape_xml_attr() {
+        assert_eq!(escape_xml_attr("hello"), "hello");
+        assert_eq!(escape_xml_attr("a&b"), "a&amp;b");
+        assert_eq!(escape_xml_attr("a<b"), "a&lt;b");
+        assert_eq!(escape_xml_attr("a>b"), "a&gt;b");
+        assert_eq!(escape_xml_attr("a\"b"), "a&quot;b");
+    }
+
+    #[test]
+    fn test_collect_text_from_group() {
+        let mut doc = XmlDocument::new();
+        let r1 = doc.add_root(XmlNodeData::element(W::r()));
+        let t1 = doc.add_child(r1, XmlNodeData::element(W::t()));
+        doc.add_child(t1, XmlNodeData::Text("Hello".to_string()));
+        
+        let r2 = doc.new_node(XmlNodeData::element(W::r()));
+        let t2 = doc.add_child(r2, XmlNodeData::element(W::t()));
+        doc.add_child(t2, XmlNodeData::Text(" World".to_string()));
+        
+        let group = vec![r1, r2];
+        let text = collect_text_from_group(&doc, &group, "Wt");
+        
+        assert_eq!(text, "Hello World");
     }
 }
 
