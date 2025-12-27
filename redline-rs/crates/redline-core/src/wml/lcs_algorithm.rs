@@ -367,6 +367,46 @@ fn process_correlated_hashes(
     Some(result)
 }
 
+/// Split a comparison unit slice at the first paragraph mark
+///
+/// Matches C# SplitAtParagraphMark (WmlComparer.cs:4974-4995)
+///
+/// Finds the first comparison unit that starts with a paragraph mark (w:pPr)
+/// and splits the slice into [0..i] and [i..end].
+/// If no paragraph mark is found, returns a single-element vec containing the original slice.
+///
+/// # Returns
+/// - `Vec<Vec<ComparisonUnit>>` with 1 element if no paragraph mark found
+/// - `Vec<Vec<ComparisonUnit>>` with 2 elements if paragraph mark found at index i:
+///   - First: units before the paragraph mark (0..i)
+///   - Second: units from paragraph mark onwards (i..end)
+fn split_at_paragraph_mark(units: &[ComparisonUnit]) -> Vec<Vec<ComparisonUnit>> {
+    // C# WmlComparer.cs:4977-4982
+    // for (i = 0; i < cua.Length; i++)
+    // {
+    //     var atom = cua[i].DescendantContentAtoms().FirstOrDefault();
+    //     if (atom != null && atom.ContentElement.Name == W.pPr)
+    //         break;
+    // }
+    for i in 0..units.len() {
+        // Get the first descendant atom from this comparison unit
+        let first_atom = units[i].descendant_atoms().first().cloned();
+        if let Some(atom) = first_atom {
+            if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+                // C# WmlComparer.cs:4990-4994: Split at this position
+                // Note: C# uses Take(i) then Skip(i), so first part is [0..i), second is [i..end]
+                return vec![
+                    units[..i].to_vec(),
+                    units[i..].to_vec(),
+                ];
+            }
+        }
+    }
+    
+    // C# WmlComparer.cs:4983-4988: No paragraph mark found, return single element
+    vec![units.to_vec()]
+}
+
 /// Find common elements at beginning and end
 ///
 /// Matches C# FindCommonAtBeginningAndEnd (WmlComparer.cs:4489-4972)
@@ -418,14 +458,95 @@ fn find_common_at_beginning_and_end(
         let remaining_right = units2.len() - count_common_at_beginning;
 
         if remaining_left > 0 && remaining_right == 0 {
+            // C# WmlComparer.cs:4536-4544
             result.push(CorrelatedSequence::deleted(
                 units1[count_common_at_beginning..].to_vec(),
             ));
         } else if remaining_left == 0 && remaining_right > 0 {
+            // C# WmlComparer.cs:4529-4534
             result.push(CorrelatedSequence::inserted(
                 units2[count_common_at_beginning..].to_vec(),
             ));
         } else if remaining_left > 0 && remaining_right > 0 {
+            // C# WmlComparer.cs:4546-4612: Paragraph-aware prefix splitting
+            // Check if we're operating at word level and can do paragraph-aware splitting
+            let first1 = units1[0].as_word();
+            let first2 = units2[0].as_word();
+            
+            if first1.is_some() && first2.is_some() {
+                // C# WmlComparer.cs:4551-4561: Comment from C# explains the logic:
+                // if operating at the word level and
+                //   if the last word on the left != pPr && last word on right != pPr
+                //     then create an unknown for the rest of the paragraph, and create an unknown for the rest of the unknown
+                //   if the last word on the left != pPr and last word on right == pPr
+                //     then create deleted for the left, and create an unknown for the rest of the unknown
+                //   if the last word on the left == pPr and last word on right != pPr
+                //     then create inserted for the right, and create an unknown for the rest of the unknown
+                //   if the last word on the left == pPr and last word on right == pPr
+                //     then create an unknown for the rest of the unknown
+                
+                // C# WmlComparer.cs:4563-4571: Get remaining content after common prefix
+                let remaining_in_left = units1[count_common_at_beginning..].to_vec();
+                let remaining_in_right = units2[count_common_at_beginning..].to_vec();
+                
+                // C# WmlComparer.cs:4573-4574: Get last content atom from the last common element
+                // Note: C# uses countCommonAtBeginning - 1 to get the last element of the common prefix
+                let last_content_atom_left = units1[count_common_at_beginning - 1]
+                    .descendant_atoms()
+                    .first()
+                    .cloned();
+                let last_content_atom_right = units2[count_common_at_beginning - 1]
+                    .descendant_atoms()
+                    .first()
+                    .cloned();
+                
+                // C# WmlComparer.cs:4576: Check if both last atoms are NOT paragraph properties
+                let left_not_ppr = last_content_atom_left
+                    .as_ref()
+                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties))
+                    .unwrap_or(false);
+                let right_not_ppr = last_content_atom_right
+                    .as_ref()
+                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties))
+                    .unwrap_or(false);
+                
+                if left_not_ppr && right_not_ppr {
+                    // C# WmlComparer.cs:4578-4579: Split remaining content at paragraph marks
+                    let split1 = split_at_paragraph_mark(&remaining_in_left);
+                    let split2 = split_at_paragraph_mark(&remaining_in_right);
+                    
+                    // C# WmlComparer.cs:4580-4588: Both have no split (no paragraph mark in either)
+                    if split1.len() == 1 && split2.len() == 1 {
+                        result.push(CorrelatedSequence::unknown(
+                            split1.into_iter().next().unwrap(),
+                            split2.into_iter().next().unwrap(),
+                        ));
+                        return Some(result);
+                    }
+                    // C# WmlComparer.cs:4589-4604: Both split at paragraph mark
+                    else if split1.len() == 2 && split2.len() == 2 {
+                        // First unknown: content before paragraph mark
+                        let mut split1_iter = split1.into_iter();
+                        let mut split2_iter = split2.into_iter();
+                        
+                        result.push(CorrelatedSequence::unknown(
+                            split1_iter.next().unwrap(),
+                            split2_iter.next().unwrap(),
+                        ));
+                        
+                        // Second unknown: content from paragraph mark onwards
+                        result.push(CorrelatedSequence::unknown(
+                            split1_iter.next().unwrap(),
+                            split2_iter.next().unwrap(),
+                        ));
+                        
+                        return Some(result);
+                    }
+                    // C# WmlComparer.cs:4605: Fall through to default case if split counts don't match
+                }
+            }
+            
+            // C# WmlComparer.cs:4608-4612: Default case - single unknown for all remaining
             result.push(CorrelatedSequence::unknown(
                 units1[count_common_at_beginning..].to_vec(),
                 units2[count_common_at_beginning..].to_vec(),
@@ -1894,5 +2015,95 @@ mod tests {
         let correlated: Vec<CorrelatedSequence> = vec![];
         let atoms = flatten_to_atoms(&correlated);
         assert!(atoms.is_empty());
+    }
+
+    /// Helper to create a word that represents a paragraph mark (w:pPr)
+    fn make_para_mark() -> ComparisonUnitWord {
+        let settings = WmlComparerSettings::default();
+        let atoms = vec![ComparisonUnitAtom::new(
+            ContentElement::ParagraphProperties,
+            vec![],
+            "main",
+            &settings,
+        )];
+        ComparisonUnitWord::new(atoms)
+    }
+
+    #[test]
+    fn test_split_at_paragraph_mark_no_para_mark() {
+        // Test case: No paragraph mark in the units
+        // Should return a single element containing all units
+        let units = vec![
+            ComparisonUnit::Word(make_word("hello")),
+            ComparisonUnit::Word(make_word("world")),
+        ];
+
+        let result = split_at_paragraph_mark(&units);
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].len(), 2);
+    }
+
+    #[test]
+    fn test_split_at_paragraph_mark_with_para_mark_at_end() {
+        // Test case: Paragraph mark at the end
+        // Should return [hello, world] and [pPr]
+        let units = vec![
+            ComparisonUnit::Word(make_word("hello")),
+            ComparisonUnit::Word(make_word("world")),
+            ComparisonUnit::Word(make_para_mark()),
+        ];
+
+        let result = split_at_paragraph_mark(&units);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].len(), 2); // hello, world
+        assert_eq!(result[1].len(), 1); // pPr
+    }
+
+    #[test]
+    fn test_split_at_paragraph_mark_with_para_mark_in_middle() {
+        // Test case: Paragraph mark in the middle
+        // Should return [hello] and [pPr, world]
+        let units = vec![
+            ComparisonUnit::Word(make_word("hello")),
+            ComparisonUnit::Word(make_para_mark()),
+            ComparisonUnit::Word(make_word("world")),
+        ];
+
+        let result = split_at_paragraph_mark(&units);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].len(), 1); // hello
+        assert_eq!(result[1].len(), 2); // pPr, world
+    }
+
+    #[test]
+    fn test_split_at_paragraph_mark_para_mark_first() {
+        // Test case: Paragraph mark at the beginning
+        // Should return [] and [pPr, hello, world]
+        let units = vec![
+            ComparisonUnit::Word(make_para_mark()),
+            ComparisonUnit::Word(make_word("hello")),
+            ComparisonUnit::Word(make_word("world")),
+        ];
+
+        let result = split_at_paragraph_mark(&units);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].len(), 0); // empty before pPr
+        assert_eq!(result[1].len(), 3); // pPr, hello, world
+    }
+
+    #[test]
+    fn test_split_at_paragraph_mark_empty_input() {
+        // Test case: Empty input
+        // Should return a single empty vec
+        let units: Vec<ComparisonUnit> = vec![];
+
+        let result = split_at_paragraph_mark(&units);
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].len(), 0);
     }
 }
