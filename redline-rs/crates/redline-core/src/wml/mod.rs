@@ -1,5 +1,6 @@
 mod atom_list;
 mod block_hash;
+mod change_event;
 mod coalesce;
 mod comparison_unit;
 mod comparer;
@@ -77,4 +78,8 @@ pub use drawing_identity::{
 pub use preprocess::{
     preprocess_markup, add_correlated_hashes_from_processed_doc,
     repair_unids_after_revision_acceptance, PreProcessSettings,
+};
+pub use change_event::{
+    ChangeEvent, ChangeEventResult, emit_change_events, 
+    group_adjacent_events, count_revisions_from_events, detect_format_changes,
 };
