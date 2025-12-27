@@ -1150,14 +1150,13 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
     let mut run_attrs = ancestor.attributes.clone();
     run_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     let run = doc.add_child(parent, XmlNodeData::element_with_attrs(W::r(), run_attrs));
-    let mut format_changed = false;
+    let mut format_changed = grouped_children.iter().any(|(_, atoms)| {
+        atoms.iter().any(|atom| atom.correlation_status == ComparisonCorrelationStatus::FormatChanged)
+    });
     for (key, group_atoms) in grouped_children {
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
-                if gcc.correlation_status == ComparisonCorrelationStatus::FormatChanged {
-                    format_changed = true;
-                }
                 let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
                 if let Some(node) = content_elem_node { doc.reparent(run, node); }
             }
@@ -1692,4 +1691,3 @@ mod tests {
         assert_eq!(text, "Hello World");
     }
 }
-

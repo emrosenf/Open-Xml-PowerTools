@@ -20,6 +20,7 @@
 use super::atom_list::create_comparison_unit_atom_list;
 use super::coalesce::{coalesce, mark_content_as_deleted_or_inserted, coalesce_adjacent_runs};
 use super::comparison_unit::{get_comparison_unit_list, WordSeparatorSettings, ComparisonUnitAtom, ComparisonCorrelationStatus, ContentElement};
+use super::change_event::detect_format_changes;
 use super::document::{
     extract_paragraph_text, find_document_body, find_paragraphs, find_footnotes_root, 
     find_endnotes_root, find_note_paragraphs, find_note_by_id, WmlDocument,
@@ -441,19 +442,7 @@ fn count_revisions_smart(
 }
 
 fn reconcile_formatting_changes(atoms: &mut [ComparisonUnitAtom], settings: &WmlComparerSettings) {
-    if !settings.track_formatting_changes {
-        return;
-    }
-
-    for atom in atoms {
-        if let Some(ref before) = atom.comparison_unit_atom_before {
-            if atom.correlation_status == ComparisonCorrelationStatus::Equal {
-                if atom.formatting_signature != before.formatting_signature {
-                    atom.correlation_status = ComparisonCorrelationStatus::FormatChanged;
-                }
-            }
-        }
-    }
+    detect_format_changes(atoms, settings);
 }
 
 /// Port of C# GetRevisions grouping logic (WmlComparer.cs:3909-3926)

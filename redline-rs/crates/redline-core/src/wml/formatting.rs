@@ -123,8 +123,10 @@ pub fn compute_normalized_rpr(
                         
                         for attr in attributes.iter() {
                             let is_pt_namespace = attr.name.namespace.as_deref() == Some(PT::NS);
+                            let is_xmlns = attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
                             
                             if is_pt_namespace
+                                || is_xmlns
                                 || attr.name.local_name == "Unid"
                                 || attr.name.local_name.to_lowercase().starts_with("rsid") 
                             {

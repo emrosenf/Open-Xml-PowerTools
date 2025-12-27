@@ -25,7 +25,7 @@
 
 use crate::package::OoxmlPackage;
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{A, R, V, W, WP14};
+use crate::xml::namespaces::{A, R, V, W, WP14, PT};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
@@ -312,21 +312,45 @@ fn hash_xml_element_recursive(
     match data {
         XmlNodeData::Element { name, attributes } => {
             hasher.update(name.local_name.as_bytes());
-            for attr in attributes {
+            let mut filtered_attrs: Vec<_> = attributes
+                .iter()
+                .filter(|attr| {
+                    if attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/") {
+                        return false;
+                    }
+                    if &attr.name == pt_unid
+                        || &attr.name == pt_sha1
+                        || attr.name.namespace.as_deref() == Some(PT::NS)
+                    {
+                        return false;
+                    }
+                    if attr.name.namespace.as_deref() == Some(R::NS) {
+                        return false;
+                    }
+                    if attr.name.namespace.as_deref() == Some(WP14::NS) {
+                        return false;
+                    }
+                    if attr.name.namespace.is_none()
+                        && matches!(
+                            attr.name.local_name.as_str(),
+                            "ObjectID" | "ShapeID" | "id" | "type"
+                        )
+                    {
+                        return false;
+                    }
+                    true
+                })
+                .collect();
+
+            filtered_attrs.sort_by(|a, b| {
+                let a_ns = a.name.namespace.as_deref().unwrap_or("");
+                let b_ns = b.name.namespace.as_deref().unwrap_or("");
+                (a_ns, a.name.local_name.as_str(), a.value.as_str())
+                    .cmp(&(b_ns, b.name.local_name.as_str(), b.value.as_str()))
+            });
+
+            for attr in filtered_attrs {
                 // Skip PT namespace attributes
-                if &attr.name == pt_unid || &attr.name == pt_sha1 {
-                    continue;
-                }
-                // Skip relationship attributes (r:embed, r:id, r:link, etc.)
-                // These change between document saves even for identical images
-                if attr.name.namespace.as_deref() == Some(R::NS) {
-                    continue;
-                }
-                // Skip WP14 namespace attributes (anchorId, editId)
-                // These are edit-tracking IDs that change between saves
-                if attr.name.namespace.as_deref() == Some(WP14::NS) {
-                    continue;
-                }
                 hasher.update(attr.name.local_name.as_bytes());
                 hasher.update(attr.value.as_bytes());
             }

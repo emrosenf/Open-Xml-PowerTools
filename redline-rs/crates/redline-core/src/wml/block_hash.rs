@@ -5,7 +5,7 @@
 //! efficient block-level matching during document comparison.
 
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{PT, W};
+use crate::xml::namespaces::{PT, W, WP14};
 use crate::xml::node::XmlNodeData;
 use crate::xml::xname::XName;
 use indextree::NodeId;
@@ -31,6 +31,21 @@ fn is_rsid_attribute(name: &XName) -> bool {
 
 fn is_pt_namespace(name: &XName) -> bool {
     name.namespace.as_deref() == Some(PT::NS)
+}
+
+fn should_trim_attribute(name: &XName) -> bool {
+    if name.namespace.as_deref() == Some(WP14::NS) {
+        return matches!(name.local_name.as_str(), "anchorId" | "editId");
+    }
+
+    if name.namespace.is_none() {
+        return matches!(
+            name.local_name.as_str(),
+            "ObjectID" | "ShapeID" | "id" | "type"
+        );
+    }
+
+    false
 }
 
 fn should_skip_element(name: &XName) -> bool {
@@ -171,7 +186,11 @@ fn clone_element_for_hashing(
             output.push_str(local);
 
             for attr in attributes {
-                if is_rsid_attribute(&attr.name) || is_pt_namespace(&attr.name) {
+                if is_rsid_attribute(&attr.name)
+                    || is_pt_namespace(&attr.name)
+                    || should_trim_attribute(&attr.name)
+                    || attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/")
+                {
                     continue;
                 }
                 output.push(' ');
