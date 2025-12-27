@@ -5,6 +5,7 @@ mod comparison_unit;
 mod comparer;
 mod consolidate;
 mod document;
+mod drawing_identity;
 mod formatting;
 mod get_revisions;
 mod lcs_algorithm;
@@ -18,7 +19,7 @@ mod simplify;
 mod types;
 mod repro_test;
 
-pub use atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list};
+pub use atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list, create_comparison_unit_atom_list_with_package};
 pub use block_hash::{
     clone_block_level_content_for_hashing, compute_block_hash, hash_block_level_content,
     HashingSettings,
@@ -69,6 +70,9 @@ pub use types::{
 pub use formatting::{
     compute_normalized_rpr, compute_formatting_signature, compute_formatting_signature_hash,
     formatting_differs,
+};
+pub use drawing_identity::{
+    compute_drawing_identity, has_textbox_content, get_drawing_info, DrawingInfo,
 };
 pub use preprocess::{
     preprocess_markup, add_correlated_hashes_from_processed_doc,

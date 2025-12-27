@@ -1,4 +1,6 @@
+use crate::package::OoxmlPackage;
 use crate::wml::comparison_unit::{AncestorInfo, ComparisonUnitAtom, ContentElement, generate_unid};
+use crate::wml::drawing_identity::compute_drawing_identity;
 use crate::wml::formatting::{compute_normalized_rpr, compute_formatting_signature};
 use crate::wml::settings::WmlComparerSettings;
 use crate::xml::arena::XmlDocument;
@@ -84,11 +86,36 @@ pub fn assign_unid_to_all_elements(doc: &mut XmlDocument, content_parent: NodeId
     }
 }
 
+/// Create a list of comparison unit atoms from a document.
+///
+/// This version does not resolve image relationships - drawings are hashed by XML structure only.
+/// For proper image identity (SHA1 of binary content), use `create_comparison_unit_atom_list_with_package`.
 pub fn create_comparison_unit_atom_list(
     doc: &mut XmlDocument,
     content_parent: NodeId,
     part_name: &str,
     settings: &WmlComparerSettings,
+) -> Vec<ComparisonUnitAtom> {
+    create_comparison_unit_atom_list_with_package(doc, content_parent, part_name, settings, None)
+}
+
+/// Create a list of comparison unit atoms from a document with package access.
+///
+/// This version resolves image relationships and computes SHA1 of binary image content
+/// for stable drawing identity. This is the recommended version when package access is available.
+///
+/// # Arguments
+/// * `doc` - The XML document
+/// * `content_parent` - The parent node to start from
+/// * `part_name` - The name of the part (e.g., "word/document.xml")
+/// * `settings` - Comparer settings
+/// * `package` - Optional OOXML package for resolving image relationships
+pub fn create_comparison_unit_atom_list_with_package(
+    doc: &mut XmlDocument,
+    content_parent: NodeId,
+    part_name: &str,
+    settings: &WmlComparerSettings,
+    package: Option<&OoxmlPackage>,
 ) -> Vec<ComparisonUnitAtom> {
     let mut atoms = Vec::new();
     let allowable = allowable_run_children();
@@ -105,6 +132,7 @@ pub fn create_comparison_unit_atom_list(
         &throw_away,
         settings,
         None,
+        package,
     );
     
     atoms
@@ -120,6 +148,7 @@ fn create_atom_list_recurse(
     throw_away: &HashSet<String>,
     settings: &WmlComparerSettings,
     current_formatting_signature: Option<String>,
+    package: Option<&OoxmlPackage>,
 ) {
     let Some(data) = doc.get(node) else { return };
     let Some(name) = data.name() else { return };
@@ -130,7 +159,7 @@ fn create_atom_list_recurse(
     if ns == Some(W::NS) && (local == "body" || local == "footnote" || local == "endnote") {
         let children: Vec<_> = doc.children(node).collect();
         for child in children {
-            create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None);
+            create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None, package);
         }
         return;
     }
@@ -141,7 +170,7 @@ fn create_atom_list_recurse(
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
                     if !(child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "pPr") {
-                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None);
+                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None, package);
                     }
                 }
             }
@@ -172,7 +201,8 @@ fn create_atom_list_recurse(
                             allowable_math, 
                             throw_away, 
                             settings, 
-                            formatting_signature.clone()
+                            formatting_signature.clone(),
+                            package,
                         );
                     }
                 }
@@ -201,7 +231,7 @@ fn create_atom_list_recurse(
     if (ns == Some(W::NS) && allowable.contains(local)) || 
        (ns == Some(M::NS) && allowable_math.contains(local)) {
         let ancestors = build_ancestor_chain(doc, node);
-        let content = create_content_element(doc, node, ns.unwrap_or(""), local);
+        let content = create_content_element_with_package(doc, node, ns.unwrap_or(""), local, part_name, package);
         let mut atom = ComparisonUnitAtom::new(content, ancestors, part_name, settings);
         atom.formatting_signature = current_formatting_signature.clone();
         atoms.push(atom);
@@ -239,7 +269,8 @@ fn create_atom_list_recurse(
                             allowable_math, 
                             throw_away, 
                             settings, 
-                            current_formatting_signature.clone()
+                            current_formatting_signature.clone(),
+                            package,
                         );
                     }
                 }
@@ -274,7 +305,8 @@ fn create_atom_list_recurse(
                 create_atom_list_recurse(
                     doc, fallback_child, atoms, part_name, 
                     allowable, allowable_math, throw_away, 
-                    settings, current_formatting_signature.clone()
+                    settings, current_formatting_signature.clone(),
+                    package,
                 );
             }
             return;
@@ -294,7 +326,8 @@ fn create_atom_list_recurse(
                 create_atom_list_recurse(
                     doc, choice_child, atoms, part_name, 
                     allowable, allowable_math, throw_away, 
-                    settings, current_formatting_signature.clone()
+                    settings, current_formatting_signature.clone(),
+                    package,
                 );
             }
             return;
@@ -306,7 +339,7 @@ fn create_atom_list_recurse(
     
     let children: Vec<_> = doc.children(node).collect();
     for child in children {
-        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, current_formatting_signature.clone());
+        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, current_formatting_signature.clone(), package);
     }
 }
 
@@ -361,7 +394,16 @@ fn extract_text_content(doc: &XmlDocument, node: NodeId) -> String {
     text
 }
 
-fn create_content_element(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> ContentElement {
+/// Create a content element with package access for proper drawing identity.
+/// This version uses the drawing identity module to compute SHA1 of image content.
+fn create_content_element_with_package(
+    doc: &XmlDocument, 
+    node: NodeId, 
+    ns: &str, 
+    local: &str,
+    part_name: &str,
+    package: Option<&OoxmlPackage>,
+) -> ContentElement {
     match (ns, local) {
         (W::NS, "br") => ContentElement::Break,
         (W::NS, "tab") => ContentElement::Tab,
@@ -375,7 +417,8 @@ fn create_content_element(doc: &XmlDocument, node: NodeId, ns: &str, local: &str
             ContentElement::EndnoteReference { id }
         }
         (W::NS, "drawing") => {
-            let hash = compute_element_hash(doc, node);
+            // Use the new drawing identity module for stable SHA1-based identity
+            let hash = compute_drawing_identity(doc, node, package, part_name);
             ContentElement::Drawing { hash }
         }
         (W::NS, "sym") => {
