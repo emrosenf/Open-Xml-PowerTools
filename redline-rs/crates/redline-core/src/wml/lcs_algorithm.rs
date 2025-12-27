@@ -234,11 +234,13 @@ fn process_correlated_hashes(
         ComparisonUnitGroupType::Paragraph
             | ComparisonUnitGroupType::Table
             | ComparisonUnitGroupType::Row
+            | ComparisonUnitGroupType::Textbox
     ) && matches!(
         first2.group_type,
         ComparisonUnitGroupType::Paragraph
             | ComparisonUnitGroupType::Table
             | ComparisonUnitGroupType::Row
+            | ComparisonUnitGroupType::Textbox
     );
 
     if !valid_types {

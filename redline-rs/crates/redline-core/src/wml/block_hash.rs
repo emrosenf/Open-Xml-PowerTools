@@ -448,7 +448,7 @@ pub fn hash_block_level_content(
             if let Some(name) = data.name() {
                 let ns = name.namespace.as_deref();
                 let local = &name.local_name;
-                if ns == Some(W::NS) && (local == "p" || local == "tbl" || local == "tr") {
+                if ns == Some(W::NS) && (local == "p" || local == "tbl" || local == "tr" || local == "txbxContent") {
                     if let Some(attrs) = data.attributes() {
                         if let Some(unid_attr) = attrs.iter().find(|a| a.name == pt_unid) {
                             source_unid_map.insert(unid_attr.value.clone(), node);
@@ -464,7 +464,7 @@ pub fn hash_block_level_content(
             if let Some(name) = data.name() {
                 let ns = name.namespace.as_deref();
                 let local = &name.local_name;
-                if ns == Some(W::NS) && (local == "p" || local == "tbl" || local == "tr") {
+                if ns == Some(W::NS) && (local == "p" || local == "tbl" || local == "tr" || local == "txbxContent") {
                     let sha1_hash = compute_block_hash(after_proc_doc, node, settings);
 
                     if let Some(attrs) = data.attributes() {
