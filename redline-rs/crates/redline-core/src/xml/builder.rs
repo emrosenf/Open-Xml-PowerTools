@@ -3,6 +3,7 @@ use super::node::XmlNodeData;
 use crate::error::Result;
 use quick_xml::events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event};
 use quick_xml::Writer;
+use std::collections::HashMap;
 use std::io::Cursor;
 
 pub fn serialize(doc: &XmlDocument) -> Result<String> {
@@ -18,16 +19,66 @@ pub fn serialize_bytes(doc: &XmlDocument) -> Result<Vec<u8>> {
         .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
 
     if let Some(root_id) = doc.root() {
-        write_node(doc, root_id, &mut writer)?;
+        let mut namespace_map = NamespaceMap::new();
+        if let Some(root_data) = doc.get(root_id) {
+            if let Some(attrs) = root_data.attributes() {
+                extend_namespace_map(&mut namespace_map, attrs);
+            }
+        }
+        write_node(doc, root_id, &mut writer, &namespace_map)?;
     }
 
     Ok(writer.into_inner().into_inner())
+}
+
+type NamespaceMap = HashMap<String, String>;
+
+fn extend_namespace_map(namespace_map: &mut NamespaceMap, attributes: &[super::xname::XAttribute]) {
+    for attr in attributes {
+        let Some(ns) = &attr.name.namespace else {
+            if attr.name.local_name == "xmlns" {
+                // Default namespace declaration.
+                namespace_map.entry(attr.value.clone()).or_insert_with(String::new);
+            }
+            continue;
+        };
+
+        if ns == "http://www.w3.org/2000/xmlns/" {
+            // Namespace declaration: xmlns:prefix="uri".
+            namespace_map
+                .entry(attr.value.clone())
+                .or_insert_with(|| attr.name.local_name.clone());
+        }
+    }
+}
+
+fn prefix_for_namespace<'a>(namespace: &str, namespace_map: &'a NamespaceMap) -> &'a str {
+    if let Some(prefix) = namespace_map.get(namespace) {
+        return prefix.as_str();
+    }
+
+    get_prefix(namespace)
+}
+
+fn prefix_for_attribute<'a>(namespace: &str, namespace_map: &'a NamespaceMap) -> &'a str {
+    if namespace == "http://www.w3.org/2000/xmlns/" {
+        return "xmlns";
+    }
+
+    if let Some(prefix) = namespace_map.get(namespace) {
+        if !prefix.is_empty() {
+            return prefix.as_str();
+        }
+    }
+
+    get_prefix(namespace)
 }
 
 fn write_node<W: std::io::Write>(
     doc: &XmlDocument,
     node_id: indextree::NodeId,
     writer: &mut Writer<W>,
+    namespace_map: &NamespaceMap,
 ) -> Result<()> {
     let Some(node_data) = doc.get(node_id) else {
         return Ok(());
@@ -35,8 +86,16 @@ fn write_node<W: std::io::Write>(
 
     match node_data {
         XmlNodeData::Element { name, attributes } => {
+            let mut scoped_map = namespace_map.clone();
+            extend_namespace_map(&mut scoped_map, attributes);
+
             let tag_name = if let Some(ns) = &name.namespace {
-                format!("{}:{}", get_prefix(ns), &name.local_name)
+                let prefix = prefix_for_namespace(ns, &scoped_map);
+                if prefix.is_empty() {
+                    name.local_name.clone()
+                } else {
+                    format!("{}:{}", prefix, &name.local_name)
+                }
             } else {
                 name.local_name.clone()
             };
@@ -45,7 +104,12 @@ fn write_node<W: std::io::Write>(
             
             for attr in attributes {
                 let attr_name = if let Some(ns) = &attr.name.namespace {
-                    format!("{}:{}", get_prefix(ns), &attr.name.local_name)
+                    let prefix = prefix_for_attribute(ns, &scoped_map);
+                    if prefix.is_empty() {
+                        attr.name.local_name.clone()
+                    } else {
+                        format!("{}:{}", prefix, &attr.name.local_name)
+                    }
                 } else {
                     attr.name.local_name.clone()
                 };
@@ -64,7 +128,7 @@ fn write_node<W: std::io::Write>(
                     .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
                 
                 for child_id in children {
-                    write_node(doc, child_id, writer)?;
+                    write_node(doc, child_id, writer, &scoped_map)?;
                 }
                 
                 writer
@@ -111,6 +175,10 @@ fn get_prefix(namespace: &str) -> &'static str {
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships" => "r",
         "http://schemas.openxmlformats.org/markup-compatibility/2006" => "mc",
         "http://powertools.codeplex.com/2011" => "pt",
+        // xmlns namespace for namespace declarations (xmlns:mc="...", etc.)
+        "http://www.w3.org/2000/xmlns/" => "xmlns",
+        // xml namespace for xml:space, xml:lang, etc.
+        "http://www.w3.org/XML/1998/namespace" => "xml",
         _ => "ns",
     }
 }

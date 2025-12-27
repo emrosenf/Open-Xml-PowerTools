@@ -44,7 +44,7 @@ fn build_tree(
                 node.tag_name().name(),
             );
             
-            let attributes: Vec<XAttribute> = node
+            let mut attributes: Vec<XAttribute> = node
                 .attributes()
                 .map(|attr| {
                     XAttribute::new(
@@ -53,6 +53,24 @@ fn build_tree(
                     )
                 })
                 .collect();
+            
+            // Capture namespace declarations as attributes (xmlns:prefix="uri")
+            // roxmltree separates these from regular attributes
+            for ns in node.namespaces() {
+                if let Some(prefix) = ns.name() {
+                    // This is xmlns:prefix="uri"
+                    attributes.push(XAttribute::new(
+                        XName::new("http://www.w3.org/2000/xmlns/", prefix),
+                        ns.uri(),
+                    ));
+                } else {
+                    // This is xmlns="uri" (default namespace)
+                    attributes.push(XAttribute::new(
+                        XName::local("xmlns"),
+                        ns.uri(),
+                    ));
+                }
+            }
             
             XmlNodeData::Element { name, attributes }
         }
