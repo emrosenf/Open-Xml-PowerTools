@@ -17,14 +17,14 @@
 //! 6. FlattenToComparisonUnitAtomList (flatten with status)
 //! 7. ProduceNewWmlMarkupFromCorrelatedSequence (generate result document)
 
-use super::atom_list::{assign_unid_to_all_elements, create_comparison_unit_atom_list};
+use super::atom_list::create_comparison_unit_atom_list;
 use super::coalesce::{coalesce, mark_content_as_deleted_or_inserted, coalesce_adjacent_runs};
 use super::comparison_unit::{get_comparison_unit_list, WordSeparatorSettings, ComparisonUnitAtom, ComparisonCorrelationStatus, ContentElement};
 use super::document::{
     extract_paragraph_text, find_document_body, find_paragraphs, find_footnotes_root, 
     find_endnotes_root, find_note_paragraphs, find_note_by_id, WmlDocument,
 };
-use super::lcs_algorithm::{self, lcs, flatten_to_atoms, CorrelatedSequence};
+use super::lcs_algorithm::{lcs, flatten_to_atoms};
 use super::preprocess::{preprocess_markup, PreProcessSettings};
 use super::revision::{count_revisions, reset_revision_id_counter};
 use super::revision_accepter::accept_revisions;
@@ -33,7 +33,6 @@ use super::types::WmlComparisonResult;
 use crate::error::Result;
 use crate::util::lcs::{self, compute_correlation, Hashable, LcsSettings};
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::W;
 use crate::xml::xname::{XAttribute, XName};
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
@@ -109,7 +108,7 @@ impl WmlComparer {
             });
         }
 
-        let (mut insertions, mut deletions, mut format_changes, coalesce_result) = {
+        let (mut insertions, mut deletions, mut format_changes, coalesce_result, correlated_atoms) = {
             let root_data = doc2.get(doc2.root().unwrap()).unwrap();
             let root_name = root_data.name().unwrap().clone();
             let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
@@ -121,22 +120,24 @@ impl WmlComparer {
         let mut result_doc = WmlDocument::from_bytes(&source2_bytes)?;
         result_doc.package_mut().put_xml_part("word/document.xml", &coalesce_result.document)?;
 
-        // Process footnotes
+        // Process footnotes - collect references from correlated atoms
+        let footnote_refs = collect_note_references(&correlated_atoms, "footnoteReference");
         let footnotes1 = source1.footnotes()?;
         let footnotes2 = source2.footnotes()?;
-        if footnotes1.is_some() || footnotes2.is_some() {
-            let res = process_notes(footnotes1, footnotes2, "footnotes", &settings)?;
+        if !footnote_refs.is_empty() && (footnotes1.is_some() || footnotes2.is_some()) {
+            let res = process_notes(footnotes1, footnotes2, "footnotes", &footnote_refs, &settings)?;
             insertions += res.insertions;
             deletions += res.deletions;
             format_changes += res.format_changes;
             result_doc.package_mut().put_xml_part("word/footnotes.xml", &res.document)?;
         }
 
-        // Process endnotes
+        // Process endnotes - collect references from correlated atoms
+        let endnote_refs = collect_note_references(&correlated_atoms, "endnoteReference");
         let endnotes1 = source1.endnotes()?;
         let endnotes2 = source2.endnotes()?;
-        if endnotes1.is_some() || endnotes2.is_some() {
-            let res = process_notes(endnotes1, endnotes2, "endnotes", &settings)?;
+        if !endnote_refs.is_empty() && (endnotes1.is_some() || endnotes2.is_some()) {
+            let res = process_notes(endnotes1, endnotes2, "endnotes", &endnote_refs, &settings)?;
             insertions += res.insertions;
             deletions += res.deletions;
             format_changes += res.format_changes;
@@ -849,7 +850,7 @@ fn compare_atoms_internal(
     root_name: XName,
     root_attrs: Vec<XAttribute>,
     settings: &WmlComparerSettings,
-) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult)> {
+) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult, Vec<ComparisonUnitAtom>)> {
     let word_settings = WordSeparatorSettings::default();
     let units1 = get_comparison_unit_list(atoms1, &word_settings);
     let units2 = get_comparison_unit_list(atoms2, &word_settings);
@@ -881,7 +882,8 @@ fn compare_atoms_internal(
     // Format changes are counted from XML as they're added during mark_content_as_deleted_or_inserted
     let format_changes = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
     
-    Ok((insertions, deletions, format_changes, coalesce_result))
+    // Return flattened atoms for note reference collection
+    Ok((insertions, deletions, format_changes, coalesce_result, flattened_atoms))
 }
 
 struct NoteProcessingResult {
@@ -891,10 +893,33 @@ struct NoteProcessingResult {
     document: XmlDocument,
 }
 
+/// Collect note reference IDs from comparison unit atoms
+/// Matches C# WmlComparer.cs:2910-2914
+fn collect_note_references(atoms: &[ComparisonUnitAtom], note_type: &str) -> Vec<(String, ComparisonCorrelationStatus)> {
+    let mut references = Vec::new();
+    
+    for atom in atoms {
+        let is_match = match &atom.content_element {
+            ContentElement::FootnoteReference { id } if note_type == "footnoteReference" => Some(id.clone()),
+            ContentElement::EndnoteReference { id } if note_type == "endnoteReference" => Some(id.clone()),
+            _ => None,
+        };
+        
+        if let Some(id) = is_match {
+            references.push((id, atom.correlation_status));
+        }
+    }
+    
+    references
+}
+
+/// Process notes (footnotes/endnotes) using per-reference comparison
+/// Matches C# WmlComparer.cs:2885-3248 ProcessFootnoteEndnote
 fn process_notes(
     source1_opt: Option<XmlDocument>,
     source2_opt: Option<XmlDocument>,
     part_type: &str,
+    reference_ids: &[(String, ComparisonCorrelationStatus)],
     settings: &WmlComparerSettings,
 ) -> Result<NoteProcessingResult> {
     let mut total_ins = 0;
@@ -921,28 +946,68 @@ fn process_notes(
         if part_type == "footnotes" { find_footnotes_root(doc) } else { find_endnotes_root(doc) }
     });
 
-    match (source1_opt, source2_opt, root1_opt, root2_opt) {
-        (Some(mut doc1), Some(mut doc2), Some(r1), Some(r2)) => {
-            // Both have notes - compare them
-            let (ins, del, fmt, coalesce_res) = compare_part_content(&mut doc1, r1, &mut doc2, r2, part_type, settings)?;
-            total_ins = ins;
-            total_del = del;
-            total_fmt = fmt;
-            result_doc = coalesce_res.document;
+    // Process each reference individually
+    for (ref_id, correlation_status) in reference_ids {
+        match correlation_status {
+            ComparisonCorrelationStatus::Equal => {
+                // Both documents have this note - compare them
+                if let (Some(ref doc1), Some(ref doc2), Some(root1), Some(root2)) = 
+                    (&source1_opt, &source2_opt, root1_opt, root2_opt) {
+                    
+                    if let (Some(note1_id), Some(note2_id)) = (
+                        find_note_by_id(doc1, root1, ref_id),
+                        find_note_by_id(doc2, root2, ref_id),
+                    ) {
+                        // Compare this specific note
+                        let mut doc1_clone = {
+                            let xml = crate::xml::builder::serialize(doc1)?;
+                            crate::xml::parser::parse(&xml)?
+                        };
+                        let mut doc2_clone = {
+                            let xml = crate::xml::builder::serialize(doc2)?;
+                            crate::xml::parser::parse(&xml)?
+                        };
+                        
+                        let (ins, del, fmt, _coalesce_res) = compare_part_content(
+                            &mut doc1_clone, note1_id, 
+                            &mut doc2_clone, note2_id, 
+                            part_type, 
+                            settings
+                        )?;
+                        
+                        total_ins += ins;
+                        total_del += del;
+                        total_fmt += fmt;
+                        
+                        // TODO: Replace the note content in result_doc with the compared version
+                        // This requires complex XML manipulation that we'll implement in the next iteration
+                    }
+                }
+            }
+            ComparisonCorrelationStatus::Inserted => {
+                // Note exists only in doc2 - all content is inserted
+                if let (Some(ref doc2), Some(root2)) = (&source2_opt, root2_opt) {
+                    if let Some(note_id) = find_note_by_id(doc2, root2, ref_id) {
+                        // Count paragraphs in the note as insertions
+                        let note_paras = find_note_paragraphs(doc2, note_id);
+                        total_ins += note_paras.len();
+                    }
+                }
+            }
+            ComparisonCorrelationStatus::Deleted => {
+                // Note exists only in doc1 - all content is deleted
+                if let (Some(ref doc1), Some(root1)) = (&source1_opt, root1_opt) {
+                    if let Some(note_id) = find_note_by_id(doc1, root1, ref_id) {
+                        // Count paragraphs in the note as deletions
+                        let note_paras = find_note_paragraphs(doc1, note_id);
+                        total_del += note_paras.len();
+                    }
+                }
+            }
+            _ => {
+                // Ignore other correlation statuses
+            }
         }
-        (None, Some(_doc2), None, Some(r2)) => {
-            // Only doc2 has notes - all are insertions
-            // Note: We need to mark them as inserted!
-            // For now, just count them
-            let paras = find_note_paragraphs(&result_doc, r2);
-            total_ins = paras.len();
-        }
-        (Some(_doc1), None, Some(r1), None) => {
-            // Only doc1 has notes - all are deletions
-            let paras = find_note_paragraphs(&result_doc, r1);
-            total_del = paras.len();
-        }
-        _ => {}
     }
 
     Ok(NoteProcessingResult {
@@ -968,7 +1033,11 @@ fn compare_part_content(
     let root_name = root_data.name().unwrap().clone();
     let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
     
-    compare_atoms_internal(atoms1, atoms2, root_name, root_attrs, settings)
+    // Call compare_atoms_internal and discard the flattened atoms (not needed for notes)
+    let (ins, del, fmt, coalesce_result, _flattened_atoms) = 
+        compare_atoms_internal(atoms1, atoms2, root_name, root_attrs, settings)?;
+    
+    Ok((ins, del, fmt, coalesce_result))
 }
 
 #[cfg(test)]
