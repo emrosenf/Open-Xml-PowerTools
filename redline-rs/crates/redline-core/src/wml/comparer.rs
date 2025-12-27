@@ -495,11 +495,263 @@ fn count_revisions_from_atoms(atoms: &[ComparisonUnitAtom]) -> (usize, usize) {
     (insertions, deletions)
 }
 
+/// Port of C# NormalizeTxbxContentAncestorUnids (WmlComparer.cs:7571-7805)
+///
+/// This function normalizes ancestor UNIDs for atoms inside textboxes.
+/// It groups atoms by txbxContent depth, subdivides into paragraph sub-groups,
+/// and normalizes UNIDs at appropriate levels.
+fn normalize_txbx_content_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
+    // Step 1: Find contiguous groups of atoms where any ancestor is txbxContent
+    // Group by txbxContent depth (which ancestor index is txbxContent)
+    let mut groups: Vec<Vec<usize>> = Vec::new();
+    let mut current_group: Option<Vec<usize>> = None;
+    let mut current_txbx_depth: Option<usize> = None;
+    
+    for (atom_idx, atom) in atoms.iter().enumerate() {
+        // Find txbxContent depth for this atom
+        let txbx_depth = atom.ancestor_elements.iter()
+            .position(|a| a.local_name == "txbxContent");
+        
+        if let Some(depth) = txbx_depth {
+            // This atom is inside txbxContent
+            if current_group.is_none() || current_txbx_depth != Some(depth) {
+                // Start a new group
+                if let Some(group) = current_group.take() {
+                    groups.push(group);
+                }
+                current_group = Some(vec![atom_idx]);
+                current_txbx_depth = Some(depth);
+            } else {
+                // Add to current group
+                current_group.as_mut().unwrap().push(atom_idx);
+            }
+        } else {
+            // Not in txbxContent, end current group
+            if let Some(group) = current_group.take() {
+                groups.push(group);
+            }
+            current_group = None;
+            current_txbx_depth = None;
+        }
+    }
+    
+    // Don't forget the last group
+    if let Some(group) = current_group.take() {
+        groups.push(group);
+    }
+    
+    // Step 2: For each group, normalize all atoms to use consistent unids
+    for group_indices in groups {
+        if group_indices.is_empty() {
+            continue;
+        }
+        
+        // Find the txbxContent index from the first atom in the group
+        let txbx_content_index = {
+            let first_atom = &atoms[group_indices[0]];
+            first_atom.ancestor_elements.iter()
+                .position(|a| a.local_name == "txbxContent")
+        };
+        
+        let txbx_content_index = match txbx_content_index {
+            Some(idx) => idx,
+            None => continue,
+        };
+        
+        // Find a reference atom for OUTER levels (up to and including txbxContent)
+        // Prefer an Equal atom which has source1's normalized unids
+        let outer_ref_atom_idx = group_indices.iter()
+            .find(|&&idx| {
+                let atom = &atoms[idx];
+                atom.correlation_status == ComparisonCorrelationStatus::Equal 
+                    && !atom.ancestor_unids.is_empty()
+            })
+            .or_else(|| {
+                group_indices.iter().find(|&&idx| {
+                    let atom = &atoms[idx];
+                    atom.correlation_status == ComparisonCorrelationStatus::Deleted 
+                        && !atom.ancestor_unids.is_empty()
+                })
+            })
+            .or_else(|| {
+                group_indices.iter().find(|&&idx| {
+                    !atoms[idx].ancestor_unids.is_empty()
+                })
+            });
+        
+        let outer_ref_atom_idx = match outer_ref_atom_idx {
+            Some(&idx) => idx,
+            None => continue,
+        };
+        
+        // Step 3: Subdivide the group into paragraph sub-groups
+        // Each pPr atom marks the start of a new paragraph
+        let mut paragraph_sub_groups: Vec<Vec<usize>> = Vec::new();
+        let mut current_paragraph: Option<Vec<usize>> = None;
+        
+        for &atom_idx in &group_indices {
+            let atom = &atoms[atom_idx];
+            
+            // Check if this atom is a pPr (paragraph properties) - marks start of new paragraph
+            if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+                // Start new paragraph
+                if let Some(para) = current_paragraph.take() {
+                    paragraph_sub_groups.push(para);
+                }
+                current_paragraph = Some(vec![atom_idx]);
+            } else {
+                if current_paragraph.is_none() {
+                    // Atom before first pPr - create a paragraph for it
+                    current_paragraph = Some(vec![atom_idx]);
+                } else {
+                    current_paragraph.as_mut().unwrap().push(atom_idx);
+                }
+            }
+        }
+        
+        // Don't forget the last paragraph
+        if let Some(para) = current_paragraph.take() {
+            paragraph_sub_groups.push(para);
+        }
+        
+        // Step 4: For each paragraph sub-group, normalize unids
+        for para_group_indices in paragraph_sub_groups {
+            if para_group_indices.is_empty() {
+                continue;
+            }
+            
+            // Check if this paragraph has mixed correlation statuses (both Equal and Inserted/Deleted)
+            let has_equal = para_group_indices.iter()
+                .any(|&idx| atoms[idx].correlation_status == ComparisonCorrelationStatus::Equal);
+            let has_inserted_or_deleted = para_group_indices.iter()
+                .any(|&idx| {
+                    atoms[idx].correlation_status == ComparisonCorrelationStatus::Inserted
+                        || atoms[idx].correlation_status == ComparisonCorrelationStatus::Deleted
+                });
+            let is_mixed_paragraph = has_equal && has_inserted_or_deleted;
+            
+            // Find a reference atom for paragraph level
+            let para_ref_atom_idx = para_group_indices.iter()
+                .find(|&&idx| {
+                    let atom = &atoms[idx];
+                    atom.correlation_status == ComparisonCorrelationStatus::Equal
+                        && !atom.ancestor_unids.is_empty()
+                })
+                .or_else(|| {
+                    para_group_indices.iter().find(|&&idx| {
+                        let atom = &atoms[idx];
+                        atom.correlation_status == ComparisonCorrelationStatus::Deleted
+                            && !atom.ancestor_unids.is_empty()
+                    })
+                })
+                .or_else(|| {
+                    para_group_indices.iter().find(|&&idx| {
+                        !atoms[idx].ancestor_unids.is_empty()
+                    })
+                });
+            
+            // Find a reference atom for run level (needs to have run-level ancestors)
+            let run_level_idx = txbx_content_index + 2;
+            let run_ref_atom_idx = para_group_indices.iter()
+                .find(|&&idx| {
+                    let atom = &atoms[idx];
+                    atom.correlation_status == ComparisonCorrelationStatus::Equal
+                        && atom.ancestor_unids.len() > run_level_idx
+                })
+                .or_else(|| {
+                    para_group_indices.iter().find(|&&idx| {
+                        let atom = &atoms[idx];
+                        atom.correlation_status == ComparisonCorrelationStatus::Deleted
+                            && atom.ancestor_unids.len() > run_level_idx
+                    })
+                })
+                .or_else(|| {
+                    para_group_indices.iter().find(|&&idx| {
+                        atoms[idx].ancestor_unids.len() > run_level_idx
+                    })
+                });
+            
+            // Clone the reference UNIDs we need before borrowing atoms mutably
+            let outer_ref_unids = atoms[outer_ref_atom_idx].ancestor_unids.clone();
+            let para_ref_unids = para_ref_atom_idx.map(|&idx| atoms[idx].ancestor_unids.clone());
+            let run_ref_unids = run_ref_atom_idx.map(|&idx| atoms[idx].ancestor_unids.clone());
+            
+            // Step 5: Normalize UNIDs for each atom in the paragraph
+            for &atom_idx in &para_group_indices {
+                let atom = &mut atoms[atom_idx];
+                
+                // Find txbxContent index for this atom
+                let this_atom_txbx_index = atom.ancestor_elements.iter()
+                    .position(|a| a.local_name == "txbxContent");
+                
+                if this_atom_txbx_index != Some(txbx_content_index) {
+                    continue;
+                }
+                
+                // Normalize outer levels and paragraph level:
+                // - Outer levels (0 to txbxContentIndex) use the group's outer reference atom
+                // - Paragraph level (txbxContentIndex + 1) uses this paragraph's inner reference atom
+                // - Run level (txbxContentIndex + 2) is ONLY normalized for mixed paragraphs
+                let paragraph_level_index = txbx_content_index + 1;
+                let run_level_index = txbx_content_index + 2;
+                let max_level_to_normalize = if is_mixed_paragraph {
+                    // Mixed paragraph - also normalize run level
+                    (run_level_index + 1).min(atom.ancestor_unids.len())
+                } else {
+                    // Pure paragraph - keep runs separate
+                    (paragraph_level_index + 1).min(atom.ancestor_unids.len())
+                };
+                
+                for i in 0..max_level_to_normalize {
+                    let ref_unid: Option<String> = if i <= txbx_content_index {
+                        // Outer level - use the group's outer reference atom
+                        if i < outer_ref_unids.len() {
+                            Some(outer_ref_unids[i].clone())
+                        } else {
+                            None
+                        }
+                    } else if i == paragraph_level_index {
+                        // Paragraph level - use the paragraph reference atom
+                        para_ref_unids.as_ref().and_then(|unids: &Vec<String>| unids.get(i).cloned())
+                    } else if i == run_level_index && is_mixed_paragraph {
+                        // Run level - only for mixed paragraphs
+                        run_ref_unids.as_ref().and_then(|unids: &Vec<String>| unids.get(i).cloned())
+                    } else {
+                        None
+                    };
+                    
+                    if let Some(ref ref_unid_val) = ref_unid {
+                        // Update both the ancestor element's unid attribute and the ancestor_unids array
+                        if i < atom.ancestor_elements.len() {
+                            atom.ancestor_elements[i].unid = ref_unid_val.clone();
+                        }
+                        if i < atom.ancestor_unids.len() {
+                            atom.ancestor_unids[i] = ref_unid_val.clone();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
-    // 1. Normalize UNIDs for Equal/FormatChanged atoms (C# lines 3450-3485)
+    // Phase 1: Initial UNID normalization (C# lines 3441-3494)
+    // For atoms inside textboxes (txbxContent), copy UNIDs from "before" document to "after" document.
+    // This applies to ALL atoms inside textboxes with Equal status, not just pPr atoms.
     for atom in atoms.iter_mut() {
-        if atom.correlation_status == ComparisonCorrelationStatus::Equal || 
-           atom.correlation_status == ComparisonCorrelationStatus::FormatChanged {
+        let is_in_textbox = atom.ancestor_elements.iter()
+            .any(|a| a.local_name == "txbxContent");
+        
+        let do_set = if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+            // pPr: normalize if in textbox OR if status is Equal
+            is_in_textbox || atom.correlation_status == ComparisonCorrelationStatus::Equal
+        } else {
+            // Other atoms: normalize only if in textbox AND status is Equal
+            is_in_textbox && atom.correlation_status == ComparisonCorrelationStatus::Equal
+        };
+        
+        if do_set {
             if let Some(ref before) = atom.comparison_unit_atom_before {
                 if atom.ancestor_elements.len() == before.ancestor_elements.len() {
                     for i in 0..atom.ancestor_elements.len() {
@@ -510,28 +762,84 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
         }
     }
 
-    // 2. Propagate paragraph UNIDs (C# lines 3515-3550)
-    // We process in reverse order as C# does
+    // Phase 2a: First pass - process non-textbox paragraphs (C# lines 3515-3578)
     let mut current_ancestor_unids: Vec<String> = Vec::new();
     
     for atom in atoms.iter_mut().rev() {
         if matches!(atom.content_element, ContentElement::ParagraphProperties) {
-            current_ancestor_unids = atom.ancestor_elements.iter().map(|a| a.unid.clone()).collect();
-            atom.ancestor_unids = current_ancestor_unids.clone();
-        } else {
-            if current_ancestor_unids.is_empty() {
-                atom.ancestor_unids = atom.ancestor_elements.iter().map(|a| a.unid.clone()).collect();
-            } else {
-                let mut unids = current_ancestor_unids.clone();
-                // Ensure we don't truncate deeper hierarchies (like tables/textboxes)
-                for (i, ancestor) in atom.ancestor_elements.iter().enumerate() {
-                    if i >= unids.len() {
-                        unids.push(ancestor.unid.clone());
-                    }
-                }
-                atom.ancestor_unids = unids;
+            let ppr_in_textbox = atom.ancestor_elements.iter()
+                .any(|ae| ae.local_name == "txbxContent");
+            
+            if !ppr_in_textbox {
+                // Collect ancestor unids for the paragraph
+                current_ancestor_unids = atom.ancestor_elements.iter()
+                    .map(|ae| ae.unid.clone())
+                    .collect();
+                atom.ancestor_unids = current_ancestor_unids.clone();
+                continue;
             }
         }
+        
+        // For non-pPr atoms, propagate ancestor unids from current paragraph
+        let this_depth = atom.ancestor_elements.len();
+        if !current_ancestor_unids.is_empty() {
+            let additional_unids: Vec<String> = atom.ancestor_elements.iter()
+                .skip(current_ancestor_unids.len())
+                .map(|ae| ae.unid.clone())
+                .collect();
+            
+            let mut this_ancestor_unids = current_ancestor_unids.clone();
+            this_ancestor_unids.extend(additional_unids);
+            atom.ancestor_unids = this_ancestor_unids;
+        } else {
+            atom.ancestor_unids = atom.ancestor_elements.iter()
+                .map(|ae| ae.unid.clone())
+                .collect();
+        }
+    }
+    
+    // Phase 2b: Second pass - process textbox content specifically (C# lines 3589-3658)
+    current_ancestor_unids = Vec::new();
+    let mut skip_until_next_ppr = false;
+    
+    for atom in atoms.iter_mut().rev() {
+        if !current_ancestor_unids.is_empty() && atom.ancestor_elements.len() < current_ancestor_unids.len() {
+            skip_until_next_ppr = true;
+            current_ancestor_unids = Vec::new();
+            continue;
+        }
+        
+        if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+            let ppr_in_textbox = atom.ancestor_elements.iter()
+                .any(|ae| ae.local_name == "txbxContent");
+            
+            if !ppr_in_textbox {
+                skip_until_next_ppr = true;
+                current_ancestor_unids = Vec::new();
+                continue;
+            } else {
+                skip_until_next_ppr = false;
+                current_ancestor_unids = atom.ancestor_elements.iter()
+                    .map(|ae| ae.unid.clone())
+                    .collect();
+                atom.ancestor_unids = current_ancestor_unids.clone();
+                continue;
+            }
+        }
+        
+        if skip_until_next_ppr {
+            continue;
+        }
+        
+        // For atoms inside textbox paragraphs
+        let additional_unids: Vec<String> = atom.ancestor_elements.iter()
+            .skip(current_ancestor_unids.len())
+            .map(|ae| ae.unid.clone())
+            .collect();
+        
+        let mut this_ancestor_unids = current_ancestor_unids.clone();
+        this_ancestor_unids.extend(additional_unids);
+        atom.ancestor_unids = this_ancestor_unids;
     }
 }
 
@@ -550,6 +858,9 @@ fn compare_atoms_internal(
     
     let mut flattened_atoms = flatten_to_atoms(&correlated);
     assemble_ancestor_unids(&mut flattened_atoms);
+    
+    // Phase 3: Additional normalization for textbox content (C# lines 7571-7805)
+    normalize_txbx_content_ancestor_unids(&mut flattened_atoms);
     
     if settings.track_formatting_changes {
         reconcile_formatting_changes(&mut flattened_atoms, settings);
