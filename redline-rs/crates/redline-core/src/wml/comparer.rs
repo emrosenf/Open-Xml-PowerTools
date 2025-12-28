@@ -34,9 +34,12 @@ use super::types::WmlComparisonResult;
 use crate::error::Result;
 use crate::util::lcs::{self, compute_correlation, Hashable, LcsSettings};
 use crate::xml::arena::XmlDocument;
+use crate::xml::namespaces::W;
+use crate::xml::node::XmlNodeData;
 use crate::xml::xname::{XAttribute, XName};
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
+use std::collections::HashMap;
 
 /// Comparison unit representing a paragraph for LCS comparison
 #[derive(Debug, Clone)]
@@ -927,9 +930,15 @@ struct NoteProcessingResult {
     document: XmlDocument,
 }
 
+struct NoteReference {
+    before_id: Option<String>,
+    after_id: String,
+    status: ComparisonCorrelationStatus,
+}
+
 /// Collect note reference IDs from comparison unit atoms
 /// Matches C# WmlComparer.cs:2910-2914
-fn collect_note_references(atoms: &[ComparisonUnitAtom], note_type: &str) -> Vec<(String, ComparisonCorrelationStatus)> {
+fn collect_note_references(atoms: &[ComparisonUnitAtom], note_type: &str) -> Vec<NoteReference> {
     let mut references = Vec::new();
     
     for atom in atoms {
@@ -939,8 +948,24 @@ fn collect_note_references(atoms: &[ComparisonUnitAtom], note_type: &str) -> Vec
             _ => None,
         };
         
-        if let Some(id) = is_match {
-            references.push((id, atom.correlation_status));
+        if let Some(after_id) = is_match {
+            let before_id = if atom.correlation_status == ComparisonCorrelationStatus::Equal {
+                atom.comparison_unit_atom_before.as_ref().and_then(|before| {
+                    match &before.content_element {
+                        ContentElement::FootnoteReference { id } if note_type == "footnoteReference" => Some(id.clone()),
+                        ContentElement::EndnoteReference { id } if note_type == "endnoteReference" => Some(id.clone()),
+                        _ => None,
+                    }
+                })
+            } else {
+                None
+            };
+
+            references.push(NoteReference {
+                before_id,
+                after_id,
+                status: atom.correlation_status,
+            });
         }
     }
     
@@ -953,7 +978,7 @@ fn process_notes(
     source1_opt: Option<XmlDocument>,
     source2_opt: Option<XmlDocument>,
     part_type: &str,
-    reference_ids: &[(String, ComparisonCorrelationStatus)],
+    reference_ids: &[NoteReference],
     settings: &WmlComparerSettings,
 ) -> Result<NoteProcessingResult> {
     let mut total_ins = 0;
@@ -973,6 +998,12 @@ fn process_notes(
         }
     };
 
+    let result_root = if part_type == "footnotes" {
+        find_footnotes_root(&result_doc)
+    } else {
+        find_endnotes_root(&result_doc)
+    };
+
     let root1_opt = source1_opt.as_ref().and_then(|doc| {
         if part_type == "footnotes" { find_footnotes_root(doc) } else { find_endnotes_root(doc) }
     });
@@ -980,31 +1011,79 @@ fn process_notes(
         if part_type == "footnotes" { find_footnotes_root(doc) } else { find_endnotes_root(doc) }
     });
 
+    let mut note_statuses: HashMap<String, NoteReference> = HashMap::new();
+    for note_ref in reference_ids {
+        let key = format!(
+            "{}|{}",
+            note_ref.before_id.clone().unwrap_or_default(),
+            note_ref.after_id
+        );
+        note_statuses
+            .entry(key)
+            .and_modify(|existing| {
+                if note_status_priority(note_ref.status) > note_status_priority(existing.status) {
+                    *existing = NoteReference {
+                        before_id: note_ref.before_id.clone(),
+                        after_id: note_ref.after_id.clone(),
+                        status: note_ref.status,
+                    };
+                }
+            })
+            .or_insert(NoteReference {
+                before_id: note_ref.before_id.clone(),
+                after_id: note_ref.after_id.clone(),
+                status: note_ref.status,
+            });
+    }
+
     // Process each reference individually
-    for (ref_id, correlation_status) in reference_ids {
-        match correlation_status {
+    for note_ref in note_statuses.into_values() {
+        if note_ref.after_id == "0" || note_ref.after_id == "-1" {
+            continue;
+        }
+
+        let after_id = note_ref.after_id.as_str();
+        let before_id = note_ref.before_id.as_deref().unwrap_or(after_id);
+
+        match note_ref.status {
             ComparisonCorrelationStatus::Equal => {
                 // Both documents have this note - compare them
                 if let (Some(ref doc1), Some(ref doc2), Some(root1), Some(root2)) = 
                     (&source1_opt, &source2_opt, root1_opt, root2_opt) {
                     
-                    if let (Some(note1_id), Some(note2_id)) = (
-                        find_note_by_id(doc1, root1, ref_id),
-                        find_note_by_id(doc2, root2, ref_id),
+                    if let (Some(_note1_id), Some(note2_id)) = (
+                        find_note_by_id(doc1, root1, before_id),
+                        find_note_by_id(doc2, root2, after_id),
                     ) {
-                        // Compare this specific note
-                        let mut doc1_clone = {
-                            let xml = crate::xml::builder::serialize(doc1)?;
-                            crate::xml::parser::parse(&xml)?
+                        let mut doc1_clone = clone_xml_doc(doc1)?;
+                        let mut doc2_clone = clone_xml_doc(doc2)?;
+
+                        let root1_clone = if part_type == "footnotes" {
+                            find_footnotes_root(&doc1_clone)
+                        } else {
+                            find_endnotes_root(&doc1_clone)
                         };
-                        let mut doc2_clone = {
-                            let xml = crate::xml::builder::serialize(doc2)?;
-                            crate::xml::parser::parse(&xml)?
+                        let root2_clone = if part_type == "footnotes" {
+                            find_footnotes_root(&doc2_clone)
+                        } else {
+                            find_endnotes_root(&doc2_clone)
                         };
-                        
-                        let (ins, del, fmt, _coalesce_res) = compare_part_content(
-                            &mut doc1_clone, note1_id, 
-                            &mut doc2_clone, note2_id, 
+
+                        let (note1_clone, note2_clone) = match (root1_clone, root2_clone) {
+                            (Some(r1), Some(r2)) => (
+                                find_note_by_id(&doc1_clone, r1, before_id),
+                                find_note_by_id(&doc2_clone, r2, after_id),
+                            ),
+                            _ => (None, None),
+                        };
+
+                        let (Some(note1_clone), Some(note2_clone)) = (note1_clone, note2_clone) else {
+                            continue;
+                        };
+
+                        let (ins, del, fmt, coalesce_res) = compare_part_content(
+                            &mut doc1_clone, note1_clone,
+                            &mut doc2_clone, note2_clone,
                             part_type, 
                             settings
                         )?;
@@ -1012,29 +1091,76 @@ fn process_notes(
                         total_ins += ins;
                         total_del += del;
                         total_fmt += fmt;
-                        
-                        // TODO: Replace the note content in result_doc with the compared version
-                        // This requires complex XML manipulation that we'll implement in the next iteration
+
+                        if let Some(result_root) = result_root {
+                            update_note_in_result(
+                                &mut result_doc,
+                                result_root,
+                                after_id,
+                                Some((doc2, note2_id)),
+                                &coalesce_res.document,
+                                coalesce_res.root,
+                                part_type,
+                            );
+                        }
                     }
                 }
             }
             ComparisonCorrelationStatus::Inserted => {
                 // Note exists only in doc2 - all content is inserted
                 if let (Some(ref doc2), Some(root2)) = (&source2_opt, root2_opt) {
-                    if let Some(note_id) = find_note_by_id(doc2, root2, ref_id) {
-                        // Count paragraphs in the note as insertions
-                        let note_paras = find_note_paragraphs(doc2, note_id);
-                        total_ins += note_paras.len();
+                    if let Some(note_id) = find_note_by_id(doc2, root2, after_id) {
+                        let (ins, del, fmt, coalesce_res) = build_note_doc_with_status(
+                            doc2,
+                            after_id,
+                            part_type,
+                            ComparisonCorrelationStatus::Inserted,
+                            settings,
+                        )?;
+                        total_ins += ins;
+                        total_del += del;
+                        total_fmt += fmt;
+
+                        if let Some(result_root) = result_root {
+                            update_note_in_result(
+                                &mut result_doc,
+                                result_root,
+                                after_id,
+                                Some((doc2, note_id)),
+                                &coalesce_res.document,
+                                coalesce_res.root,
+                                part_type,
+                            );
+                        }
                     }
                 }
             }
             ComparisonCorrelationStatus::Deleted => {
                 // Note exists only in doc1 - all content is deleted
                 if let (Some(ref doc1), Some(root1)) = (&source1_opt, root1_opt) {
-                    if let Some(note_id) = find_note_by_id(doc1, root1, ref_id) {
-                        // Count paragraphs in the note as deletions
-                        let note_paras = find_note_paragraphs(doc1, note_id);
-                        total_del += note_paras.len();
+                    if let Some(note_id) = find_note_by_id(doc1, root1, before_id) {
+                        let (ins, del, fmt, coalesce_res) = build_note_doc_with_status(
+                            doc1,
+                            before_id,
+                            part_type,
+                            ComparisonCorrelationStatus::Deleted,
+                            settings,
+                        )?;
+                        total_ins += ins;
+                        total_del += del;
+                        total_fmt += fmt;
+
+                        if let Some(result_root) = result_root {
+                            update_note_in_result(
+                                &mut result_doc,
+                                result_root,
+                                before_id,
+                                Some((doc1, note_id)),
+                                &coalesce_res.document,
+                                coalesce_res.root,
+                                part_type,
+                            );
+                        }
                     }
                 }
             }
@@ -1050,6 +1176,68 @@ fn process_notes(
         format_changes: total_fmt,
         document: result_doc,
     })
+}
+
+fn note_status_priority(status: ComparisonCorrelationStatus) -> usize {
+    match status {
+        ComparisonCorrelationStatus::Equal => 3,
+        ComparisonCorrelationStatus::Inserted => 2,
+        ComparisonCorrelationStatus::Deleted => 1,
+        _ => 0,
+    }
+}
+
+fn clone_xml_doc(doc: &XmlDocument) -> Result<XmlDocument> {
+    let xml = crate::xml::builder::serialize(doc)?;
+    crate::xml::parser::parse(&xml)
+}
+
+fn build_note_doc_with_status(
+    source_doc: &XmlDocument,
+    ref_id: &str,
+    part_type: &str,
+    status: ComparisonCorrelationStatus,
+    settings: &WmlComparerSettings,
+) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult)> {
+    let mut doc = clone_xml_doc(source_doc)?;
+
+    let root = if part_type == "footnotes" {
+        find_footnotes_root(&doc)
+    } else {
+        find_endnotes_root(&doc)
+    };
+
+    let Some(root) = root else {
+        let fallback_root = doc.root().unwrap();
+        return Ok((0, 0, 0, super::coalesce::CoalesceResult { document: doc, root: fallback_root }));
+    };
+
+    let Some(note_id) = find_note_by_id(&doc, root, ref_id) else {
+        return Ok((0, 0, 0, super::coalesce::CoalesceResult { document: doc, root }));
+    };
+
+    let mut atoms = create_comparison_unit_atom_list(&mut doc, note_id, part_type, settings);
+    for atom in atoms.iter_mut() {
+        atom.correlation_status = status;
+    }
+
+    assemble_ancestor_unids(&mut atoms);
+    normalize_txbx_content_ancestor_unids(&mut atoms);
+    if settings.track_formatting_changes {
+        reconcile_formatting_changes(&mut atoms, settings);
+    }
+
+    let root_data = doc.get(note_id).unwrap();
+    let root_name = root_data.name().unwrap().clone();
+    let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
+
+    let (ins, del) = count_revisions_from_atoms(&atoms);
+    let mut coalesce_result = coalesce(&atoms, settings, root_name, root_attrs);
+    mark_content_as_deleted_or_inserted(&mut coalesce_result.document, coalesce_result.root, settings);
+    coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, settings);
+    let fmt = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
+
+    Ok((ins, del, fmt, coalesce_result))
 }
 
 fn compare_part_content(
@@ -1072,6 +1260,158 @@ fn compare_part_content(
         compare_atoms_internal(atoms1, atoms2, root_name, root_attrs, settings)?;
     
     Ok((ins, del, fmt, coalesce_result))
+}
+
+fn update_note_in_result(
+    result_doc: &mut XmlDocument,
+    result_root: NodeId,
+    ref_id: &str,
+    source_note: Option<(&XmlDocument, NodeId)>,
+    updated_doc: &XmlDocument,
+    updated_root: NodeId,
+    part_type: &str,
+) {
+    let mut note_node = find_note_by_id(result_doc, result_root, ref_id);
+    if note_node.is_none() {
+        if let Some((source_doc, source_node)) = source_note {
+            note_node = Some(append_cloned_element(result_doc, result_root, source_doc, source_node));
+        } else {
+            note_node = Some(append_cloned_element(result_doc, result_root, updated_doc, updated_root));
+        }
+    }
+
+    let Some(note_node) = note_node else { return; };
+    replace_children_with(result_doc, note_node, updated_doc, updated_root);
+    ensure_note_reference_run(result_doc, note_node, part_type);
+}
+
+fn replace_children_with(
+    target_doc: &mut XmlDocument,
+    target_parent: NodeId,
+    source_doc: &XmlDocument,
+    source_parent: NodeId,
+) {
+    let children: Vec<_> = target_doc.children(target_parent).collect();
+    for child in children {
+        target_doc.remove(child);
+    }
+
+    let source_children: Vec<_> = source_doc.children(source_parent).collect();
+    for child in source_children {
+        clone_subtree(source_doc, child, target_doc, target_parent);
+    }
+}
+
+fn append_cloned_element(
+    target_doc: &mut XmlDocument,
+    target_parent: NodeId,
+    source_doc: &XmlDocument,
+    source_node: NodeId,
+) -> NodeId {
+    let data = source_doc.get(source_node).unwrap().clone();
+    let new_node = target_doc.add_child(target_parent, data);
+    let source_children: Vec<_> = source_doc.children(source_node).collect();
+    for child in source_children {
+        clone_subtree(source_doc, child, target_doc, new_node);
+    }
+    new_node
+}
+
+fn clone_subtree(
+    source_doc: &XmlDocument,
+    source_node: NodeId,
+    target_doc: &mut XmlDocument,
+    target_parent: NodeId,
+) -> NodeId {
+    let data = source_doc.get(source_node).unwrap().clone();
+    let new_node = target_doc.add_child(target_parent, data);
+    let children: Vec<_> = source_doc.children(source_node).collect();
+    for child in children {
+        clone_subtree(source_doc, child, target_doc, new_node);
+    }
+    new_node
+}
+
+fn ensure_note_reference_run(doc: &mut XmlDocument, note_node: NodeId, part_type: &str) {
+    if note_has_reference_run(doc, note_node, part_type) {
+        return;
+    }
+
+    let Some(first_para) = find_first_descendant(doc, note_node, &W::p()) else { return; };
+    insert_reference_run(doc, first_para, part_type);
+}
+
+fn note_has_reference_run(doc: &XmlDocument, note_node: NodeId, part_type: &str) -> bool {
+    let (style_val, ref_name) = note_reference_marker(part_type);
+
+    for node in doc.descendants(note_node) {
+        let Some(name) = doc.get(node).and_then(|d| d.name()) else { continue; };
+        if name == &ref_name {
+            return true;
+        }
+        if name == &W::r() && run_has_rstyle(doc, node, style_val) {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn run_has_rstyle(doc: &XmlDocument, run: NodeId, style_val: &str) -> bool {
+    for child in doc.children(run) {
+        let Some(name) = doc.get(child).and_then(|d| d.name()) else { continue; };
+        if name != &W::rPr() {
+            continue;
+        }
+        for rpr_child in doc.children(child) {
+            let Some(rpr_name) = doc.get(rpr_child).and_then(|d| d.name()) else { continue; };
+            if rpr_name != &W::r_style() {
+                continue;
+            }
+            if let Some(attrs) = doc.get(rpr_child).and_then(|d| d.attributes()) {
+                if attrs.iter().any(|a| a.name == W::val() && a.value == style_val) {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn insert_reference_run(doc: &mut XmlDocument, para: NodeId, part_type: &str) {
+    let (style_val, ref_name) = note_reference_marker(part_type);
+
+    let run = doc.new_node(XmlNodeData::element(W::r()));
+    let rpr = doc.add_child(run, XmlNodeData::element(W::rPr()));
+    doc.add_child(
+        rpr,
+        XmlNodeData::element_with_attrs(W::r_style(), vec![XAttribute::new(W::val(), style_val)]),
+    );
+    doc.add_child(run, XmlNodeData::element(ref_name));
+
+    let first_child = doc.children(para).next();
+    if let Some(first_child) = first_child {
+        doc.insert_before(first_child, run);
+    } else {
+        doc.reparent(para, run);
+    }
+}
+
+fn note_reference_marker(part_type: &str) -> (&'static str, XName) {
+    if part_type == "footnotes" {
+        ("FootnoteReference", W::footnoteRef())
+    } else {
+        ("EndnoteReference", W::endnoteRef())
+    }
+}
+
+fn find_first_descendant(doc: &XmlDocument, root: NodeId, name: &XName) -> Option<NodeId> {
+    for node in doc.descendants(root) {
+        if doc.get(node).and_then(|d| d.name()) == Some(name) {
+            return Some(node);
+        }
+    }
+    None
 }
 
 #[cfg(test)]
