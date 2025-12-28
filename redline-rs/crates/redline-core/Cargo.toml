@@ -43,6 +43,7 @@ chrono = { workspace = true }
 
 # UUID generation
 uuid = { workspace = true }
+base64 = "0.22.1"
 
 [dev-dependencies]
 insta = { workspace = true }

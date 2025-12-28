@@ -11,6 +11,16 @@ pub struct PmlComparerSettings {
     pub compare_text_formatting: bool,
     pub compare_shape_transforms: bool,
     pub use_slide_alignment_lcs: bool,
+    
+    // Fuzzy matching settings
+    pub enable_fuzzy_shape_matching: bool,
+    pub slide_similarity_threshold: f64,
+    pub shape_similarity_threshold: f64,
+    
+    // Tolerance settings
+    pub position_tolerance: i64, // EMUs
+    
+    // Legacy/Other tolerance settings (keeping for compatibility if used elsewhere)
     pub transform_tolerance: TransformTolerance,
 }
 
@@ -42,6 +52,12 @@ impl Default for PmlComparerSettings {
             compare_text_formatting: true,
             compare_shape_transforms: true,
             use_slide_alignment_lcs: true,
+            
+            enable_fuzzy_shape_matching: true,
+            slide_similarity_threshold: 0.4,
+            shape_similarity_threshold: 0.7,
+            position_tolerance: 91440, // ~0.1 inch
+            
             transform_tolerance: TransformTolerance::default(),
         }
     }
@@ -65,5 +81,7 @@ mod tests {
         assert!(settings.compare_shape_structure);
         assert!(settings.compare_text_content);
         assert!(settings.use_slide_alignment_lcs);
+        assert_eq!(settings.slide_similarity_threshold, 0.4);
+        assert_eq!(settings.position_tolerance, 91440);
     }
 }
