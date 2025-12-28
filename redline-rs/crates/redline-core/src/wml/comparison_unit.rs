@@ -101,7 +101,7 @@ pub struct AncestorInfo {
     /// Unique ID (Unid) for this element - used for correlation
     pub unid: String,
     /// Attributes from the ancestor element (for reconstruction)
-    pub attributes: Vec<crate::xml::xname::XAttribute>,
+    pub attributes: Arc<Vec<crate::xml::xname::XAttribute>>,
     /// Whether this table cell has merged cell properties (vMerge or gridSpan)
     /// Used by DoLcsAlgorithmForTable to detect merged cells
     #[allow(dead_code)]
@@ -1517,7 +1517,7 @@ mod tests {
                 namespace: None,
                 local_name: "p".to_string(),
                 unid: "abc123".to_string(),
-                attributes: vec![],
+                attributes: Arc::new(Vec::new()),
                 has_merged_cells: false,
             }],
             "main",

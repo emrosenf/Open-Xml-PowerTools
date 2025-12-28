@@ -1476,7 +1476,7 @@ fn get_ancestor_element_for_level(
                     return AncestorElementInfo {
                         namespace: before_ancestors[level].namespace.clone(),
                         local_name: before_ancestors[level].local_name.clone(),
-                        attributes: before_ancestors[level].attributes.clone(),
+                        attributes: before_ancestors[level].attributes.as_ref().clone(),
                     };
                 }
             }
@@ -1485,7 +1485,7 @@ fn get_ancestor_element_for_level(
     AncestorElementInfo {
         namespace: first_atom.ancestor_elements[level].namespace.clone(),
         local_name: first_atom.ancestor_elements[level].local_name.clone(),
-        attributes: first_atom.ancestor_elements[level].attributes.clone(),
+        attributes: first_atom.ancestor_elements[level].attributes.as_ref().clone(),
     }
 }
 

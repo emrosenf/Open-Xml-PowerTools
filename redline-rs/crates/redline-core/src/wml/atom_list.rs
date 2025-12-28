@@ -363,7 +363,9 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     break;
                 }
                 
-                let attrs = data.attributes().map(|a| a.to_vec()).unwrap_or_default();
+                let attrs = std::sync::Arc::new(
+                    data.attributes().map(|a| a.to_vec()).unwrap_or_default()
+                );
                 let unid = attrs.iter()
                     .find(|a| a.name == pt_unid)
                     .map(|a| a.value.clone())
