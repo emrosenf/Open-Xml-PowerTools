@@ -75,6 +75,7 @@ impl WmlComparer {
     ) -> Result<WmlComparisonResult> {
         let settings = settings.cloned().unwrap_or_default();
         reset_revision_id_counter(1);
+        let perf_enabled = std::env::var_os("REDLINE_TIMING").is_some();
 
         let mut doc1 = source1.main_document()?;
         let mut doc2 = source2.main_document()?;
@@ -90,15 +91,26 @@ impl WmlComparer {
 
         // C# WmlComparer.cs:255-256 - Accept revisions before comparison
         // This ensures documents with tracked changes are compared by their final content
-        let mut doc1 = accept_revisions(&doc1, body1);
-        let mut doc2 = accept_revisions(&doc2, body2);
+        // IMPORTANT: Pass the document root, not just the body, to preserve full document structure
+        let doc1_root = doc1.root().ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No root in document 1".to_string()))?;
+        let doc2_root = doc2.root().ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No root in document 2".to_string()))?;
+        let t0 = std::time::Instant::now();
+        let mut doc1 = accept_revisions(&doc1, doc1_root);
+        let mut doc2 = accept_revisions(&doc2, doc2_root);
+        if perf_enabled {
+            eprintln!("[PERF] accept_revisions: {:?}", t0.elapsed());
+        }
         
         // Find body nodes in the accepted documents
         let body1 = find_document_body(&doc1).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 1".to_string()))?;
         let body2 = find_document_body(&doc2).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 2".to_string()))?;
 
+        let t1 = std::time::Instant::now();
         let atoms1 = create_comparison_unit_atom_list(&mut doc1, body1, "main", &settings);
         let atoms2 = create_comparison_unit_atom_list(&mut doc2, body2, "main", &settings);
+        if perf_enabled {
+            eprintln!("[PERF] create_atom_lists: {:?} (atoms1={}, atoms2={})", t1.elapsed(), atoms1.len(), atoms2.len());
+        }
         
         if atoms1.is_empty() && atoms2.is_empty() {
             let result_bytes = source2.to_bytes()?;
@@ -888,13 +900,27 @@ fn compare_atoms_internal(
     settings: &WmlComparerSettings,
 ) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult, Vec<ComparisonUnitAtom>)> {
     let word_settings = WordSeparatorSettings::default();
+    let perf_enabled = std::env::var_os("REDLINE_TIMING").is_some();
+
+    let t0 = std::time::Instant::now();
     let units1 = get_comparison_unit_list(atoms1, &word_settings);
     let units2 = get_comparison_unit_list(atoms2, &word_settings);
+    if perf_enabled {
+        eprintln!("[PERF]   get_comparison_unit_list: {:?} (units1={}, units2={})", t0.elapsed(), units1.len(), units2.len());
+    }
 
+    let t1 = std::time::Instant::now();
     let correlated = lcs(units1, units2, settings);
+    if perf_enabled {
+        eprintln!("[PERF]   lcs: {:?}", t1.elapsed());
+    }
     
+    let t2 = std::time::Instant::now();
     let mut flattened_atoms = flatten_to_atoms(&correlated);
     assemble_ancestor_unids(&mut flattened_atoms);
+    if perf_enabled {
+        eprintln!("[PERF]   flatten+assemble: {:?} (flattened={})", t2.elapsed(), flattened_atoms.len());
+    }
     
     // Phase 3: Additional normalization for textbox content (C# lines 7571-7805)
     normalize_txbx_content_ancestor_unids(&mut flattened_atoms);
@@ -907,13 +933,21 @@ fn compare_atoms_internal(
     // This groups adjacent atoms by correlation status, which is how C# counts
     let (insertions, deletions) = count_revisions_from_atoms(&flattened_atoms);
     
+    let t3 = std::time::Instant::now();
     let mut coalesce_result = coalesce(&flattened_atoms, settings, root_name, root_attrs);
+    if perf_enabled {
+        eprintln!("[PERF]   coalesce: {:?}", t3.elapsed());
+    }
     
+    let t4 = std::time::Instant::now();
     // Wrap content in revision marks (C# line 2173)
     mark_content_as_deleted_or_inserted(&mut coalesce_result.document, coalesce_result.root, settings);
     
     // Consolidate adjacent revisions (C# line 2174)
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, &settings);
+    if perf_enabled {
+        eprintln!("[PERF]   mark+coalesce_runs: {:?}", t4.elapsed());
+    }
     
     // Format changes are counted from XML as they're added during mark_content_as_deleted_or_inserted
     // This matches C# GetFormattingRevisionList which scans the final XML for rPrChange/pPrChange

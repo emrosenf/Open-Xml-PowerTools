@@ -28,6 +28,7 @@ pub fn pt_unid() -> XName {
 /// Helper struct to represent an ancestor element's information
 #[derive(Clone, Debug)]
 struct AncestorElementInfo {
+    namespace: Option<String>,
     local_name: String,
     attributes: Vec<XAttribute>,
 }
@@ -1241,7 +1242,7 @@ fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, anc
                 attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
                 let status = if del { "Deleted" } else { "Inserted" };
                 attrs.push(XAttribute::new(pt_status(), status));
-                let elem_name = XName::new(W::NS, &ancestor.local_name);
+                let elem_name = xname_from_ancestor(ancestor);
                 doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
             }
         } else {
@@ -1257,8 +1258,9 @@ fn reconstruct_element(doc: &mut XmlDocument, parent: NodeId, group_key: &str, a
     coalesce_recurse(doc, temp_container, group_atoms, level + 1, part, settings);
     let new_child_elements: Vec<NodeId> = doc.children(temp_container).collect();
     let mut attrs = ancestor.attributes.clone();
+    attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     attrs.push(XAttribute::new(pt_unid(), group_key));
-    let elem_name = XName::new(W::NS, &ancestor.local_name);
+    let elem_name = xname_from_ancestor(ancestor);
     let elem = doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
     for child in new_child_elements { doc.reparent(elem, child); }
 }
@@ -1371,6 +1373,7 @@ fn get_ancestor_element_for_level(
             if let Some(ref before_ancestors) = atom.ancestor_elements_before {
                 if level < before_ancestors.len() {
                     return AncestorElementInfo {
+                        namespace: before_ancestors[level].namespace.clone(),
                         local_name: before_ancestors[level].local_name.clone(),
                         attributes: before_ancestors[level].attributes.clone(),
                     };
@@ -1379,8 +1382,16 @@ fn get_ancestor_element_for_level(
         }
     }
     AncestorElementInfo {
+        namespace: first_atom.ancestor_elements[level].namespace.clone(),
         local_name: first_atom.ancestor_elements[level].local_name.clone(),
         attributes: first_atom.ancestor_elements[level].attributes.clone(),
+    }
+}
+
+fn xname_from_ancestor(ancestor: &AncestorElementInfo) -> XName {
+    match ancestor.namespace.as_deref() {
+        Some(namespace) if !namespace.is_empty() => XName::new(namespace, &ancestor.local_name),
+        _ => XName::local(&ancestor.local_name),
     }
 }
 

@@ -40,7 +40,7 @@ fn clone_element_deep_in_place(doc: &mut XmlDocument, source: NodeId, parent: Op
     let cloned = match parent {
         Some(p) => doc.add_child(p, source_data),
         None => {
-            let id = doc.add_root(XmlNodeData::element(W::rPr()));
+            let id = doc.new_node(XmlNodeData::element(W::rPr()));
             if let Some(mut_data) = doc.get_mut(id) {
                 *mut_data = source_data;
             }
