@@ -580,20 +580,16 @@ fn normalize_txbx_content_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
         let outer_ref_atom_idx = group_indices.iter()
             .find(|&&idx| {
                 let atom = &atoms[idx];
-                atom.correlation_status == ComparisonCorrelationStatus::Equal 
-                    && !atom.ancestor_unids.is_empty()
+                atom.correlation_status == ComparisonCorrelationStatus::Equal
             })
             .or_else(|| {
                 group_indices.iter().find(|&&idx| {
                     let atom = &atoms[idx];
-                    atom.correlation_status == ComparisonCorrelationStatus::Deleted 
-                        && !atom.ancestor_unids.is_empty()
+                    atom.correlation_status == ComparisonCorrelationStatus::Deleted
                 })
             })
             .or_else(|| {
-                group_indices.iter().find(|&&idx| {
-                    !atoms[idx].ancestor_unids.is_empty()
-                })
+                group_indices.iter().next()
             });
         
         let outer_ref_atom_idx = match outer_ref_atom_idx {
@@ -652,19 +648,15 @@ fn normalize_txbx_content_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
                 .find(|&&idx| {
                     let atom = &atoms[idx];
                     atom.correlation_status == ComparisonCorrelationStatus::Equal
-                        && !atom.ancestor_unids.is_empty()
                 })
                 .or_else(|| {
                     para_group_indices.iter().find(|&&idx| {
                         let atom = &atoms[idx];
                         atom.correlation_status == ComparisonCorrelationStatus::Deleted
-                            && !atom.ancestor_unids.is_empty()
                     })
                 })
                 .or_else(|| {
-                    para_group_indices.iter().find(|&&idx| {
-                        !atoms[idx].ancestor_unids.is_empty()
-                    })
+                    para_group_indices.iter().next()
                 });
             
             // Find a reference atom for run level (needs to have run-level ancestors)
@@ -779,6 +771,17 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
         }
     }
 
+    let deepest_ancestor_unid = atoms.iter().rev()
+        .next()
+        .and_then(|atom| atom.ancestor_elements.first())
+        .and_then(|ancestor| {
+            if ancestor.local_name == "footnote" || ancestor.local_name == "endnote" {
+                Some(ancestor.unid.clone())
+            } else {
+                None
+            }
+        });
+
     // Phase 2a: First pass - process non-textbox paragraphs (C# lines 3515-3578)
     let mut current_ancestor_unids: Vec<String> = Vec::new();
     
@@ -793,12 +796,16 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
                     .map(|ae| ae.unid.clone())
                     .collect();
                 atom.ancestor_unids = current_ancestor_unids.clone();
+                if let Some(ref unid) = deepest_ancestor_unid {
+                    if !atom.ancestor_unids.is_empty() {
+                        atom.ancestor_unids[0] = unid.clone();
+                    }
+                }
                 continue;
             }
         }
         
         // For non-pPr atoms, propagate ancestor unids from current paragraph
-        let this_depth = atom.ancestor_elements.len();
         if !current_ancestor_unids.is_empty() {
             let additional_unids: Vec<String> = atom.ancestor_elements.iter()
                 .skip(current_ancestor_unids.len())
@@ -808,10 +815,20 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
             let mut this_ancestor_unids = current_ancestor_unids.clone();
             this_ancestor_unids.extend(additional_unids);
             atom.ancestor_unids = this_ancestor_unids;
+            if let Some(ref unid) = deepest_ancestor_unid {
+                if !atom.ancestor_unids.is_empty() {
+                    atom.ancestor_unids[0] = unid.clone();
+                }
+            }
         } else {
             atom.ancestor_unids = atom.ancestor_elements.iter()
                 .map(|ae| ae.unid.clone())
                 .collect();
+            if let Some(ref unid) = deepest_ancestor_unid {
+                if !atom.ancestor_unids.is_empty() {
+                    atom.ancestor_unids[0] = unid.clone();
+                }
+            }
         }
     }
     

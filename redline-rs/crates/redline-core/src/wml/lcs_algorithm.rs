@@ -11,8 +11,8 @@
 //! all are resolved to Equal, Deleted, or Inserted.
 
 use super::comparison_unit::{
-    ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom, ComparisonUnitGroupType,
-    ContentElement, generate_unid,
+    ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom, ComparisonUnitGroup,
+    ComparisonUnitGroupType, ContentElement, generate_unid,
 };
 use super::settings::WmlComparerSettings;
 
@@ -1477,42 +1477,54 @@ fn flatten_and_create_unknown(
     units1: &[ComparisonUnit],
     units2: &[ComparisonUnit],
 ) -> Vec<CorrelatedSequence> {
-    // Extract contents from groups
-    let flattened1: Vec<_> = units1
-        .iter()
-        .flat_map(|u| match u {
-            ComparisonUnit::Group(g) => match &g.contents {
-                super::comparison_unit::ComparisonUnitGroupContents::Words(words) => words
-                    .iter()
-                    .map(|w| ComparisonUnit::Word(w.clone()))
-                    .collect::<Vec<_>>(),
-                super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => groups
-                    .iter()
-                    .map(|g| ComparisonUnit::Group(g.clone()))
-                    .collect::<Vec<_>>(),
-            },
-            ComparisonUnit::Word(w) => vec![ComparisonUnit::Word(w.clone())],
-        })
-        .collect();
-
-    let flattened2: Vec<_> = units2
-        .iter()
-        .flat_map(|u| match u {
-            ComparisonUnit::Group(g) => match &g.contents {
-                super::comparison_unit::ComparisonUnitGroupContents::Words(words) => words
-                    .iter()
-                    .map(|w| ComparisonUnit::Word(w.clone()))
-                    .collect::<Vec<_>>(),
-                super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => groups
-                    .iter()
-                    .map(|g| ComparisonUnit::Group(g.clone()))
-                    .collect::<Vec<_>>(),
-            },
-            ComparisonUnit::Word(w) => vec![ComparisonUnit::Word(w.clone())],
-        })
-        .collect();
+    let flattened1 = flatten_units_for_unknown(units1);
+    let flattened2 = flatten_units_for_unknown(units2);
 
     vec![CorrelatedSequence::unknown(flattened1, flattened2)]
+}
+
+fn flatten_units_for_unknown(units: &[ComparisonUnit]) -> Vec<ComparisonUnit> {
+    units
+        .iter()
+        .flat_map(|u| match u {
+            ComparisonUnit::Group(g) => match &g.contents {
+                super::comparison_unit::ComparisonUnitGroupContents::Words(words) => words
+                    .iter()
+                    .map(|w| ComparisonUnit::Word(w.clone()))
+                    .collect::<Vec<_>>(),
+                super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => {
+                    flatten_group_children_for_unknown(g, groups)
+                }
+            },
+            ComparisonUnit::Word(w) => vec![ComparisonUnit::Word(w.clone())],
+        })
+        .collect()
+}
+
+fn flatten_group_children_for_unknown(
+    parent: &ComparisonUnitGroup,
+    groups: &[ComparisonUnitGroup],
+) -> Vec<ComparisonUnit> {
+    let mut flattened = Vec::new();
+
+    for group in groups {
+        match &group.contents {
+            super::comparison_unit::ComparisonUnitGroupContents::Words(words)
+                if group.group_type == parent.group_type =>
+            {
+                flattened.extend(
+                    words
+                        .iter()
+                        .map(|w| ComparisonUnit::Word(w.clone()))
+                );
+            }
+            _ => {
+                flattened.push(ComparisonUnit::Group(group.clone()));
+            }
+        }
+    }
+
+    flattened
 }
 
 /// Handle matching rows by flattening to cells
@@ -1687,12 +1699,10 @@ fn detect_unrelated_sources(
     let groups1: Vec<_> = units1
         .iter()
         .filter_map(|u| u.as_group())
-        .take(4)
         .collect();
     let groups2: Vec<_> = units2
         .iter()
         .filter_map(|u| u.as_group())
-        .take(4)
         .collect();
 
     if groups1.len() <= 3 || groups2.len() <= 3 {
