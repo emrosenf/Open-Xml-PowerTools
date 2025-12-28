@@ -371,6 +371,7 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                 
                 ancestors.push(AncestorInfo {
                     node_id: ancestor_id,
+                    namespace: name.namespace.clone(),
                     local_name: local.to_string(),
                     unid,
                     attributes: attrs,

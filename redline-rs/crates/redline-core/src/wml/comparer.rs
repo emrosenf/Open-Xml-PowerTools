@@ -90,8 +90,12 @@ impl WmlComparer {
 
         // C# WmlComparer.cs:255-256 - Accept revisions before comparison
         // This ensures documents with tracked changes are compared by their final content
-        let mut doc1 = accept_revisions(&doc1, body1);
-        let mut doc2 = accept_revisions(&doc2, body2);
+        // IMPORTANT: Pass the document root, not just the body, to preserve full document structure
+        let doc1_root = doc1.root().ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No root in document 1".to_string()))?;
+        let doc2_root = doc2.root().ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No root in document 2".to_string()))?;
+        
+        let mut doc1 = accept_revisions(&doc1, doc1_root);
+        let mut doc2 = accept_revisions(&doc2, doc2_root);
         
         // Find body nodes in the accepted documents
         let body1 = find_document_body(&doc1).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 1".to_string()))?;
@@ -888,6 +892,7 @@ fn compare_atoms_internal(
     settings: &WmlComparerSettings,
 ) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult, Vec<ComparisonUnitAtom>)> {
     let word_settings = WordSeparatorSettings::default();
+    
     let units1 = get_comparison_unit_list(atoms1, &word_settings);
     let units2 = get_comparison_unit_list(atoms2, &word_settings);
 

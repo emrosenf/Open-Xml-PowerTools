@@ -28,6 +28,7 @@ pub fn pt_unid() -> XName {
 /// Helper struct to represent an ancestor element's information
 #[derive(Clone, Debug)]
 struct AncestorElementInfo {
+    namespace: Option<String>,
     local_name: String,
     attributes: Vec<XAttribute>,
 }
@@ -66,9 +67,7 @@ pub fn coalesce(atoms: &[ComparisonUnitAtom], settings: &WmlComparerSettings, ro
             attrs.push(XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", prefix), uri));
         }
     }
-    if !attrs.iter().any(|a| a.name.local_name == "pt14") {
-        attrs.push(XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "pt14"), PT_STATUS_NS));
-    }
+    // Note: Do NOT add pt14 namespace - it's for internal tracking only, not output
     
     let doc_root = doc.add_root(XmlNodeData::element_with_attrs(root_name.clone(), attrs));
     
@@ -1099,46 +1098,71 @@ fn coalesce_recurse(
     _part: Option<()>,
     settings: &WmlComparerSettings,
 ) {
-    let grouped = group_by_key(list, |ca| {
+    // Use range-based grouping to avoid cloning
+    let grouped = group_by_key_ranges(list, |ca| {
         if level >= ca.ancestor_unids.len() { String::new() } else { ca.ancestor_unids[level].clone() }
     });
-    let grouped: Vec<_> = grouped.into_iter().filter(|(key, _)| !key.is_empty()).collect();
-    if grouped.is_empty() { return; }
-    for (group_key, group_atoms) in grouped {
+    
+    for (group_key, start, end) in grouped {
+        if group_key.is_empty() { continue; }
+        
+        let group_atoms = &list[start..end];
         let first_atom = &group_atoms[0];
-        let ancestor_being_constructed = get_ancestor_element_for_level(first_atom, level, &group_atoms);
+        let ancestor_being_constructed = get_ancestor_element_for_level(first_atom, level, group_atoms);
         let ancestor_name = &ancestor_being_constructed.local_name;
         let is_inside_vml = is_inside_vml_content(first_atom, level);
-        let grouped_children = group_adjacent_by_correlation(&group_atoms, level, is_inside_vml, settings);
+        
+        // Use range-based correlation grouping
+        let grouped_children = group_adjacent_by_correlation_ranges(group_atoms, level, is_inside_vml, settings);
+        
         match ancestor_name.as_str() {
-            "p" => reconstruct_paragraph(doc, parent, &group_key, &ancestor_being_constructed, &grouped_children, level, is_inside_vml, _part, settings),
-            "r" => reconstruct_run(doc, parent, &ancestor_being_constructed, &grouped_children, level, is_inside_vml, _part, settings),
-            "t" => reconstruct_text_elements(doc, parent, &grouped_children),
-            "drawing" => reconstruct_drawing_elements(doc, parent, &grouped_children, _part, settings),
-            "oMath" | "oMathPara" => reconstruct_math_elements(doc, parent, &ancestor_being_constructed, &grouped_children, settings),
-            elem if ALLOWABLE_RUN_CHILDREN.contains(&elem) => reconstruct_allowable_run_children(doc, parent, &ancestor_being_constructed, &grouped_children),
-            "tbl" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["tblPr", "tblGrid"], &group_atoms, level, _part, settings),
-            "tr" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["trPr"], &group_atoms, level, _part, settings),
-            "tc" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["tcPr"], &group_atoms, level, _part, settings),
-            "sdt" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["sdtPr", "sdtEndPr"], &group_atoms, level, _part, settings),
-            "pict" | "shape" | "rect" | "group" | "shapetype" | "oval" | "line" | "arc" | "curve" | "polyline" | "roundrect" => reconstruct_vml_element(doc, parent, &group_key, &ancestor_being_constructed, &group_atoms, level, _part, settings),
-            "object" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["shapetype", "shape", "OLEObject"], &group_atoms, level, _part, settings),
-            "ruby" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["rubyPr"], &group_atoms, level, _part, settings),
-            _ => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &[], &group_atoms, level, _part, settings),
+            "p" => reconstruct_paragraph(doc, parent, &group_key, &ancestor_being_constructed, group_atoms, &grouped_children, level, is_inside_vml, _part, settings),
+            "r" => reconstruct_run(doc, parent, &ancestor_being_constructed, group_atoms, &grouped_children, level, is_inside_vml, _part, settings),
+            "t" => reconstruct_text_elements(doc, parent, group_atoms, &grouped_children),
+            "drawing" => reconstruct_drawing_elements(doc, parent, group_atoms, &grouped_children, _part, settings),
+            "oMath" | "oMathPara" => reconstruct_math_elements(doc, parent, &ancestor_being_constructed, group_atoms, &grouped_children, settings),
+            elem if ALLOWABLE_RUN_CHILDREN.contains(&elem) => reconstruct_allowable_run_children(doc, parent, &ancestor_being_constructed, group_atoms, &grouped_children),
+            "tbl" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["tblPr", "tblGrid"], group_atoms, level, _part, settings),
+            "tr" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["trPr"], group_atoms, level, _part, settings),
+            "tc" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["tcPr"], group_atoms, level, _part, settings),
+            "sdt" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["sdtPr", "sdtEndPr"], group_atoms, level, _part, settings),
+            "pict" | "shape" | "rect" | "group" | "shapetype" | "oval" | "line" | "arc" | "curve" | "polyline" | "roundrect" => reconstruct_vml_element(doc, parent, &group_key, &ancestor_being_constructed, group_atoms, level, _part, settings),
+            "object" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["shapetype", "shape", "OLEObject"], group_atoms, level, _part, settings),
+            "ruby" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["rubyPr"], group_atoms, level, _part, settings),
+            _ => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &[], group_atoms, level, _part, settings),
         }
     }
 }
 
-fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, group_key: &str, ancestor: &AncestorElementInfo, grouped_children: &[(String, Vec<ComparisonUnitAtom>)], level: usize, is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
+fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], level: usize, is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
     let mut para_attrs = ancestor.attributes.clone();
     para_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
-    para_attrs.push(XAttribute::new(pt_unid(), group_key));
+    // Note: Do NOT add pt_unid to output - it's an internal tracking attribute
     let para = doc.add_child(parent, XmlNodeData::element_with_attrs(W::p(), para_attrs));
-    for (key, group_atoms) in grouped_children {
+    
+    // OOXML requires w:pPr to be the FIRST child of w:p
+    // First pass: add pPr elements
+    for (key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
-                if is_inside_vml && matches!(&gcc.content_element, ContentElement::ParagraphProperties) && spl.get(1) == Some(&"Inserted") { continue; }
+                if !matches!(&gcc.content_element, ContentElement::ParagraphProperties) { continue; }
+                if is_inside_vml && spl.get(1) == Some(&"Inserted") { continue; }
+                let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
+                if let Some(node) = content_elem_node { doc.reparent(para, node); }
+            }
+        }
+    }
+    
+    // Second pass: add all other content (runs, etc.)
+    for (key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
+        let spl: Vec<&str> = key.split('|').collect();
+        if spl.get(0) == Some(&"") {
+            for gcc in group_atoms {
+                // Skip pPr - already added in first pass
+                if matches!(&gcc.content_element, ContentElement::ParagraphProperties) { continue; }
                 let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
             }
@@ -1146,14 +1170,15 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, group_key: &str,
     }
 }
 
-fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorElementInfo, grouped_children: &[(String, Vec<ComparisonUnitAtom>)], level: usize, _is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
+fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], level: usize, _is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
     let mut run_attrs = ancestor.attributes.clone();
     run_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     let run = doc.add_child(parent, XmlNodeData::element_with_attrs(W::r(), run_attrs));
-    let mut format_changed = grouped_children.iter().any(|(_, atoms)| {
-        atoms.iter().any(|atom| atom.correlation_status == ComparisonCorrelationStatus::FormatChanged)
+    let format_changed = grouped_children.iter().any(|(_, start, end)| {
+        atoms[*start..*end].iter().any(|atom| atom.correlation_status == ComparisonCorrelationStatus::FormatChanged)
     });
-    for (key, group_atoms) in grouped_children {
+    for (key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
@@ -1170,8 +1195,9 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
     }
 }
 
-fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, grouped_children: &[(String, Vec<ComparisonUnitAtom>)]) {
-    for (_key, group_atoms) in grouped_children {
+fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
+    for (_key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
         let text_of_text_element: String = group_atoms.iter().filter_map(|gce| if let ContentElement::Text(ch) = gce.content_element { Some(ch) } else { None }).collect();
         if text_of_text_element.is_empty() { continue; }
         let first = &group_atoms[0];
@@ -1186,8 +1212,9 @@ fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, grouped_chil
     }
 }
 
-fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, grouped_children: &[(String, Vec<ComparisonUnitAtom>)], _part: Option<()>, _settings: &WmlComparerSettings) {
-    for (_key, group_atoms) in grouped_children {
+fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], _part: Option<()>, _settings: &WmlComparerSettings) {
+    for (_key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
         let first = &group_atoms[0];
         let del = first.correlation_status == ComparisonCorrelationStatus::Deleted;
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
@@ -1207,8 +1234,9 @@ fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, grouped_c
     }
 }
 
-fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &AncestorElementInfo, grouped_children: &[(String, Vec<ComparisonUnitAtom>)], settings: &WmlComparerSettings) {
-    for (_key, group_atoms) in grouped_children {
+fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], settings: &WmlComparerSettings) {
+    for (_key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
         let first = &group_atoms[0];
         let del = first.correlation_status == ComparisonCorrelationStatus::Deleted;
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
@@ -1230,8 +1258,9 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
     }
 }
 
-fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorElementInfo, grouped_children: &[(String, Vec<ComparisonUnitAtom>)]) {
-    for (_key, group_atoms) in grouped_children {
+fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
+    for (_key, start, end) in grouped_children {
+        let group_atoms = &atoms[*start..*end];
         let first = &group_atoms[0];
         let del = first.correlation_status == ComparisonCorrelationStatus::Deleted;
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
@@ -1241,7 +1270,7 @@ fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, anc
                 attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
                 let status = if del { "Deleted" } else { "Inserted" };
                 attrs.push(XAttribute::new(pt_status(), status));
-                let elem_name = XName::new(W::NS, &ancestor.local_name);
+                let elem_name = xname_from_ancestor(ancestor);
                 doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
             }
         } else {
@@ -1257,8 +1286,9 @@ fn reconstruct_element(doc: &mut XmlDocument, parent: NodeId, group_key: &str, a
     coalesce_recurse(doc, temp_container, group_atoms, level + 1, part, settings);
     let new_child_elements: Vec<NodeId> = doc.children(temp_container).collect();
     let mut attrs = ancestor.attributes.clone();
+    attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     attrs.push(XAttribute::new(pt_unid(), group_key));
-    let elem_name = XName::new(W::NS, &ancestor.local_name);
+    let elem_name = xname_from_ancestor(ancestor);
     let elem = doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
     for child in new_child_elements { doc.reparent(elem, child); }
 }
@@ -1312,43 +1342,116 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
     }
 }
 
-fn group_by_key<T, F, K>(items: &[T], mut key_fn: F) -> Vec<(K, Vec<T>)> where T: Clone, F: FnMut(&T) -> K, K: Eq + std::hash::Hash + Clone {
-    let mut groups: HashMap<K, Vec<T>> = HashMap::new();
-    let mut order: Vec<K> = Vec::new();
-    for item in items {
-        let key = key_fn(item);
-        if !groups.contains_key(&key) { order.push(key.clone()); }
-        groups.entry(key).or_default().push(item.clone());
+/// Group items by key, returning ranges into the original slice to avoid cloning
+/// Returns (key, start_index, end_index) tuples
+fn group_by_key_ranges<'a, T, F, K>(items: &'a [T], mut key_fn: F) -> Vec<(K, usize, usize)> 
+where 
+    F: FnMut(&T) -> K, 
+    K: Eq + std::hash::Hash + Clone 
+{
+    if items.is_empty() {
+        return Vec::new();
     }
-    order.into_iter().filter_map(|key| groups.remove(&key).map(|items| (key, items))).collect()
+    
+    // Build index groups - maps key to list of indices
+    let mut groups: HashMap<K, Vec<usize>> = HashMap::new();
+    let mut order: Vec<K> = Vec::new();
+    
+    for (idx, item) in items.iter().enumerate() {
+        let key = key_fn(item);
+        if !groups.contains_key(&key) { 
+            order.push(key.clone()); 
+        }
+        groups.entry(key).or_default().push(idx);
+    }
+    
+    // Convert to contiguous ranges - this works because we process in order
+    // and items with same key at same ancestor level are adjacent in practice
+    let mut result = Vec::with_capacity(order.len());
+    for key in order {
+        if let Some(indices) = groups.remove(&key) {
+            if !indices.is_empty() {
+                // Find contiguous ranges
+                let mut range_start = indices[0];
+                let mut range_end = indices[0] + 1;
+                
+                for &idx in &indices[1..] {
+                    if idx == range_end {
+                        range_end = idx + 1;
+                    } else {
+                        // Non-contiguous - emit current range and start new one
+                        result.push((key.clone(), range_start, range_end));
+                        range_start = idx;
+                        range_end = idx + 1;
+                    }
+                }
+                result.push((key, range_start, range_end));
+            }
+        }
+    }
+    result
 }
 
-fn group_adjacent_by_correlation(
+/// Group adjacent atoms by correlation status, returning ranges into the original slice
+/// Returns (key, start_index, end_index) tuples - NO CLONING
+fn group_adjacent_by_correlation_ranges(
     atoms: &[ComparisonUnitAtom],
     level: usize,
     _is_inside_vml: bool,
     settings: &WmlComparerSettings,
-) -> Vec<(String, Vec<ComparisonUnitAtom>)> {
-    let mut groups: Vec<(String, Vec<ComparisonUnitAtom>)> = Vec::new();
-    for atom in atoms {
+) -> Vec<(String, usize, usize)> {
+    if atoms.is_empty() {
+        return Vec::new();
+    }
+    
+    let mut groups: Vec<(String, usize, usize)> = Vec::new();
+    let mut current_key = String::new();
+    let mut range_start = 0usize;
+    
+    for (idx, atom) in atoms.iter().enumerate() {
         let in_txbx_content = atom.ancestor_elements.iter().take(level).any(|a| a.local_name == "txbxContent");
-        let mut ancestor_unid = if level < atom.ancestor_unids.len() - 1 { atom.ancestor_unids[level + 1].clone() } else { String::new() };
-        if in_txbx_content && !ancestor_unid.is_empty() { ancestor_unid = "TXBX".to_string(); }
-        let status_str = if in_txbx_content { "Equal".to_string() } else { format!("{:?}", atom.correlation_status) };
-        let key = if in_txbx_content { format!("{}|{}", ancestor_unid, status_str) } else {
+        let ancestor_unid = if level < atom.ancestor_unids.len() - 1 { 
+            if in_txbx_content { "TXBX" } else { &atom.ancestor_unids[level + 1] }
+        } else { 
+            "" 
+        };
+        
+        let key = if in_txbx_content { 
+            format!("{}|Equal", ancestor_unid) 
+        } else {
+            let status_str = format!("{:?}", atom.correlation_status);
             if settings.track_formatting_changes {
                 if atom.correlation_status == ComparisonCorrelationStatus::FormatChanged {
-                    format!("{}|{}|FMT:{}|TO:{}", ancestor_unid, status_str, atom.formatting_change_rpr_before_signature.as_deref().unwrap_or("<null>"), atom.formatting_signature.as_deref().unwrap_or("<null>"))
+                    format!("{}|{}|FMT:{}|TO:{}", ancestor_unid, status_str, 
+                        atom.formatting_change_rpr_before_signature.as_deref().unwrap_or("<null>"), 
+                        atom.formatting_signature.as_deref().unwrap_or("<null>"))
                 } else if atom.correlation_status == ComparisonCorrelationStatus::Equal {
-                    format!("{}|{}|SIG:{}", ancestor_unid, status_str, atom.formatting_signature.as_deref().unwrap_or("<null>"))
-                } else { format!("{}|{}", ancestor_unid, status_str) }
-            } else { format!("{}|{}", ancestor_unid, status_str) }
+                    format!("{}|{}|SIG:{}", ancestor_unid, status_str, 
+                        atom.formatting_signature.as_deref().unwrap_or("<null>"))
+                } else { 
+                    format!("{}|{}", ancestor_unid, status_str) 
+                }
+            } else { 
+                format!("{}|{}", ancestor_unid, status_str) 
+            }
         };
-        if let Some((last_key, last_group)) = groups.last_mut() {
-            if last_key == &key { last_group.push(atom.clone()); continue; }
+        
+        if idx == 0 {
+            current_key = key;
+            range_start = 0;
+        } else if key != current_key {
+            // End previous group, start new one
+            groups.push((std::mem::take(&mut current_key), range_start, idx));
+            current_key = key;
+            range_start = idx;
         }
-        groups.push((key, vec![atom.clone()]));
     }
+    
+    // Push final group
+    if !atoms.is_empty() {
+        groups.push((current_key, range_start, atoms.len()));
+    }
+    
     groups
 }
 
@@ -1371,6 +1474,7 @@ fn get_ancestor_element_for_level(
             if let Some(ref before_ancestors) = atom.ancestor_elements_before {
                 if level < before_ancestors.len() {
                     return AncestorElementInfo {
+                        namespace: before_ancestors[level].namespace.clone(),
                         local_name: before_ancestors[level].local_name.clone(),
                         attributes: before_ancestors[level].attributes.clone(),
                     };
@@ -1379,8 +1483,16 @@ fn get_ancestor_element_for_level(
         }
     }
     AncestorElementInfo {
+        namespace: first_atom.ancestor_elements[level].namespace.clone(),
         local_name: first_atom.ancestor_elements[level].local_name.clone(),
         attributes: first_atom.ancestor_elements[level].attributes.clone(),
+    }
+}
+
+fn xname_from_ancestor(ancestor: &AncestorElementInfo) -> XName {
+    match ancestor.namespace.as_deref() {
+        Some(namespace) if !namespace.is_empty() => XName::new(namespace, &ancestor.local_name),
+        _ => XName::local(&ancestor.local_name),
     }
 }
 

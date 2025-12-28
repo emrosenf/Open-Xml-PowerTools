@@ -37,15 +37,10 @@ static FONT_ATTRIBUTES: &[&str] = &["ascii", "hAnsi", "cs", "eastAsia"];
 fn clone_element_deep_in_place(doc: &mut XmlDocument, source: NodeId, parent: Option<NodeId>) -> NodeId {
     let source_data = doc.get(source).expect("Source node must exist").clone();
     
+    // Use new_node for orphan nodes to avoid overwriting the document root
     let cloned = match parent {
         Some(p) => doc.add_child(p, source_data),
-        None => {
-            let id = doc.add_root(XmlNodeData::element(W::rPr()));
-            if let Some(mut_data) = doc.get_mut(id) {
-                *mut_data = source_data;
-            }
-            id
-        }
+        None => doc.new_node(source_data),  // Don't use add_root - it overwrites the document root!
     };
     
     let children: Vec<_> = doc.children(source).collect();

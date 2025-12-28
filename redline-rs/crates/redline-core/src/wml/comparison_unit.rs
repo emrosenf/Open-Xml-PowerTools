@@ -93,6 +93,8 @@ impl fmt::Display for ComparisonUnitGroupType {
 pub struct AncestorInfo {
     /// Node ID of the ancestor element
     pub node_id: NodeId,
+    /// Namespace URI for the element (None for no namespace)
+    pub namespace: Option<String>,
     /// Local name of the element (e.g., "p", "tbl", "tr", "tc")
     pub local_name: String,
     /// Unique ID (Unid) for this element - used for correlation
@@ -1485,6 +1487,7 @@ mod tests {
             ContentElement::Text('H'),
             vec![AncestorInfo {
                 node_id: node,
+                namespace: None,
                 local_name: "p".to_string(),
                 unid: "abc123".to_string(),
                 attributes: vec![],
