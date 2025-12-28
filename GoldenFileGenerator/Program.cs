@@ -1,15 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-// Golden File Generator for TypeScript Port TDD
-// Generates reference outputs from the C# WmlComparer, SmlComparer, and PmlComparer
-// to validate TypeScript implementations against.
-
 using System.Text.Json;
 using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using OpenXmlPowerTools;
 
+// Golden File Generator for TypeScript Port TDD
+// Generates reference outputs from the C# WmlComparer, SmlComparer, and PmlComparer
+// to validate TypeScript implementations against.
 class Program
 {
     // Paths work both locally (from GoldenFileGenerator dir) and in Docker (from /app)
