@@ -1730,6 +1730,31 @@ impl<'a> Iterator for DescendantAtomsIter<'a> {
 /// - Inserted atoms come from units2 only
 /// - Unknown atoms get atoms from both sides with Unknown status
 pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnitAtom> {
+    fn needs_before_ancestor_elements(atom: &ComparisonUnitAtom) -> bool {
+        const VML_RELATED_ELEMENTS: &[&str] = &[
+            "pict", "shape", "rect", "group", "shapetype", "oval", "line", "arc", "curve",
+            "polyline", "roundrect",
+        ];
+
+        let is_ppr = matches!(atom.content_element, ContentElement::ParagraphProperties);
+        let mut is_in_textbox = false;
+        let mut is_vml = false;
+
+        for ancestor in &atom.ancestor_elements {
+            if ancestor.local_name == "txbxContent" {
+                is_in_textbox = true;
+            }
+            if VML_RELATED_ELEMENTS.contains(&ancestor.local_name.as_str()) {
+                is_vml = true;
+            }
+            if is_in_textbox && is_vml {
+                break;
+            }
+        }
+
+        is_ppr || is_in_textbox || is_vml
+    }
+
     fn count_units(units: &[ComparisonUnit]) -> usize {
         units.iter().map(|u| u.descendant_content_atoms_count()).sum()
     }
@@ -1780,7 +1805,9 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                             cloned.correlation_status = ComparisonCorrelationStatus::Equal;
                             cloned.content_element_before = Some(a1.content_element.clone());
                             cloned.formatting_signature_before = a1.formatting_signature.clone();
-                            cloned.ancestor_elements_before = Some(a1.ancestor_elements.clone());
+                            if needs_before_ancestor_elements(&cloned) {
+                                cloned.ancestor_elements_before = Some(a1.ancestor_elements.clone());
+                            }
                             cloned.part_before = Some(a1.part_name.clone());
                             result.push(cloned);
                         }
