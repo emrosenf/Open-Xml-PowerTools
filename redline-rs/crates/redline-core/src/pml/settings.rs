@@ -22,6 +22,32 @@ pub struct PmlComparerSettings {
     
     // Legacy/Other tolerance settings (keeping for compatibility if used elsewhere)
     pub transform_tolerance: TransformTolerance,
+    
+    // === Output Settings ===
+    /// Author name for change annotations
+    pub author_for_changes: String,
+    
+    /// Add a summary slide at the end of marked presentations
+    pub add_summary_slide: bool,
+    
+    /// Add change summary to speaker notes
+    pub add_notes_annotations: bool,
+    
+    // === Colors (RRGGBB hex) ===
+    /// Color for inserted elements
+    pub inserted_color: String,
+    
+    /// Color for deleted elements
+    pub deleted_color: String,
+    
+    /// Color for modified elements
+    pub modified_color: String,
+    
+    /// Color for moved elements
+    pub moved_color: String,
+    
+    /// Color for formatting-only changes
+    pub formatting_color: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,6 +85,18 @@ impl Default for PmlComparerSettings {
             position_tolerance: 91440, // ~0.1 inch
             
             transform_tolerance: TransformTolerance::default(),
+            
+            // Output settings
+            author_for_changes: "Open-Xml-PowerTools".to_string(),
+            add_summary_slide: true,
+            add_notes_annotations: true,
+            
+            // Colors
+            inserted_color: "00AA00".to_string(),  // Green
+            deleted_color: "FF0000".to_string(),   // Red
+            modified_color: "FFA500".to_string(),  // Orange
+            moved_color: "0000FF".to_string(),     // Blue
+            formatting_color: "9932CC".to_string(), // Purple
         }
     }
 }

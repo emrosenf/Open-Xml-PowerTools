@@ -167,6 +167,34 @@ pub mod S {
     pub fn f() -> XName { XName::new(NS, "f") }
     pub fn is() -> XName { XName::new(NS, "is") }
     pub fn t() -> XName { XName::new(NS, "t") }
+    pub fn sheets() -> XName { XName::new(NS, "sheets") }
+    pub fn sheet() -> XName { XName::new(NS, "sheet") }
+    pub fn definedNames() -> XName { XName::new(NS, "definedNames") }
+    pub fn definedName() -> XName { XName::new(NS, "definedName") }
+    pub fn si() -> XName { XName::new(NS, "si") }
+    pub fn numFmts() -> XName { XName::new(NS, "numFmts") }
+    pub fn numFmt() -> XName { XName::new(NS, "numFmt") }
+    pub fn fonts() -> XName { XName::new(NS, "fonts") }
+    pub fn font() -> XName { XName::new(NS, "font") }
+    pub fn fills() -> XName { XName::new(NS, "fills") }
+    pub fn fill() -> XName { XName::new(NS, "fill") }
+    pub fn borders() -> XName { XName::new(NS, "borders") }
+    pub fn border() -> XName { XName::new(NS, "border") }
+    pub fn cellXfs() -> XName { XName::new(NS, "cellXfs") }
+    pub fn xf() -> XName { XName::new(NS, "xf") }
+    pub fn authors() -> XName { XName::new(NS, "authors") }
+    pub fn author() -> XName { XName::new(NS, "author") }
+    pub fn commentList() -> XName { XName::new(NS, "commentList") }
+    pub fn comment() -> XName { XName::new(NS, "comment") }
+    pub fn text() -> XName { XName::new(NS, "text") }
+    pub fn dataValidations() -> XName { XName::new(NS, "dataValidations") }
+    pub fn dataValidation() -> XName { XName::new(NS, "dataValidation") }
+    pub fn formula1() -> XName { XName::new(NS, "formula1") }
+    pub fn formula2() -> XName { XName::new(NS, "formula2") }
+    pub fn mergeCells() -> XName { XName::new(NS, "mergeCells") }
+    pub fn mergeCell() -> XName { XName::new(NS, "mergeCell") }
+    pub fn hyperlinks() -> XName { XName::new(NS, "hyperlinks") }
+    pub fn hyperlink() -> XName { XName::new(NS, "hyperlink") }
 }
 
 pub mod P {
@@ -175,10 +203,32 @@ pub mod P {
     
     pub fn presentation() -> XName { XName::new(NS, "presentation") }
     pub fn sld() -> XName { XName::new(NS, "sld") }
+    pub fn sld_sz() -> XName { XName::new(NS, "sldSz") }
+    pub fn sld_id_lst() -> XName { XName::new(NS, "sldIdLst") }
+    pub fn sld_id() -> XName { XName::new(NS, "sldId") }
+    pub fn c_sld() -> XName { XName::new(NS, "cSld") }
     pub fn cSld() -> XName { XName::new(NS, "cSld") }
+    pub fn bg() -> XName { XName::new(NS, "bg") }
+    pub fn sp_tree() -> XName { XName::new(NS, "spTree") }
     pub fn spTree() -> XName { XName::new(NS, "spTree") }
     pub fn sp() -> XName { XName::new(NS, "sp") }
+    pub fn pic() -> XName { XName::new(NS, "pic") }
+    pub fn graphic_frame() -> XName { XName::new(NS, "graphicFrame") }
+    pub fn grp_sp() -> XName { XName::new(NS, "grpSp") }
+    pub fn cxn_sp() -> XName { XName::new(NS, "cxnSp") }
+    pub fn nv_sp_pr() -> XName { XName::new(NS, "nvSpPr") }
+    pub fn nv_pic_pr() -> XName { XName::new(NS, "nvPicPr") }
+    pub fn nv_graphic_frame_pr() -> XName { XName::new(NS, "nvGraphicFramePr") }
+    pub fn nv_grp_sp_pr() -> XName { XName::new(NS, "nvGrpSpPr") }
+    pub fn nv_cxn_sp_pr() -> XName { XName::new(NS, "nvCxnSpPr") }
+    pub fn c_nv_pr() -> XName { XName::new(NS, "cNvPr") }
+    pub fn nv_pr() -> XName { XName::new(NS, "nvPr") }
+    pub fn ph() -> XName { XName::new(NS, "ph") }
+    pub fn sp_pr() -> XName { XName::new(NS, "spPr") }
+    pub fn grp_sp_pr() -> XName { XName::new(NS, "grpSpPr") }
+    pub fn tx_body() -> XName { XName::new(NS, "txBody") }
     pub fn txBody() -> XName { XName::new(NS, "txBody") }
+    pub fn blip_fill() -> XName { XName::new(NS, "blipFill") }
 }
 
 pub mod A {
@@ -191,6 +241,23 @@ pub mod A {
     pub fn off() -> XName { XName::new(NS, "off") }
     pub fn ext() -> XName { XName::new(NS, "ext") }
     pub fn xfrm() -> XName { XName::new(NS, "xfrm") }
+    pub fn p_pr() -> XName { XName::new(NS, "pPr") }
+    pub fn bu_char() -> XName { XName::new(NS, "buChar") }
+    pub fn bu_auto_num() -> XName { XName::new(NS, "buAutoNum") }
+    pub fn r_pr() -> XName { XName::new(NS, "rPr") }
+    pub fn fld() -> XName { XName::new(NS, "fld") }
+    pub fn latin() -> XName { XName::new(NS, "latin") }
+    pub fn solid_fill() -> XName { XName::new(NS, "solidFill") }
+    pub fn srgb_clr() -> XName { XName::new(NS, "srgbClr") }
+    pub fn blip() -> XName { XName::new(NS, "blip") }
+    pub fn prst_geom() -> XName { XName::new(NS, "prstGeom") }
+    pub fn cust_geom() -> XName { XName::new(NS, "custGeom") }
+    pub fn graphic() -> XName { XName::new(NS, "graphic") }
+    pub fn graphic_data() -> XName { XName::new(NS, "graphicData") }
+    pub fn tbl() -> XName { XName::new(NS, "tbl") }
+    pub fn tr() -> XName { XName::new(NS, "tr") }
+    pub fn tc() -> XName { XName::new(NS, "tc") }
+    pub fn tx_body() -> XName { XName::new(NS, "txBody") }
 }
 
 pub mod R {
@@ -198,6 +265,7 @@ pub mod R {
     pub const NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     
     pub fn id() -> XName { XName::new(NS, "id") }
+    pub fn embed() -> XName { XName::new(NS, "embed") }
     pub fn r() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "r") }
 }
 
