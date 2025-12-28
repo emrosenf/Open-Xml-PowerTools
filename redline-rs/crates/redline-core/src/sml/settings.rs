@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Settings for controlling spreadsheet comparison behavior.
 /// 100% parity with C# SmlComparerSettings.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SmlComparerSettings {
     // ===== Phase 1: Core Comparison Settings =====
     
@@ -30,9 +30,11 @@ pub struct SmlComparerSettings {
     /// Author name for change annotations.
     pub author_for_changes: String,
 
-    /// Optional callback for logging (not serializable - use Arc<Mutex<dyn Fn>> in practice).
+    /// Optional callback for logging (not serializable or debug-able).
+    /// Note: In Rust, we skip this field for Clone, Debug, and Serialize.
+    /// Users should set this after construction if needed.
     #[serde(skip)]
-    pub log_callback: Option<Box<dyn Fn(&str) + Send + Sync>>,
+    pub log_callback: Option<fn(&str)>,
 
     // ===== Highlight Colors (ARGB hex without #) =====
     
@@ -105,6 +107,42 @@ pub struct SmlComparerSettings {
 
     /// Fill color for data validation changes (default: light orange).
     pub data_validation_change_color: String,
+}
+
+impl std::fmt::Debug for SmlComparerSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SmlComparerSettings")
+            .field("compare_values", &self.compare_values)
+            .field("compare_formulas", &self.compare_formulas)
+            .field("compare_formatting", &self.compare_formatting)
+            .field("compare_sheet_structure", &self.compare_sheet_structure)
+            .field("case_insensitive_values", &self.case_insensitive_values)
+            .field("numeric_tolerance", &self.numeric_tolerance)
+            .field("author_for_changes", &self.author_for_changes)
+            .field("log_callback", &self.log_callback.map(|_| "<fn>"))
+            .field("added_cell_color", &self.added_cell_color)
+            .field("deleted_cell_color", &self.deleted_cell_color)
+            .field("modified_value_color", &self.modified_value_color)
+            .field("modified_formula_color", &self.modified_formula_color)
+            .field("modified_format_color", &self.modified_format_color)
+            .field("inserted_row_color", &self.inserted_row_color)
+            .field("deleted_row_color", &self.deleted_row_color)
+            .field("enable_row_alignment", &self.enable_row_alignment)
+            .field("enable_column_alignment", &self.enable_column_alignment)
+            .field("enable_sheet_rename_detection", &self.enable_sheet_rename_detection)
+            .field("sheet_rename_similarity_threshold", &self.sheet_rename_similarity_threshold)
+            .field("row_signature_sample_size", &self.row_signature_sample_size)
+            .field("compare_named_ranges", &self.compare_named_ranges)
+            .field("compare_comments", &self.compare_comments)
+            .field("compare_data_validation", &self.compare_data_validation)
+            .field("compare_merged_cells", &self.compare_merged_cells)
+            .field("compare_conditional_formatting", &self.compare_conditional_formatting)
+            .field("compare_hyperlinks", &self.compare_hyperlinks)
+            .field("named_range_change_color", &self.named_range_change_color)
+            .field("comment_change_color", &self.comment_change_color)
+            .field("data_validation_change_color", &self.data_validation_change_color)
+            .finish()
+    }
 }
 
 impl Default for SmlComparerSettings {
@@ -265,10 +303,13 @@ mod tests {
     #[test]
     fn log_callback_can_be_set() {
         let mut settings = SmlComparerSettings::new();
-        let mut logged_messages = Vec::new();
         
-        // In real usage, you'd use Arc<Mutex<Vec<String>>> to capture messages
-        settings.log_callback = None; // Just test that it compiles
+        // Simple function for logging
+        fn test_logger(_msg: &str) {
+            // In real usage, this would log somewhere
+        }
+        
+        settings.log_callback = Some(test_logger);
         settings.log("test message"); // Should not panic
     }
 }

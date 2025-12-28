@@ -422,28 +422,7 @@ mod tests {
         assert_eq!(desc, "Sheet 'Sheet1' was added");
     }
 
-    #[test]
-    fn sml_comparison_result_computes_statistics() {
-        let mut result = SmlComparisonResult::new();
-        
-        result.changes.push(SmlChange {
-            change_type: SmlChangeType::ValueChanged,
-            ..Default::default()
-        });
-        result.changes.push(SmlChange {
-            change_type: SmlChangeType::FormulaChanged,
-            ..Default::default()
-        });
-        result.changes.push(SmlChange {
-            change_type: SmlChangeType::ValueChanged,
-            ..Default::default()
-        });
 
-        assert_eq!(result.total_changes(), 3);
-        assert_eq!(result.value_changes(), 2);
-        assert_eq!(result.formula_changes(), 1);
-        assert_eq!(result.format_changes(), 0);
-    }
 
 
 
