@@ -54,3 +54,7 @@ regex = { workspace = true }
 [features]
 default = []
 wasm = []
+
+[[bench]]
+name = "wml_benchmark"
+harness = false

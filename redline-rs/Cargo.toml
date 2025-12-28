@@ -49,7 +49,7 @@ once_cell = "1.19"
 chrono = { version = "0.4", features = ["serde"] }
 
 # UUID generation (for UNID matching C# Guid.NewGuid())
-uuid = { version = "1.10", features = ["v4"] }
+uuid = { version = "1.10", features = ["v4", "js"] }
 
 # Dev dependencies
 insta = { version = "1.41", features = ["json"] }
