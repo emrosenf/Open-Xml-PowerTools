@@ -36,6 +36,7 @@ use crate::wml::settings::WmlComparerSettings;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
 use std::fmt;
+use std::sync::Arc;
 
 /// Correlation status for comparison units
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -661,7 +662,7 @@ impl ComparisonUnitAtom {
 #[derive(Debug, Clone)]
 pub struct ComparisonUnitWord {
     /// Atoms that make up this word
-    pub atoms: Vec<ComparisonUnitAtom>,
+    pub atoms: Arc<Vec<ComparisonUnitAtom>>,
     /// SHA1 hash of all atom hashes concatenated
     pub sha1_hash: String,
     /// Correlation status
@@ -718,11 +719,10 @@ const RELATIONSHIP_ATTRIBUTE_NAMES: &[&str] = &[
 impl ComparisonUnitWord {
     /// Create a new word from a list of atoms
     pub fn new(atoms: Vec<ComparisonUnitAtom>) -> Self {
-        let hash_input: String = atoms.iter().map(|a| a.sha1_hash.as_str()).collect();
-        let sha1_hash = compute_sha1(&hash_input);
+        let sha1_hash = compute_sha1_concat(atoms.iter().map(|a| a.sha1_hash.as_str()));
 
         Self {
-            atoms,
+            atoms: Arc::new(atoms),
             sha1_hash,
             correlation_status: ComparisonCorrelationStatus::Nil,
         }
@@ -761,7 +761,7 @@ impl ComparisonUnitWord {
         };
         
         let mut result = format!("{}Word SHA1:{}\n", indent_str, hash_short);
-        for atom in &self.atoms {
+        for atom in self.atoms.iter() {
             result.push_str(&atom.to_string_with_indent(indent + 2));
             result.push('\n');
         }
@@ -793,6 +793,8 @@ pub struct ComparisonUnitGroup {
     pub correlation_status: ComparisonCorrelationStatus,
     /// Level in the hierarchy (0 = outermost)
     pub level: usize,
+    /// Cached total count of atoms in this group (recursive)
+    pub atom_count: usize,
 }
 
 /// Contents of a comparison unit group
@@ -809,17 +811,40 @@ impl ComparisonUnitGroup {
         group_type: ComparisonUnitGroupType,
         level: usize,
     ) -> Self {
-        let hash_input: String = words.iter().map(|w| w.sha1_hash.as_str()).collect();
-        let sha1_hash = compute_sha1(&hash_input);
+        let sha1_hash = compute_sha1_concat(words.iter().map(|w| w.sha1_hash.as_str()));
+        
+        let atom_count: usize = words.iter().map(|w| w.atoms.len()).sum();
+
+        // Get correlated SHA1 hash from the first atom's ancestors
+        let correlated_sha1_hash = words.first()
+            .and_then(|w| w.atoms.first())
+            .and_then(|atom| {
+                let ancestor_name = match group_type {
+                    ComparisonUnitGroupType::Table => "tbl",
+                    ComparisonUnitGroupType::Row => "tr",
+                    ComparisonUnitGroupType::Cell => "tc",
+                    ComparisonUnitGroupType::Paragraph => "p",
+                    ComparisonUnitGroupType::Textbox => "txbxContent",
+                };
+
+                atom.ancestor_elements.iter()
+                    .find(|a| a.local_name == ancestor_name)
+                    .and_then(|a| {
+                        a.attributes.iter()
+                            .find(|attr| attr.name.local_name == "CorrelatedSHA1Hash")
+                            .map(|attr| attr.value.clone())
+                    })
+            });
 
         Self {
             group_type,
             contents: ComparisonUnitGroupContents::Words(words),
             sha1_hash,
-            correlated_sha1_hash: None,
+            correlated_sha1_hash,
             structure_sha1_hash: None,
             correlation_status: ComparisonCorrelationStatus::Nil,
             level,
+            atom_count,
         }
     }
 
@@ -829,23 +854,46 @@ impl ComparisonUnitGroup {
         group_type: ComparisonUnitGroupType,
         level: usize,
     ) -> Self {
-        let hash_input: String = groups.iter().map(|g| g.sha1_hash.as_str()).collect();
-        let sha1_hash = compute_sha1(&hash_input);
+        let sha1_hash = compute_sha1_concat(groups.iter().map(|g| g.sha1_hash.as_str()));
+        
+        let atom_count: usize = groups.iter().map(|g| g.atom_count).sum();
+
+        // Get correlated SHA1 hash from the first group's first atom's ancestors
+        let correlated_sha1_hash = groups.first()
+            .and_then(|g| g.first_atom())
+            .and_then(|atom| {
+                let ancestor_name = match group_type {
+                    ComparisonUnitGroupType::Table => "tbl",
+                    ComparisonUnitGroupType::Row => "tr",
+                    ComparisonUnitGroupType::Cell => "tc",
+                    ComparisonUnitGroupType::Paragraph => "p",
+                    ComparisonUnitGroupType::Textbox => "txbxContent",
+                };
+
+                atom.ancestor_elements.iter()
+                    .find(|a| a.local_name == ancestor_name)
+                    .and_then(|a| {
+                        a.attributes.iter()
+                            .find(|attr| attr.name.local_name == "CorrelatedSHA1Hash")
+                            .map(|attr| attr.value.clone())
+                    })
+            });
 
         Self {
             group_type,
             contents: ComparisonUnitGroupContents::Groups(groups),
             sha1_hash,
-            correlated_sha1_hash: None,
+            correlated_sha1_hash,
             structure_sha1_hash: None,
             correlation_status: ComparisonCorrelationStatus::Nil,
             level,
+            atom_count,
         }
     }
 
     /// Get all descendant atoms
     pub fn descendant_atoms(&self) -> Vec<&ComparisonUnitAtom> {
-        let mut atoms = Vec::new();
+        let mut atoms = Vec::with_capacity(self.atom_count);
         self.collect_atoms(&mut atoms);
         atoms
     }
@@ -854,7 +902,7 @@ impl ComparisonUnitGroup {
         match &self.contents {
             ComparisonUnitGroupContents::Words(words) => {
                 for word in words {
-                    for atom in &word.atoms {
+                    for atom in word.atoms.iter() {
                         atoms.push(atom);
                     }
                 }
@@ -869,14 +917,7 @@ impl ComparisonUnitGroup {
 
     /// Get the count of descendant content atoms
     pub fn descendant_atom_count(&self) -> usize {
-        match &self.contents {
-            ComparisonUnitGroupContents::Words(words) => {
-                words.iter().map(|w| w.atoms.len()).sum()
-            }
-            ComparisonUnitGroupContents::Groups(groups) => {
-                groups.iter().map(|g| g.descendant_atom_count()).sum()
-            }
-        }
+        self.atom_count
     }
 
     /// Get contents as a vector of ComparisonUnit
@@ -965,6 +1006,15 @@ fn compute_sha1(content: &str) -> String {
     format!("{:x}", result)
 }
 
+fn compute_sha1_concat<'a>(parts: impl IntoIterator<Item = &'a str>) -> String {
+    let mut hasher = Sha1::new();
+    for part in parts {
+        hasher.update(part.as_bytes());
+    }
+    let result = hasher.finalize();
+    format!("{:x}", result)
+}
+
 pub fn generate_unid() -> String {
     uuid::Uuid::new_v4().as_simple().to_string()
 }
@@ -1042,20 +1092,25 @@ pub fn get_comparison_unit_list(
     }
 
     // Step 1: Assign grouping keys using Rollup logic
-    let atoms_with_keys = assign_grouping_keys(&atoms, settings);
+    let grouping_keys = assign_grouping_keys(&atoms, settings);
+    let atoms_with_keys: Vec<_> = atoms
+        .into_iter()
+        .zip(grouping_keys)
+        .map(|(atom, key)| AtomWithGroupingKey { key, atom })
+        .collect();
 
     // Step 2: Group adjacent atoms with same key into words
     let words_with_hierarchy = group_into_words(atoms_with_keys);
 
     // Step 3 & 4: Build hierarchical structure
-    get_hierarchical_comparison_units(&words_with_hierarchy, 0)
+    get_hierarchical_comparison_units(words_with_hierarchy, 0)
 }
 
 /// Assign grouping keys to atoms (Rollup logic from C#)
 fn assign_grouping_keys(
     atoms: &[ComparisonUnitAtom],
     settings: &WordSeparatorSettings,
-) -> Vec<AtomWithGroupingKey> {
+) -> Vec<usize> {
     let mut result = Vec::with_capacity(atoms.len());
     let mut next_index = 0usize;
 
@@ -1130,10 +1185,7 @@ fn assign_grouping_keys(
             }
         };
 
-        result.push(AtomWithGroupingKey {
-            key,
-            atom: atom.clone(),
-        });
+        result.push(key);
     }
 
     result
@@ -1190,78 +1242,50 @@ fn extract_hierarchy(atom: &ComparisonUnitAtom) -> Vec<String> {
 
 /// Recursively build hierarchical comparison units
 fn get_hierarchical_comparison_units(
-    words: &[WordWithHierarchy],
+    words: Vec<WordWithHierarchy>,
     level: usize,
 ) -> Vec<ComparisonUnit> {
     if words.is_empty() {
         return Vec::new();
     }
 
-    // Group by hierarchy key at current level
     let mut result = Vec::new();
-    let mut current_key = get_hierarchy_key(&words[0].hierarchy, level);
-    let mut current_group: Vec<&WordWithHierarchy> = Vec::new();
+    let mut iter = words.into_iter().peekable();
 
-    for word in words {
-        let key = get_hierarchy_key(&word.hierarchy, level);
-        if key != current_key {
-            // Process current group
-            result.extend(process_hierarchy_group(&current_group, level, &current_key));
-            current_group.clear();
-            current_key = key;
+    while let Some(first) = iter.next() {
+        let key = get_hierarchy_key(&first.hierarchy, level).map(|value| value.to_string());
+        let mut group = Vec::new();
+        group.push(first);
+
+        while let Some(next) = iter.peek() {
+            if get_hierarchy_key(&next.hierarchy, level) == key.as_deref() {
+                group.push(iter.next().expect("peeked item should exist"));
+            } else {
+                break;
+            }
         }
-        current_group.push(word);
-    }
 
-    // Process final group
-    result.extend(process_hierarchy_group(&current_group, level, &current_key));
+        match key {
+            None => {
+                for word in group {
+                    result.push(ComparisonUnit::Word(word.word));
+                }
+            }
+            Some(key) => {
+                let group_type = parse_group_type(&key);
+                let child_units = get_hierarchical_comparison_units(group, level + 1);
+                let group_unit = ComparisonUnitGroup::from_comparison_units(child_units, group_type, level);
+                result.push(ComparisonUnit::Group(group_unit));
+            }
+        }
+    }
 
     result
 }
 
-/// Get hierarchy key at a specific level, or empty string if beyond hierarchy depth
-fn get_hierarchy_key(hierarchy: &[String], level: usize) -> String {
-    if level < hierarchy.len() {
-        hierarchy[level].clone()
-    } else {
-        String::new()
-    }
-}
-
-/// Process a group of words at a hierarchy level
-fn process_hierarchy_group(
-    words: &[&WordWithHierarchy],
-    level: usize,
-    key: &str,
-) -> Vec<ComparisonUnit> {
-    if words.is_empty() {
-        return Vec::new();
-    }
-
-    if key.is_empty() {
-        // No more hierarchy - return words directly
-        words
-            .iter()
-            .map(|w| ComparisonUnit::Word(w.word.clone()))
-            .collect()
-    } else {
-        // Create a group and recurse
-        let group_type = parse_group_type(key);
-        
-        // Collect owned copies for recursion
-        let owned_words: Vec<WordWithHierarchy> = words
-            .iter()
-            .map(|w| WordWithHierarchy {
-                word: w.word.clone(),
-                hierarchy: w.hierarchy.clone(),
-            })
-            .collect();
-        
-        let child_units = get_hierarchical_comparison_units(&owned_words, level + 1);
-        let group = ComparisonUnitGroup::from_comparison_units(child_units, group_type, level);
-        
-        vec![ComparisonUnit::Group(group)]
-    }
+/// Get hierarchy key at a specific level, or None if beyond hierarchy depth
+fn get_hierarchy_key(hierarchy: &[String], level: usize) -> Option<&str> {
+    hierarchy.get(level).map(|value| value.as_str())
 }
 
 /// Parse group type from hierarchy key (e.g., "p:abc123" -> Paragraph)
@@ -1342,14 +1366,13 @@ impl ComparisonUnit {
     /// Get all descendant content atoms
     /// Corresponds to C# DescendantContentAtoms() (WmlComparer.cs:8170)
     pub fn descendant_content_atoms(&self) -> Vec<ComparisonUnitAtom> {
-        self.descendants()
-            .into_iter()
-            .filter_map(|cu| match cu {
-                ComparisonUnit::Word(w) => Some(w.atoms),
-                _ => None,
-            })
-            .flatten()
-            .collect()
+        let mut result = Vec::new();
+        for unit in self.descendants() {
+            if let ComparisonUnit::Word(word) = unit {
+                result.extend(word.atoms.iter().cloned());
+            }
+        }
+        result
     }
 
     /// Get all descendant atoms (as references)

@@ -15,6 +15,7 @@ use super::comparison_unit::{
     ComparisonUnitGroupType, ContentElement, generate_unid,
 };
 use super::settings::WmlComparerSettings;
+use std::collections::HashMap;
 
 /// Correlation status for sequences
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -253,43 +254,76 @@ fn process_correlated_hashes(
     let mut best_i1 = 0usize;
     let mut best_i2 = 0usize;
 
-    for i1 in 0..units1.len() {
-        for i2 in 0..units2.len() {
-            let mut seq_length = 0usize;
-            let mut seq_atom_count = 0usize;
-            let mut cur_i1 = i1;
-            let mut cur_i2 = i2;
-
-            while cur_i1 < units1.len() && cur_i2 < units2.len() {
-                let group1 = match &units1[cur_i1] {
-                    ComparisonUnit::Group(g) => g,
-                    _ => break,
-                };
-                let group2 = match &units2[cur_i2] {
-                    ComparisonUnit::Group(g) => g,
-                    _ => break,
-                };
-
-                // Match if same type and same correlated hash
-                let matches = group1.group_type == group2.group_type
-                    && group1.correlated_sha1_hash.is_some()
-                    && group1.correlated_sha1_hash == group2.correlated_sha1_hash;
-
-                if matches {
-                    seq_atom_count += group1.descendant_atom_count();
-                    cur_i1 += 1;
-                    cur_i2 += 1;
-                    seq_length += 1;
-                } else {
-                    break;
-                }
+    // Optimization: Index units2 by correlated hash for O(1) lookup
+    // Map hash -> list of indices in units2
+    let mut units2_index: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (i2, unit) in units2.iter().enumerate() {
+        if let ComparisonUnit::Group(g) = unit {
+            if let Some(hash) = &g.correlated_sha1_hash {
+                units2_index.entry(hash.as_str()).or_default().push(i2);
             }
+        }
+    }
+
+    for i1 in 0..units1.len() {
+        // Skip if we can't possibly beat best_length
+        if units1.len() - i1 <= best_length {
+            break;
+        }
+
+        let group1 = match &units1[i1] {
+            ComparisonUnit::Group(g) => g,
+            _ => continue,
+        };
+
+        let Some(hash1) = &group1.correlated_sha1_hash else { continue };
+
+        // Only check indices that have matching hash
+        if let Some(candidates) = units2_index.get(hash1.as_str()) {
+            for &i2 in candidates {
+                // Optimization: Skip if we can't beat best_length
+                if units2.len() - i2 <= best_length {
+                    continue;
+                }
+
+                let mut seq_length = 0usize;
+                let mut seq_atom_count = 0usize;
+                let mut cur_i1 = i1;
+                let mut cur_i2 = i2;
+
+                while cur_i1 < units1.len() && cur_i2 < units2.len() {
+                    let group1 = match &units1[cur_i1] {
+                        ComparisonUnit::Group(g) => g,
+                        _ => break,
+                    };
+                    let group2 = match &units2[cur_i2] {
+                        ComparisonUnit::Group(g) => g,
+                        _ => break,
+                    };
+
+                    // Match if same type and same correlated hash
+                    // Note: We already know hash matches for first item from index,
+                    // but we need to check type and subsequent items.
+                    let matches = group1.group_type == group2.group_type
+                        && group1.correlated_sha1_hash.is_some()
+                        && group1.correlated_sha1_hash == group2.correlated_sha1_hash;
+
+                    if matches {
+                        seq_atom_count += group1.descendant_atom_count();
+                        cur_i1 += 1;
+                        cur_i2 += 1;
+                        seq_length += 1;
+                    } else {
+                        break;
+                    }
+                }
 
                 if seq_atom_count > best_atom_count {
-                best_length = seq_length;
-                best_atom_count = seq_atom_count;
-                best_i1 = i1;
-                best_i2 = i2;
+                    best_length = seq_length;
+                    best_atom_count = seq_atom_count;
+                    best_i1 = i1;
+                    best_i2 = i2;
+                }
             }
         }
     }
@@ -297,18 +331,18 @@ fn process_correlated_hashes(
     // Apply thresholds based on sequence length and atom count
     let do_correlation = if best_length == 1 {
         // Single group needs 16+ atoms on each side
-        let atoms1 = units1[best_i1].descendant_atoms().len();
-        let atoms2 = units2[best_i2].descendant_atoms().len();
+        let atoms1 = units1[best_i1].descendant_content_atoms_count();
+        let atoms2 = units2[best_i2].descendant_content_atoms_count();
         atoms1 > 16 && atoms2 > 16
     } else if best_length > 1 && best_length <= 3 {
         // 2-3 groups need 32+ atoms total on each side
         let atoms1: usize = units1[best_i1..best_i1 + best_length]
             .iter()
-            .map(|u| u.descendant_atoms().len())
+            .map(|u| u.descendant_content_atoms_count())
             .sum();
         let atoms2: usize = units2[best_i2..best_i2 + best_length]
             .iter()
-            .map(|u| u.descendant_atoms().len())
+            .map(|u| u.descendant_content_atoms_count())
             .sum();
         atoms1 > 32 && atoms2 > 32
     } else {
@@ -801,26 +835,41 @@ fn do_lcs_algorithm(
     let mut best_i1: isize = -1;
     let mut best_i2: isize = -1;
 
+    // Optimization: Index units2 by hash for O(1) lookup
+    let mut units2_index: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (i2, unit) in units2.iter().enumerate() {
+        units2_index.entry(unit.hash()).or_default().push(i2);
+    }
+
     for i1 in 0..units1.len().saturating_sub(best_length) {
-        for i2 in 0..units2.len().saturating_sub(best_length) {
-            let mut seq_length = 0usize;
-            let mut cur_i1 = i1;
-            let mut cur_i2 = i2;
-
-            while cur_i1 < units1.len() && cur_i2 < units2.len() {
-                if units1[cur_i1].hash() == units2[cur_i2].hash() {
-                    cur_i1 += 1;
-                    cur_i2 += 1;
-                    seq_length += 1;
-                } else {
-                    break;
+        let hash1 = units1[i1].hash();
+        
+        if let Some(candidates) = units2_index.get(hash1) {
+            for &i2 in candidates {
+                // Optimization: Skip if we can't beat best_length
+                if units2.len() - i2 <= best_length {
+                    continue;
                 }
-            }
+                
+                let mut seq_length = 0usize;
+                let mut cur_i1 = i1;
+                let mut cur_i2 = i2;
 
-            if seq_length > best_length {
-                best_length = seq_length;
-                best_i1 = i1 as isize;
-                best_i2 = i2 as isize;
+                while cur_i1 < units1.len() && cur_i2 < units2.len() {
+                    if units1[cur_i1].hash() == units2[cur_i2].hash() {
+                        cur_i1 += 1;
+                        cur_i2 += 1;
+                        seq_length += 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                if seq_length > best_length {
+                    best_length = seq_length;
+                    best_i1 = i1 as isize;
+                    best_i2 = i2 as isize;
+                }
             }
         }
     }
