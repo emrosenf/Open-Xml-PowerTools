@@ -12,7 +12,8 @@
 
 use super::comparison_unit::{
     ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom, ComparisonUnitGroup,
-    ComparisonUnitGroupType, ContentElement, generate_unid,
+    ComparisonUnitGroupContents, ComparisonUnitGroupType, ComparisonUnitWord, ContentElement,
+    generate_unid,
 };
 use super::settings::WmlComparerSettings;
 use std::collections::HashMap;
@@ -1643,6 +1644,76 @@ fn handle_matching_rows(
     result
 }
 
+enum DescendantAtomsFrame<'a> {
+    Atoms(std::slice::Iter<'a, ComparisonUnitAtom>),
+    Words(std::slice::Iter<'a, ComparisonUnitWord>),
+    Groups(std::slice::Iter<'a, ComparisonUnitGroup>),
+}
+
+struct DescendantAtomsIter<'a> {
+    stack: Vec<DescendantAtomsFrame<'a>>,
+}
+
+impl<'a> DescendantAtomsIter<'a> {
+    fn new(unit: &'a ComparisonUnit) -> Self {
+        let mut iter = Self { stack: Vec::with_capacity(8) };
+        iter.push_unit(unit);
+        iter
+    }
+
+    fn push_unit(&mut self, unit: &'a ComparisonUnit) {
+        match unit {
+            ComparisonUnit::Word(word) => {
+                self.stack.push(DescendantAtomsFrame::Atoms(word.atoms.iter()));
+            }
+            ComparisonUnit::Group(group) => self.push_group(group),
+        }
+    }
+
+    fn push_group(&mut self, group: &'a ComparisonUnitGroup) {
+        match &group.contents {
+            ComparisonUnitGroupContents::Words(words) => {
+                self.stack.push(DescendantAtomsFrame::Words(words.iter()));
+            }
+            ComparisonUnitGroupContents::Groups(groups) => {
+                self.stack.push(DescendantAtomsFrame::Groups(groups.iter()));
+            }
+        }
+    }
+}
+
+impl<'a> Iterator for DescendantAtomsIter<'a> {
+    type Item = &'a ComparisonUnitAtom;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let frame = self.stack.last_mut()?;
+            match frame {
+                DescendantAtomsFrame::Atoms(iter) => {
+                    if let Some(atom) = iter.next() {
+                        return Some(atom);
+                    }
+                    self.stack.pop();
+                }
+                DescendantAtomsFrame::Words(iter) => {
+                    if let Some(word) = iter.next() {
+                        self.stack.push(DescendantAtomsFrame::Atoms(word.atoms.iter()));
+                    } else {
+                        self.stack.pop();
+                    }
+                }
+                DescendantAtomsFrame::Groups(iter) => {
+                    if let Some(group) = iter.next() {
+                        self.push_group(group);
+                    } else {
+                        self.stack.pop();
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Flatten correlated sequences back to a list of atoms with appropriate correlation status
 ///
 /// This function takes the output of the LCS algorithm (correlated sequences) and
@@ -1659,7 +1730,40 @@ fn handle_matching_rows(
 /// - Inserted atoms come from units2 only
 /// - Unknown atoms get atoms from both sides with Unknown status
 pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnitAtom> {
-    let mut result = Vec::new();
+    fn count_units(units: &[ComparisonUnit]) -> usize {
+        units.iter().map(|u| u.descendant_content_atoms_count()).sum()
+    }
+
+    let mut total_atoms = 0usize;
+    for seq in correlated {
+        match seq.status {
+            CorrelationStatus::Equal => {
+                if let Some(units2) = &seq.units2 {
+                    total_atoms += count_units(units2);
+                }
+            }
+            CorrelationStatus::Deleted => {
+                if let Some(units1) = &seq.units1 {
+                    total_atoms += count_units(units1);
+                }
+            }
+            CorrelationStatus::Inserted => {
+                if let Some(units2) = &seq.units2 {
+                    total_atoms += count_units(units2);
+                }
+            }
+            CorrelationStatus::Unknown => {
+                if let Some(units1) = &seq.units1 {
+                    total_atoms += count_units(units1);
+                }
+                if let Some(units2) = &seq.units2 {
+                    total_atoms += count_units(units2);
+                }
+            }
+        }
+    }
+
+    let mut result = Vec::with_capacity(total_atoms);
 
     for seq in correlated {
         match seq.status {
@@ -1668,13 +1772,13 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                 // In C#, it uses units2 as the basis but preserves link to units1
                 if let (Some(units1), Some(units2)) = (&seq.units1, &seq.units2) {
                     for (u1, u2) in units1.iter().zip(units2.iter()) {
-                        let atoms1 = u1.descendant_atoms();
-                        let atoms2 = u2.descendant_atoms();
-                        
-                        for (a1, a2) in atoms1.iter().zip(atoms2.iter()) {
-                            let mut cloned = (*a2).clone();
+                        let mut atoms1 = DescendantAtomsIter::new(u1);
+                        let mut atoms2 = DescendantAtomsIter::new(u2);
+
+                        while let (Some(a1), Some(a2)) = (atoms1.next(), atoms2.next()) {
+                            let mut cloned = a2.clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Equal;
-                            cloned.comparison_unit_atom_before = Some(Box::new((*a1).clone()));
+                            cloned.comparison_unit_atom_before = Some(Box::new(a1.clone()));
                             cloned.ancestor_elements_before = Some(a1.ancestor_elements.clone());
                             result.push(cloned);
                         }
@@ -1685,7 +1789,7 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                 // Deleted content comes from units1 only
                 if let Some(units) = &seq.units1 {
                     for unit in units {
-                        for atom in unit.descendant_atoms() {
+                        for atom in DescendantAtomsIter::new(unit) {
                             let mut cloned = atom.clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Deleted;
                             result.push(cloned);
@@ -1697,7 +1801,7 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                 // Inserted content comes from units2 only
                 if let Some(units) = &seq.units2 {
                     for unit in units {
-                        for atom in unit.descendant_atoms() {
+                        for atom in DescendantAtomsIter::new(unit) {
                             let mut cloned = atom.clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Inserted;
                             result.push(cloned);
@@ -1711,7 +1815,7 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                 // First add deleted atoms from units1
                 if let Some(units) = &seq.units1 {
                     for unit in units {
-                        for atom in unit.descendant_atoms() {
+                        for atom in DescendantAtomsIter::new(unit) {
                             let mut cloned = atom.clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Deleted;
                             result.push(cloned);
@@ -1721,7 +1825,7 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                 // Then add inserted atoms from units2
                 if let Some(units) = &seq.units2 {
                     for unit in units {
-                        for atom in unit.descendant_atoms() {
+                        for atom in DescendantAtomsIter::new(unit) {
                             let mut cloned = atom.clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Inserted;
                             result.push(cloned);
