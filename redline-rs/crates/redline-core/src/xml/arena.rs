@@ -168,6 +168,20 @@ impl XmlDocument {
             .and_then(|s| s.parse::<i64>().ok())
     }
 
+    /// Get an attribute value as an i32
+    pub fn get_attribute_i32(&self, node: NodeId, name: &str) -> Option<i32> {
+        let attr_name = XName::local(name);
+        self.get_attribute_string(node, &attr_name)
+            .and_then(|s| s.parse::<i32>().ok())
+    }
+
+    /// Get an attribute value as a bool
+    pub fn get_attribute_bool(&self, node: NodeId, name: &str) -> Option<bool> {
+        let attr_name = XName::local(name);
+        self.get_attribute_string(node, &attr_name)
+            .map(|s| s == "1" || s == "true")
+    }
+
     /// Get the text content of a text node
     pub fn text(&self, node: NodeId) -> Option<String> {
         self.get(node)
