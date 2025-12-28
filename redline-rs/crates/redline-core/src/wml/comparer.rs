@@ -768,10 +768,10 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
         };
         
         if do_set {
-            if let Some(ref before) = atom.comparison_unit_atom_before {
-                if atom.ancestor_elements.len() == before.ancestor_elements.len() {
+            if let Some(ref before) = atom.ancestor_elements_before {
+                if atom.ancestor_elements.len() == before.len() {
                     for i in 0..atom.ancestor_elements.len() {
-                        atom.ancestor_elements[i].unid = before.ancestor_elements[i].unid.clone();
+                        atom.ancestor_elements[i].unid = before[i].unid.clone();
                     }
                 }
             }
@@ -955,8 +955,8 @@ fn collect_note_references(atoms: &[ComparisonUnitAtom], note_type: &str) -> Vec
         
         if let Some(after_id) = is_match {
             let before_id = if atom.correlation_status == ComparisonCorrelationStatus::Equal {
-                atom.comparison_unit_atom_before.as_ref().and_then(|before| {
-                    match &before.content_element {
+                atom.content_element_before.as_ref().and_then(|before| {
+                    match before {
                         ContentElement::FootnoteReference { id } if note_type == "footnoteReference" => Some(id.clone()),
                         ContentElement::EndnoteReference { id } if note_type == "endnoteReference" => Some(id.clone()),
                         _ => None,

@@ -348,6 +348,8 @@ pub struct ComparisonUnitAtom {
     // Fields for "before" document tracking (Equal/FormatChanged atoms)
     /// Content element from "before" document
     pub content_element_before: Option<ContentElement>,
+    /// Formatting signature from "before" document
+    pub formatting_signature_before: Option<String>,
     /// Reference to comparison unit atom from "before" document
     pub comparison_unit_atom_before: Option<Box<ComparisonUnitAtom>>,
     /// Ancestor elements from "before" document
@@ -422,6 +424,7 @@ impl ComparisonUnitAtom {
             normalized_rpr: None,
             part_name: part_name.to_string(),
             content_element_before: None,
+            formatting_signature_before: None,
             comparison_unit_atom_before: None,
             ancestor_elements_before: None,
             part_before: None,
@@ -467,6 +470,7 @@ impl ComparisonUnitAtom {
             normalized_rpr: None,
             part_name: part_name.to_string(),
             content_element_before: None,
+            formatting_signature_before: None,
             comparison_unit_atom_before: None,
             ancestor_elements_before: None,
             part_before: None,

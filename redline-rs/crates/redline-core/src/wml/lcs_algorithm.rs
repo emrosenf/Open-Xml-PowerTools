@@ -1778,8 +1778,10 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                         while let (Some(a1), Some(a2)) = (atoms1.next(), atoms2.next()) {
                             let mut cloned = a2.clone();
                             cloned.correlation_status = ComparisonCorrelationStatus::Equal;
-                            cloned.comparison_unit_atom_before = Some(Box::new(a1.clone()));
+                            cloned.content_element_before = Some(a1.content_element.clone());
+                            cloned.formatting_signature_before = a1.formatting_signature.clone();
                             cloned.ancestor_elements_before = Some(a1.ancestor_elements.clone());
+                            cloned.part_before = Some(a1.part_name.clone());
                             result.push(cloned);
                         }
                     }

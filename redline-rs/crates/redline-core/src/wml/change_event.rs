@@ -327,22 +327,24 @@ pub fn detect_format_changes(
             continue;
         }
         
-        if let Some(ref before_atom) = atom.comparison_unit_atom_before {
-            // Compare formatting signatures
-            let before_sig = before_atom.formatting_signature.as_deref();
-            let after_sig = atom.formatting_signature.as_deref();
-            
-            let formatting_differs = match (before_sig, after_sig) {
-                (None, None) => false,
-                (Some(_), None) | (None, Some(_)) => true,
-                (Some(b), Some(a)) => b != a,
-            };
-            
-            if formatting_differs {
-                atom.correlation_status = ComparisonCorrelationStatus::FormatChanged;
-                atom.formatting_change_rpr_before = before_atom.formatting_signature.clone();
-                atom.formatting_change_rpr_before_signature = before_atom.formatting_signature.clone();
-            }
+        if atom.content_element_before.is_none() {
+            continue;
+        }
+
+        // Compare formatting signatures
+        let before_sig = atom.formatting_signature_before.as_deref();
+        let after_sig = atom.formatting_signature.as_deref();
+        
+        let formatting_differs = match (before_sig, after_sig) {
+            (None, None) => false,
+            (Some(_), None) | (None, Some(_)) => true,
+            (Some(b), Some(a)) => b != a,
+        };
+        
+        if formatting_differs {
+            atom.correlation_status = ComparisonCorrelationStatus::FormatChanged;
+            atom.formatting_change_rpr_before = atom.formatting_signature_before.clone();
+            atom.formatting_change_rpr_before_signature = atom.formatting_signature_before.clone();
         }
     }
 }
