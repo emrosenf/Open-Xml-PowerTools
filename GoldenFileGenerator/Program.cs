@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // Golden File Generator for TypeScript Port TDD
 // Generates reference outputs from the C# WmlComparer, SmlComparer, and PmlComparer
 // to validate TypeScript implementations against.
