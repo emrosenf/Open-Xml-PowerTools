@@ -155,12 +155,12 @@ pub enum ContentElement {
     Break,
     /// Tab (w:tab)
     Tab,
-    /// Drawing/image with hash
-    Drawing { hash: String },
-    /// Picture (VML) with hash
-    Picture { hash: String },
-    /// Math equation with hash
-    Math { hash: String },
+    /// Drawing/image with hash and serialized element content
+    Drawing { hash: String, element_xml: String },
+    /// Picture (VML) with hash and serialized element content
+    Picture { hash: String, element_xml: String },
+    /// Math equation with hash and serialized element content
+    Math { hash: String, element_xml: String },
     /// Footnote reference with ID
     FootnoteReference { id: String },
     /// Endnote reference with ID
@@ -249,9 +249,9 @@ impl ContentElement {
             ContentElement::RunProperties => String::new(),
             ContentElement::Break => String::new(),
             ContentElement::Tab => String::new(),
-            ContentElement::Drawing { hash } => hash.clone(),
-            ContentElement::Picture { hash } => hash.clone(),
-            ContentElement::Math { hash } => hash.clone(),
+            ContentElement::Drawing { hash, .. } => hash.clone(),
+            ContentElement::Picture { hash, .. } => hash.clone(),
+            ContentElement::Math { hash, .. } => hash.clone(),
             ContentElement::FootnoteReference { .. } => String::new(),
             ContentElement::EndnoteReference { .. } => String::new(),
             ContentElement::TextboxStart => String::new(),
@@ -1496,6 +1496,7 @@ mod tests {
 
         let drawing = ContentElement::Drawing {
             hash: "abc123".to_string(),
+            element_xml: String::new(),
         };
         assert_eq!(drawing.hash_string(), "drawingabc123");
     }
@@ -1583,7 +1584,7 @@ mod tests {
         assert_eq!(ppr.content_type(), ContentType::ParagraphMark);
         
         // Drawing
-        let drawing = ContentElement::Drawing { hash: "abc".to_string() };
+        let drawing = ContentElement::Drawing { hash: "abc".to_string(), element_xml: String::new() };
         assert_eq!(drawing.content_type(), ContentType::Drawing);
         
         // Field
@@ -1591,7 +1592,7 @@ mod tests {
         assert_eq!(field.content_type(), ContentType::Field);
         
         // Picture
-        let pict = ContentElement::Picture { hash: "xyz".to_string() };
+        let pict = ContentElement::Picture { hash: "xyz".to_string(), element_xml: String::new() };
         assert_eq!(pict.content_type(), ContentType::Picture);
     }
 
@@ -1599,8 +1600,8 @@ mod tests {
     fn test_content_element_local_name() {
         assert_eq!(ContentElement::Text('a').local_name(), "t");
         assert_eq!(ContentElement::ParagraphProperties.local_name(), "pPr");
-        assert_eq!(ContentElement::Drawing { hash: "x".to_string() }.local_name(), "drawing");
-        assert_eq!(ContentElement::Picture { hash: "x".to_string() }.local_name(), "pict");
+        assert_eq!(ContentElement::Drawing { hash: "x".to_string(), element_xml: String::new() }.local_name(), "drawing");
+        assert_eq!(ContentElement::Picture { hash: "x".to_string(), element_xml: String::new() }.local_name(), "pict");
         assert_eq!(ContentElement::Break.local_name(), "br");
         assert_eq!(ContentElement::Tab.local_name(), "tab");
         assert_eq!(ContentElement::FieldBegin.local_name(), "fldChar");
@@ -1617,7 +1618,7 @@ mod tests {
         assert_eq!(ContentElement::ParagraphProperties.text_value(), "");
         
         // Drawing has hash as text value
-        assert_eq!(ContentElement::Drawing { hash: "abc123".to_string() }.text_value(), "abc123");
+        assert_eq!(ContentElement::Drawing { hash: "abc123".to_string(), element_xml: String::new() }.text_value(), "abc123");
         
         // Field characters have type as value
         assert_eq!(ContentElement::FieldBegin.text_value(), "begin");
@@ -1637,7 +1638,7 @@ mod tests {
         assert_eq!(ppr.hash_string(), "pPr");
         
         // Drawing: "drawing" + hash
-        let drawing = ContentElement::Drawing { hash: "abc123".to_string() };
+        let drawing = ContentElement::Drawing { hash: "abc123".to_string(), element_xml: String::new() };
         assert_eq!(drawing.hash_string(), "drawingabc123");
         
         // Symbol: "sym" + font:char
@@ -1757,7 +1758,7 @@ mod tests {
         );
         
         let drawing_atom = ComparisonUnitAtom::new(
-            ContentElement::Drawing { hash: "image_hash_123".to_string() },
+            ContentElement::Drawing { hash: "image_hash_123".to_string(), element_xml: String::new() },
             vec![],
             "main",
             &settings,
@@ -1772,7 +1773,7 @@ mod tests {
         
         // Same drawing hash → same identity hash
         let drawing_atom2 = ComparisonUnitAtom::new(
-            ContentElement::Drawing { hash: "image_hash_123".to_string() },
+            ContentElement::Drawing { hash: "image_hash_123".to_string(), element_xml: String::new() },
             vec![],
             "main",
             &settings,

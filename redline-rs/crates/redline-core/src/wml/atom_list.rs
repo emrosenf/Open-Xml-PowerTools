@@ -4,6 +4,7 @@ use crate::wml::drawing_identity::compute_drawing_identity;
 use crate::wml::formatting::{compute_normalized_rpr, compute_formatting_signature};
 use crate::wml::settings::WmlComparerSettings;
 use crate::xml::arena::XmlDocument;
+use crate::xml::builder::serialize_subtree;
 use crate::xml::namespaces::{M, MC, O, PT, V, W, W10};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
@@ -363,8 +364,22 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     break;
                 }
                 
+                // Filter out namespace declarations - they should only appear on the root element
+                // during serialization, not on every descendant element
                 let attrs = std::sync::Arc::new(
-                    data.attributes().map(|a| a.to_vec()).unwrap_or_default()
+                    data.attributes()
+                        .map(|a| a.iter()
+                            .filter(|attr| {
+                                // Keep attribute if it's NOT a namespace declaration
+                                // Namespace declarations have namespace = "http://www.w3.org/2000/xmlns/"
+                                // or are the "xmlns" attribute with no namespace
+                                let is_xmlns_ns = attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
+                                let is_xmlns_attr = attr.name.namespace.is_none() && attr.name.local_name == "xmlns";
+                                !is_xmlns_ns && !is_xmlns_attr
+                            })
+                            .cloned()
+                            .collect::<Vec<_>>())
+                        .unwrap_or_default()
                 );
                 let unid = attrs.iter()
                     .find(|a| a.name == pt_unid)
@@ -422,7 +437,9 @@ fn create_content_element_with_package(
         (W::NS, "drawing") => {
             // Use the new drawing identity module for stable SHA1-based identity
             let hash = compute_drawing_identity(doc, node, package, part_name);
-            ContentElement::Drawing { hash }
+            // Serialize the full element content so it can be reconstructed
+            let element_xml = serialize_subtree(doc, node).unwrap_or_default();
+            ContentElement::Drawing { hash, element_xml }
         }
         (W::NS, "sym") => {
             let font = get_attribute_value(doc, node, W::NS, "font").unwrap_or_default();
@@ -440,7 +457,8 @@ fn create_content_element_with_package(
         }
         (M::NS, "oMath") | (M::NS, "oMathPara") => {
             let hash = compute_element_hash(doc, node);
-            ContentElement::Math { hash }
+            let element_xml = serialize_subtree(doc, node).unwrap_or_default();
+            ContentElement::Math { hash, element_xml }
         }
         _ => ContentElement::Unknown { name: local.to_string() },
     }

@@ -53,25 +53,35 @@ fn build_tree(
                     )
                 })
                 .collect();
-            
-            // Capture namespace declarations as attributes (xmlns:prefix="uri")
-            // roxmltree separates these from regular attributes
+
+            // Capture namespace declarations that are DECLARED on this specific element
+            // (not inherited from ancestors). roxmltree's namespaces() returns ALL namespaces
+            // in scope including inherited. We identify locally declared ones by comparing
+            // with the parent's namespaces.
+            let parent_ns: std::collections::HashSet<_> = node.parent()
+                .map(|p| p.namespaces().map(|ns| (ns.name(), ns.uri())).collect())
+                .unwrap_or_default();
+
             for ns in node.namespaces() {
-                if let Some(prefix) = ns.name() {
-                    // This is xmlns:prefix="uri"
-                    attributes.push(XAttribute::new(
-                        XName::new("http://www.w3.org/2000/xmlns/", prefix),
-                        ns.uri(),
-                    ));
-                } else {
-                    // This is xmlns="uri" (default namespace)
-                    attributes.push(XAttribute::new(
-                        XName::local("xmlns"),
-                        ns.uri(),
-                    ));
+                let key = (ns.name(), ns.uri());
+                // Only add if this namespace is NOT already declared by an ancestor
+                if !parent_ns.contains(&key) {
+                    if let Some(prefix) = ns.name() {
+                        // This is xmlns:prefix="uri"
+                        attributes.push(XAttribute::new(
+                            XName::new("http://www.w3.org/2000/xmlns/", prefix),
+                            ns.uri(),
+                        ));
+                    } else {
+                        // This is xmlns="uri" (default namespace)
+                        attributes.push(XAttribute::new(
+                            XName::local("xmlns"),
+                            ns.uri(),
+                        ));
+                    }
                 }
             }
-            
+
             XmlNodeData::Element { name, attributes }
         }
         roxmltree::NodeType::Text => {

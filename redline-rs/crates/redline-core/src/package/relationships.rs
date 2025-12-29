@@ -39,20 +39,30 @@ impl Relationship {
 }
 
 pub mod relationship_types {
-    pub const OFFICE_DOCUMENT: &str = 
+    pub const OFFICE_DOCUMENT: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
-    pub const STYLES: &str = 
+    pub const STYLES: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
-    pub const NUMBERING: &str = 
+    pub const NUMBERING: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
-    pub const FOOTNOTES: &str = 
+    pub const FOOTNOTES: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes";
-    pub const ENDNOTES: &str = 
+    pub const ENDNOTES: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes";
-    pub const COMMENTS: &str = 
+    pub const COMMENTS: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments";
-    pub const HYPERLINK: &str = 
+    pub const HYPERLINK: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
-    pub const IMAGE: &str = 
+    pub const IMAGE: &str =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+
+    // Extended comment-related relationships (Microsoft Office extensions)
+    pub const COMMENTS_EXTENDED: &str =
+        "http://schemas.microsoft.com/office/2011/relationships/commentsExtended";
+    pub const COMMENTS_IDS: &str =
+        "http://schemas.microsoft.com/office/2016/09/relationships/commentsIds";
+    pub const COMMENTS_EXTENSIBLE: &str =
+        "http://schemas.microsoft.com/office/2018/08/relationships/commentsExtensible";
+    pub const PEOPLE: &str =
+        "http://schemas.microsoft.com/office/2011/relationships/people";
 }

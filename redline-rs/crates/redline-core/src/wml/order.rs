@@ -230,6 +230,151 @@ pub fn get_element_order(element_name: &XName, order_map: &HashMap<XName, i32>) 
     *order_map.get(element_name).unwrap_or(&999)
 }
 
+use crate::xml::arena::XmlDocument;
+use indextree::NodeId;
+
+/// Order XML elements per OOXML standard
+/// Port of C# WmlOrderElementsPerStandard (PtOpenXmlUtil.cs line 1361)
+///
+/// This function recursively reorders child elements within:
+/// - w:pPr (paragraph properties)
+/// - w:rPr (run properties)
+/// - w:tblPr (table properties)
+/// - w:tcPr (table cell properties)
+/// - w:tblBorders, w:tcBorders, w:pBdr (border properties)
+/// - w:p (paragraphs - ensures pPr comes first)
+/// - w:r (runs - ensures rPr comes first)
+pub fn order_elements_per_standard(doc: &mut XmlDocument) {
+    if let Some(root) = doc.root() {
+        order_element_recursive(doc, root);
+    }
+}
+
+fn order_element_recursive(doc: &mut XmlDocument, node_id: NodeId) {
+    // First, get the element name to determine what reordering is needed
+    let element_name = doc.get(node_id).and_then(|d| d.name().cloned());
+
+    // Recursively process all children first
+    let children: Vec<NodeId> = doc.children(node_id).collect();
+    for child in &children {
+        order_element_recursive(doc, *child);
+    }
+
+    // Now reorder this node's children based on its type
+    if let Some(name) = element_name {
+        let local = name.local_name.as_str();
+        let ns = name.namespace.as_deref();
+
+        // Only process elements in the W namespace
+        if ns != Some(W::NS) {
+            return;
+        }
+
+        match local {
+            "pPr" => reorder_children(doc, node_id, &ORDER_P_PR),
+            "rPr" => reorder_children(doc, node_id, &ORDER_R_PR),
+            "tblPr" => reorder_children(doc, node_id, &ORDER_TBL_PR),
+            "tcPr" => reorder_children(doc, node_id, &ORDER_TC_PR),
+            "tblBorders" => reorder_children(doc, node_id, &ORDER_TBL_BORDERS),
+            "tcBorders" => reorder_children(doc, node_id, &ORDER_TC_BORDERS),
+            "pBdr" => reorder_children(doc, node_id, &ORDER_P_BDR),
+            "p" => {
+                // For paragraphs, ensure pPr comes first
+                ensure_first_child(doc, node_id, "pPr");
+            }
+            "r" => {
+                // For runs, ensure rPr comes first
+                ensure_first_child(doc, node_id, "rPr");
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Reorder children of a node according to the given order map
+fn reorder_children(doc: &mut XmlDocument, parent: NodeId, order_map: &HashMap<XName, i32>) {
+    // Collect children with their sort keys
+    let mut children_with_keys: Vec<(NodeId, i32)> = doc.children(parent)
+        .map(|child| {
+            let key = doc.get(child)
+                .and_then(|d| d.name())
+                .map(|name| get_element_order(name, order_map))
+                .unwrap_or(999);
+            (child, key)
+        })
+        .collect();
+
+    // Check if already in order
+    let mut is_sorted = true;
+    for i in 1..children_with_keys.len() {
+        if children_with_keys[i].1 < children_with_keys[i-1].1 {
+            is_sorted = false;
+            break;
+        }
+    }
+
+    if is_sorted {
+        return; // Already in correct order
+    }
+
+    // Sort by order key (stable sort to preserve relative order of same-priority elements)
+    children_with_keys.sort_by_key(|(_, key)| *key);
+
+    // Detach all children
+    for (child, _) in &children_with_keys {
+        doc.detach(*child);
+    }
+
+    // Re-attach in sorted order
+    for (child, _) in children_with_keys {
+        doc.reparent(parent, child);
+    }
+}
+
+/// Ensure a specific element type comes first among children
+fn ensure_first_child(doc: &mut XmlDocument, parent: NodeId, first_local_name: &str) {
+    let children: Vec<NodeId> = doc.children(parent).collect();
+
+    // Find the element that should be first
+    let mut first_element = None;
+    let mut first_element_idx = None;
+
+    for (idx, child) in children.iter().enumerate() {
+        if let Some(data) = doc.get(*child) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(W::NS) && name.local_name == first_local_name {
+                    first_element = Some(*child);
+                    first_element_idx = Some(idx);
+                    break;
+                }
+            }
+        }
+    }
+
+    // If the element exists and is not already first, move it
+    if let (Some(elem), Some(idx)) = (first_element, first_element_idx) {
+        if idx > 0 {
+            // Detach and re-insert at beginning
+            doc.detach(elem);
+
+            // We need to insert before the first child
+            // Since XmlDocument doesn't have insert_before, we detach all and re-add
+            let remaining: Vec<NodeId> = doc.children(parent).collect();
+            for child in &remaining {
+                doc.detach(*child);
+            }
+
+            // Add the first element
+            doc.reparent(parent, elem);
+
+            // Add the rest
+            for child in remaining {
+                doc.reparent(parent, child);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

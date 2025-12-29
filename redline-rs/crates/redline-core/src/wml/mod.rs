@@ -2,6 +2,7 @@ mod atom_list;
 mod block_hash;
 mod change_event;
 mod coalesce;
+mod comments;
 mod comparison_unit;
 mod comparer;
 mod consolidate;
@@ -11,6 +12,7 @@ mod formatting;
 mod get_revisions;
 mod lcs_algorithm;
 mod order;
+pub use order::order_elements_per_standard;
 mod preprocess;
 mod revision;
 mod revision_accepter;
@@ -80,6 +82,11 @@ pub use preprocess::{
     repair_unids_after_revision_acceptance, PreProcessSettings,
 };
 pub use change_event::{
-    ChangeEvent, ChangeEventResult, emit_change_events, 
+    ChangeEvent, ChangeEventResult, emit_change_events,
     group_adjacent_events, count_revisions_from_events, detect_format_changes,
+};
+pub use comments::{
+    add_comments_to_package, build_comments_xml, build_comments_extended_xml,
+    build_comments_ids_xml, build_comments_extensible_xml, build_people_xml,
+    extract_comments_data, merge_comments, CommentInfo, CommentsData, PersonInfo,
 };

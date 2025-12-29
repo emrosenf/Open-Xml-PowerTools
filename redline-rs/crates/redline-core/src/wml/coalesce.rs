@@ -8,6 +8,7 @@ use crate::wml::revision::{create_run_property_change, RevisionSettings};
 use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::W;
 use crate::xml::node::XmlNodeData;
+use crate::xml::parser::parse;
 use crate::xml::xname::{XAttribute, XName};
 use indextree::NodeId;
 use std::collections::HashMap;
@@ -1229,18 +1230,49 @@ fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
         if del || ins {
             for gcc in group_atoms {
-                if let ContentElement::Drawing { .. } = &gcc.content_element {
-                    let drawing = doc.add_child(parent, XmlNodeData::element(W::drawing()));
-                    let status = if del { "Deleted" } else { "Inserted" };
-                    doc.set_attribute(drawing, &pt_status(), status);
+                if let ContentElement::Drawing { element_xml, .. } = &gcc.content_element {
+                    // Parse the stored element XML and deep-copy it
+                    if let Some(drawing_node) = copy_element_from_xml(doc, parent, element_xml) {
+                        let status = if del { "Deleted" } else { "Inserted" };
+                        doc.set_attribute(drawing_node, &pt_status(), status);
+                    }
                 }
             }
         } else {
             for gcc in group_atoms {
-                if let ContentElement::Drawing { .. } = &gcc.content_element { doc.add_child(parent, XmlNodeData::element(W::drawing())); }
+                if let ContentElement::Drawing { element_xml, .. } = &gcc.content_element {
+                    // Parse the stored element XML and deep-copy it
+                    copy_element_from_xml(doc, parent, element_xml);
+                }
             }
         }
     }
+}
+
+/// Parse serialized XML and deep-copy the root element into the target document as a child of parent
+fn copy_element_from_xml(target_doc: &mut XmlDocument, parent: NodeId, element_xml: &str) -> Option<NodeId> {
+    // Parse the element XML
+    let source_doc = parse(element_xml).ok()?;
+    let source_root = source_doc.root()?;
+
+    // Deep-copy the element into the target document
+    deep_copy_node(target_doc, parent, &source_doc, source_root)
+}
+
+/// Deep-copy a node from source_doc to target_doc as a child of parent
+fn deep_copy_node(target_doc: &mut XmlDocument, parent: NodeId, source_doc: &XmlDocument, source_node: NodeId) -> Option<NodeId> {
+    let source_data = source_doc.get(source_node)?;
+
+    // Clone the node data
+    let new_data = source_data.clone();
+    let new_node = target_doc.add_child(parent, new_data);
+
+    // Recursively copy children
+    for child in source_doc.children(source_node) {
+        deep_copy_node(target_doc, new_node, source_doc, child);
+    }
+
+    Some(new_node)
 }
 
 fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], settings: &WmlComparerSettings) {
@@ -1346,6 +1378,77 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
             let mut attrs = Vec::new();
             if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
             Some(doc.new_node(XmlNodeData::element_with_attrs(W::pPr(), attrs)))
+        }
+        ContentElement::Drawing { element_xml, .. } => {
+            // Parse and deep-copy the drawing element from stored XML
+            if element_xml.is_empty() {
+                // Fallback: create empty drawing if no stored XML
+                let drawing = doc.new_node(XmlNodeData::element(W::drawing()));
+                if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
+                Some(drawing)
+            } else {
+                // Parse and deep-copy the original drawing
+                if let Ok(source_doc) = parse(element_xml) {
+                    if let Some(source_root) = source_doc.root() {
+                        // Create a temporary parent to copy into
+                        let temp_parent = doc.new_node(XmlNodeData::element(XName::local("temp")));
+                        if let Some(new_node) = deep_copy_node(doc, temp_parent, &source_doc, source_root) {
+                            // Detach from temporary parent
+                            doc.detach(new_node);
+                            if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
+                            return Some(new_node);
+                        }
+                    }
+                }
+                // Fallback: create empty drawing
+                let drawing = doc.new_node(XmlNodeData::element(W::drawing()));
+                if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
+                Some(drawing)
+            }
+        }
+        ContentElement::Picture { element_xml, .. } => {
+            // Parse and deep-copy the pict element from stored XML
+            if element_xml.is_empty() {
+                let pict = doc.new_node(XmlNodeData::element(W::pict()));
+                if !status.is_empty() { doc.set_attribute(pict, &pt_status(), status); }
+                Some(pict)
+            } else {
+                if let Ok(source_doc) = parse(element_xml) {
+                    if let Some(source_root) = source_doc.root() {
+                        let temp_parent = doc.new_node(XmlNodeData::element(XName::local("temp")));
+                        if let Some(new_node) = deep_copy_node(doc, temp_parent, &source_doc, source_root) {
+                            doc.detach(new_node);
+                            if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
+                            return Some(new_node);
+                        }
+                    }
+                }
+                let pict = doc.new_node(XmlNodeData::element(W::pict()));
+                if !status.is_empty() { doc.set_attribute(pict, &pt_status(), status); }
+                Some(pict)
+            }
+        }
+        ContentElement::Math { element_xml, .. } => {
+            // Parse and deep-copy the math element from stored XML
+            if element_xml.is_empty() {
+                let math = doc.new_node(XmlNodeData::element(XName::new("http://schemas.openxmlformats.org/officeDocument/2006/math", "oMath")));
+                if !status.is_empty() { doc.set_attribute(math, &pt_status(), status); }
+                Some(math)
+            } else {
+                if let Ok(source_doc) = parse(element_xml) {
+                    if let Some(source_root) = source_doc.root() {
+                        let temp_parent = doc.new_node(XmlNodeData::element(XName::local("temp")));
+                        if let Some(new_node) = deep_copy_node(doc, temp_parent, &source_doc, source_root) {
+                            doc.detach(new_node);
+                            if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
+                            return Some(new_node);
+                        }
+                    }
+                }
+                let math = doc.new_node(XmlNodeData::element(XName::new("http://schemas.openxmlformats.org/officeDocument/2006/math", "oMath")));
+                if !status.is_empty() { doc.set_attribute(math, &pt_status(), status); }
+                Some(math)
+            }
         }
         _ => None,
     }

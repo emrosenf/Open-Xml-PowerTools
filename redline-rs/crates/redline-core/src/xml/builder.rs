@@ -11,6 +11,26 @@ pub fn serialize(doc: &XmlDocument) -> Result<String> {
     Ok(String::from_utf8(bytes).expect("XML should be valid UTF-8"))
 }
 
+/// Serialize a subtree starting from a specific node (no XML declaration)
+pub fn serialize_subtree(doc: &XmlDocument, node_id: indextree::NodeId) -> Result<String> {
+    use std::io::Cursor;
+
+    let mut writer = Writer::new(Cursor::new(Vec::new()));
+
+    // Build namespace map from the node and its ancestors
+    let mut namespace_map = NamespaceMap::new();
+    if let Some(node_data) = doc.get(node_id) {
+        if let Some(attrs) = node_data.attributes() {
+            extend_namespace_map(&mut namespace_map, attrs);
+        }
+    }
+
+    write_node(doc, node_id, &mut writer, &namespace_map)?;
+
+    let bytes = writer.into_inner().into_inner();
+    Ok(String::from_utf8(bytes).expect("XML should be valid UTF-8"))
+}
+
 pub fn serialize_bytes(doc: &XmlDocument) -> Result<Vec<u8>> {
     let mut writer = Writer::new(Cursor::new(Vec::new()));
     

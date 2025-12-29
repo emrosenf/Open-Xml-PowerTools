@@ -42,16 +42,28 @@ impl ContentTypes {
 }
 
 pub mod content_type_values {
-    pub const WORD_DOCUMENT: &str = 
+    pub const WORD_DOCUMENT: &str =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
-    pub const WORD_STYLES: &str = 
+    pub const WORD_STYLES: &str =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml";
-    pub const EXCEL_WORKBOOK: &str = 
+    pub const EXCEL_WORKBOOK: &str =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
-    pub const EXCEL_WORKSHEET: &str = 
+    pub const EXCEL_WORKSHEET: &str =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml";
-    pub const POWERPOINT_PRESENTATION: &str = 
+    pub const POWERPOINT_PRESENTATION: &str =
         "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml";
-    pub const POWERPOINT_SLIDE: &str = 
+    pub const POWERPOINT_SLIDE: &str =
         "application/vnd.openxmlformats-officedocument.presentationml.slide+xml";
+
+    // Word comment-related parts
+    pub const WORD_COMMENTS: &str =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml";
+    pub const WORD_COMMENTS_EXTENDED: &str =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml";
+    pub const WORD_COMMENTS_IDS: &str =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.commentsIds+xml";
+    pub const WORD_COMMENTS_EXTENSIBLE: &str =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtensible+xml";
+    pub const WORD_PEOPLE: &str =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.people+xml";
 }

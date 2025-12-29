@@ -397,8 +397,47 @@ pub mod VML {
 pub mod W15 {
     use super::XName;
     pub const NS: &str = "http://schemas.microsoft.com/office/word/2012/wordml";
-    
+
     pub fn w15() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w15") }
+
+    // Comments extended
+    pub fn commentsEx() -> XName { XName::new(NS, "commentsEx") }
+    pub fn commentEx() -> XName { XName::new(NS, "commentEx") }
+    pub fn paraId() -> XName { XName::new(NS, "paraId") }
+    pub fn paraIdParent() -> XName { XName::new(NS, "paraIdParent") }
+    pub fn done() -> XName { XName::new(NS, "done") }
+
+    // People
+    pub fn people() -> XName { XName::new(NS, "people") }
+    pub fn person() -> XName { XName::new(NS, "person") }
+    pub fn author() -> XName { XName::new(NS, "author") }
+    pub fn presenceInfo() -> XName { XName::new(NS, "presenceInfo") }
+    pub fn providerId() -> XName { XName::new(NS, "providerId") }
+    pub fn userId() -> XName { XName::new(NS, "userId") }
+}
+
+pub mod W16CID {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2016/wordml/cid";
+
+    pub fn w16cid() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w16cid") }
+
+    pub fn commentsIds() -> XName { XName::new(NS, "commentsIds") }
+    pub fn commentId() -> XName { XName::new(NS, "commentId") }
+    pub fn paraId() -> XName { XName::new(NS, "paraId") }
+    pub fn durableId() -> XName { XName::new(NS, "durableId") }
+}
+
+pub mod W16CEX {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2018/wordml/cex";
+
+    pub fn w16cex() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w16cex") }
+
+    pub fn commentsExtensible() -> XName { XName::new(NS, "commentsExtensible") }
+    pub fn commentExtensible() -> XName { XName::new(NS, "commentExtensible") }
+    pub fn durableId() -> XName { XName::new(NS, "durableId") }
+    pub fn dateUtc() -> XName { XName::new(NS, "dateUtc") }
 }
 
 pub mod W16SE {

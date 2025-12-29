@@ -19,10 +19,11 @@
 
 use super::atom_list::create_comparison_unit_atom_list;
 use super::coalesce::{coalesce, mark_content_as_deleted_or_inserted, coalesce_adjacent_runs, strip_pt_attributes};
+use super::comments::{add_comments_to_package, extract_comments_data, merge_comments};
 use super::comparison_unit::{get_comparison_unit_list, WordSeparatorSettings, ComparisonUnitAtom, ComparisonCorrelationStatus, ContentElement};
 use super::change_event::detect_format_changes;
 use super::document::{
-    extract_paragraph_text, find_document_body, find_paragraphs, find_footnotes_root, 
+    extract_paragraph_text, find_document_body, find_paragraphs, find_footnotes_root,
     find_endnotes_root, find_note_paragraphs, find_note_by_id, WmlDocument,
 };
 use super::lcs_algorithm::{lcs, flatten_to_atoms};
@@ -62,7 +63,346 @@ impl Hashable for ParagraphUnit {
     }
 }
 
+/// Filter out xmlns attributes from node data
+fn filter_xmlns_attrs(data: &XmlNodeData) -> XmlNodeData {
+    match data {
+        XmlNodeData::Element { name, attributes } => {
+            let filtered_attrs: Vec<XAttribute> = attributes
+                .iter()
+                .filter(|attr| {
+                    // Keep attribute if it's NOT an xmlns declaration
+                    // (xmlns without prefix or xmlns:prefix)
+                    let is_xmlns = (attr.name.namespace.is_none() && attr.name.local_name == "xmlns")
+                        || attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/")
+                        || attr.name.local_name.starts_with("xmlns");
+                    !is_xmlns
+                })
+                .cloned()
+                .collect();
+            XmlNodeData::Element {
+                name: name.clone(),
+                attributes: filtered_attrs,
+            }
+        }
+        other => other.clone(),
+    }
+}
 
+/// Helper to clone sectPr children that we want to preserve
+fn clone_sect_pr_children(doc: &XmlDocument, sect_pr: NodeId) -> Vec<XmlNodeData> {
+    let mut children = Vec::new();
+    for sect_child in doc.children(sect_pr) {
+        if let Some(child_data) = doc.get(sect_child) {
+            if let Some(child_name) = child_data.name() {
+                // Copy essential sectPr elements including header/footer references
+                let local = &child_name.local_name;
+                if local == "type" || local == "pgSz" || local == "pgMar"
+                    || local == "cols" || local == "titlePg" || local == "noEndnote"
+                    || local == "docGrid" || local == "bidi"
+                    || local == "headerReference" || local == "footerReference"
+                    || local == "endnotePr" {
+                    // Filter xmlns from child elements too
+                    children.push(filter_xmlns_attrs(child_data));
+                }
+            }
+        }
+    }
+    children
+}
+
+/// Helper to clone sectPr attributes, filtering out xmlns declarations
+fn clone_sect_pr_attrs(doc: &XmlDocument, sect_pr: NodeId) -> Vec<XAttribute> {
+    doc.get(sect_pr)
+        .and_then(|d| d.attributes())
+        .map(|a| a.iter()
+            .filter(|attr| {
+                let is_xmlns = (attr.name.namespace.is_none() && attr.name.local_name == "xmlns")
+                    || attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/")
+                    || attr.name.local_name.starts_with("xmlns");
+                !is_xmlns
+            })
+            .cloned()
+            .collect())
+        .unwrap_or_default()
+}
+
+/// Extract sectPr (section properties) from document body
+/// C# WmlComparer.cs lines 2030-2035: saves sectPr before comparison
+fn extract_sect_pr(doc: &XmlDocument, body: NodeId) -> Option<(Vec<XAttribute>, Vec<XmlNodeData>)> {
+    // Find sectPr that is a direct child of body
+    for child in doc.children(body) {
+        if let Some(data) = doc.get(child) {
+            if let Some(name) = data.name() {
+                if name == &W::sectPr() {
+                    let attrs = clone_sect_pr_attrs(doc, child);
+                    let children = clone_sect_pr_children(doc, child);
+                    return Some((attrs, children));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Extract sectPr from the last paragraph's pPr (contains headerReference/footerReference)
+/// This is where Word stores the main section's header/footer references
+fn extract_ppr_sect_pr(doc: &XmlDocument, body: NodeId) -> Option<(Vec<XAttribute>, Vec<XmlNodeData>)> {
+    // Find the last paragraph that has a sectPr inside its pPr
+    let mut last_ppr_sect_pr: Option<NodeId> = None;
+
+    for child in doc.children(body) {
+        if let Some(data) = doc.get(child) {
+            if let Some(name) = data.name() {
+                if name == &W::p() {
+                    // Look for pPr child
+                    for p_child in doc.children(child) {
+                        if let Some(p_child_data) = doc.get(p_child) {
+                            if let Some(p_child_name) = p_child_data.name() {
+                                if p_child_name == &W::pPr() {
+                                    // Look for sectPr inside pPr
+                                    for ppr_child in doc.children(p_child) {
+                                        if let Some(ppr_child_data) = doc.get(ppr_child) {
+                                            if let Some(ppr_child_name) = ppr_child_data.name() {
+                                                if ppr_child_name == &W::sectPr() {
+                                                    last_ppr_sect_pr = Some(ppr_child);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    last_ppr_sect_pr.map(|sect_pr| {
+        let attrs = clone_sect_pr_attrs(doc, sect_pr);
+        let children = clone_sect_pr_children(doc, sect_pr);
+        (attrs, children)
+    })
+}
+
+/// Add sectPr to result document body
+/// C# WmlComparer.cs lines 2201-2216: removes existing sectPr and adds saved one back
+fn add_sect_pr_to_document(doc: &mut XmlDocument, saved_sect_pr: Option<(Vec<XAttribute>, Vec<XmlNodeData>)>) {
+    let body = {
+        let root = match doc.root() {
+            Some(r) => r,
+            None => return,
+        };
+        doc.children(root).find(|&child| {
+            doc.get(child).and_then(|d| d.name()).map(|n| n == &W::body()).unwrap_or(false)
+        })
+    };
+    let body = match body {
+        Some(b) => b,
+        None => return,
+    };
+
+    // Remove any existing sectPr elements from body (C# line 2201)
+    let sect_prs_to_remove: Vec<NodeId> = doc.children(body)
+        .filter(|&child| {
+            doc.get(child).and_then(|d| d.name()).map(|n| n == &W::sectPr()).unwrap_or(false)
+        })
+        .collect();
+    for node in sect_prs_to_remove {
+        doc.detach(node);
+    }
+
+    // Add saved sectPr if present (C# lines 2204-2216)
+    if let Some((attrs, children)) = saved_sect_pr {
+        let sect_pr = doc.new_node(XmlNodeData::element_with_attrs(W::sectPr(), attrs));
+        for child_data in children {
+            doc.add_child(sect_pr, child_data);
+        }
+        doc.reparent(body, sect_pr);
+    }
+}
+
+/// Find a relationship ID by target filename in a relationships XML
+fn find_relationship_id_by_target(rels_content: &[u8], target: &str) -> Option<String> {
+    let content = std::str::from_utf8(rels_content).ok()?;
+    for line in content.split("<Relationship") {
+        if line.contains(&format!("Target=\"{}\"", target)) {
+            // Extract Id attribute
+            if let Some(id_start) = line.find("Id=\"") {
+                let start = id_start + 4;
+                let rest = &line[start..];
+                if let Some(end) = rest.find('"') {
+                    return Some(rest[..end].to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Fix headerReference and footerReference relationship IDs in the document
+/// This is necessary because relationship IDs from source1 may not match source2's package
+fn fix_header_footer_relationship_ids(doc: &mut XmlDocument, package: &crate::package::OoxmlPackage) {
+    // Get the document.xml.rels content
+    let rels_content = match package.get_part("word/_rels/document.xml.rels") {
+        Some(c) => c,
+        None => return,
+    };
+
+    // Find the correct rIds for header and footer
+    let header_rid = find_relationship_id_by_target(rels_content, "header1.xml");
+    let footer_rid = find_relationship_id_by_target(rels_content, "footer1.xml");
+
+    // If we don't have the rIds, don't try to fix
+    if header_rid.is_none() && footer_rid.is_none() {
+        return;
+    }
+
+    // Find all sectPr elements and update their headerReference/footerReference
+    let root = match doc.root() {
+        Some(r) => r,
+        None => return,
+    };
+
+    // Collect all nodes that need updating (to avoid borrow issues)
+    let mut header_refs_to_update: Vec<NodeId> = Vec::new();
+    let mut footer_refs_to_update: Vec<NodeId> = Vec::new();
+
+    for node_id in doc.descendants(root) {
+        if let Some(data) = doc.get(node_id) {
+            if let Some(name) = data.name() {
+                if name.local_name == "headerReference" {
+                    header_refs_to_update.push(node_id);
+                } else if name.local_name == "footerReference" {
+                    footer_refs_to_update.push(node_id);
+                }
+            }
+        }
+    }
+
+    // Update headerReference elements
+    if let Some(ref rid) = header_rid {
+        for node_id in header_refs_to_update {
+            if let Some(data) = doc.get_mut(node_id) {
+                if let XmlNodeData::Element { attributes, .. } = data {
+                    // Find and update the r:id attribute
+                    for attr in attributes.iter_mut() {
+                        if attr.name.local_name == "id" &&
+                           attr.name.namespace.as_deref() == Some("http://schemas.openxmlformats.org/officeDocument/2006/relationships") {
+                            attr.value = rid.clone();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Update footerReference elements
+    if let Some(ref rid) = footer_rid {
+        for node_id in footer_refs_to_update {
+            if let Some(data) = doc.get_mut(node_id) {
+                if let XmlNodeData::Element { attributes, .. } = data {
+                    // Find and update the r:id attribute
+                    for attr in attributes.iter_mut() {
+                        if attr.name.local_name == "id" &&
+                           attr.name.namespace.as_deref() == Some("http://schemas.openxmlformats.org/officeDocument/2006/relationships") {
+                            attr.value = rid.clone();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Add sectPr to the last paragraph's pPr (for headerReference/footerReference)
+/// This ensures Word can find the headers/footers for the document
+fn add_ppr_sect_pr_to_document(doc: &mut XmlDocument, saved_ppr_sect_pr: Option<(Vec<XAttribute>, Vec<XmlNodeData>)>) {
+    let saved = match saved_ppr_sect_pr {
+        Some(s) => s,
+        None => return,
+    };
+
+    let body = {
+        let root = match doc.root() {
+            Some(r) => r,
+            None => return,
+        };
+        doc.children(root).find(|&child| {
+            doc.get(child).and_then(|d| d.name()).map(|n| n == &W::body()).unwrap_or(false)
+        })
+    };
+    let body = match body {
+        Some(b) => b,
+        None => return,
+    };
+
+    // Find the last paragraph
+    let mut last_p: Option<NodeId> = None;
+    for child in doc.children(body) {
+        if let Some(data) = doc.get(child) {
+            if let Some(name) = data.name() {
+                if name == &W::p() {
+                    last_p = Some(child);
+                }
+            }
+        }
+    }
+
+    let last_p = match last_p {
+        Some(p) => p,
+        None => return,
+    };
+
+    // Find or create pPr in the last paragraph
+    let mut ppr: Option<NodeId> = None;
+    for child in doc.children(last_p) {
+        if let Some(data) = doc.get(child) {
+            if let Some(name) = data.name() {
+                if name == &W::pPr() {
+                    ppr = Some(child);
+                    break;
+                }
+            }
+        }
+    }
+
+    let ppr = match ppr {
+        Some(p) => p,
+        None => {
+            // Create pPr if it doesn't exist
+            let new_ppr = doc.new_node(XmlNodeData::element(W::pPr()));
+            // Insert pPr as first child of paragraph
+            let children: Vec<NodeId> = doc.children(last_p).collect();
+            for child in &children {
+                doc.detach(*child);
+            }
+            doc.reparent(last_p, new_ppr);
+            for child in children {
+                doc.reparent(last_p, child);
+            }
+            new_ppr
+        }
+    };
+
+    // Remove any existing sectPr from pPr
+    let sect_prs_to_remove: Vec<NodeId> = doc.children(ppr)
+        .filter(|&child| {
+            doc.get(child).and_then(|d| d.name()).map(|n| n == &W::sectPr()).unwrap_or(false)
+        })
+        .collect();
+    for node in sect_prs_to_remove {
+        doc.detach(node);
+    }
+
+    // Add the saved sectPr to pPr
+    let (attrs, children) = saved;
+    let sect_pr = doc.new_node(XmlNodeData::element_with_attrs(W::sectPr(), attrs));
+    for child_data in children {
+        doc.add_child(sect_pr, child_data);
+    }
+    doc.reparent(ppr, sect_pr);
+}
 
 pub struct WmlComparer;
 
@@ -81,7 +421,14 @@ impl WmlComparer {
         
         let body1 = find_document_body(&doc1).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in document 1".to_string()))?;
         let body2 = find_document_body(&doc2).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in document 2".to_string()))?;
-        
+
+        // Save sectPr from doc1 before comparison (C# WmlComparer.cs lines 2030-2035)
+        // sectPr defines page layout (margins, size, etc.) and must be preserved in output
+        let saved_sect_pr = extract_sect_pr(&doc1, body1);
+        // Also save the pPr-level sectPr which contains headerReference/footerReference
+        // This is critical for Word to locate header/footer parts
+        let saved_ppr_sect_pr = extract_ppr_sect_pr(&doc1, body1);
+
         let preprocess_settings = PreProcessSettings::for_comparison();
         preprocess_markup(&mut doc1, body1, &preprocess_settings)
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
@@ -116,16 +463,31 @@ impl WmlComparer {
             });
         }
 
-        let (mut insertions, mut deletions, mut format_changes, coalesce_result, correlated_atoms) = {
+        let (mut insertions, mut deletions, mut format_changes, mut coalesce_result, correlated_atoms) = {
             let root_data = doc2.get(doc2.root().unwrap()).unwrap();
             let root_name = root_data.name().unwrap().clone();
             let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
             compare_atoms_internal(atoms1, atoms2, root_name, root_attrs, &settings)?
         };
 
+        // Add sectPr back to result document (C# WmlComparer.cs lines 2201-2216)
+        // This restores page layout that was saved from doc1
+        add_sect_pr_to_document(&mut coalesce_result.document, saved_sect_pr);
+        // Also add the pPr-level sectPr to the last paragraph (contains headerReference/footerReference)
+        add_ppr_sect_pr_to_document(&mut coalesce_result.document, saved_ppr_sect_pr);
+
+        // Order elements per OOXML standard (C# WmlComparer.cs line 2196)
+        // This is critical - OOXML requires elements in specific order within pPr, rPr, etc.
+        super::order_elements_per_standard(&mut coalesce_result.document);
+
         // Create result document from source2
         let source2_bytes = source2.to_bytes()?;
         let mut result_doc = WmlDocument::from_bytes(&source2_bytes)?;
+
+        // Fix header/footer relationship IDs before putting the document
+        // The sectPr we copied from source1 may have different rIds than source2's package
+        fix_header_footer_relationship_ids(&mut coalesce_result.document, result_doc.package());
+
         result_doc.package_mut().put_xml_part("word/document.xml", &coalesce_result.document)?;
 
         // Process footnotes - collect references from correlated atoms
@@ -150,6 +512,15 @@ impl WmlComparer {
             deletions += res.deletions;
             format_changes += res.format_changes;
             result_doc.package_mut().put_xml_part("word/endnotes.xml", &res.document)?;
+        }
+
+        // Process comments - merge from both source documents
+        // MS Word's compare feature preserves comments from both source documents
+        let comments1 = extract_comments_data(source1.package())?;
+        let comments2 = extract_comments_data(source2.package())?;
+        let merged_comments = merge_comments(&comments1, &comments2);
+        if !merged_comments.is_empty() {
+            add_comments_to_package(result_doc.package_mut(), &merged_comments)?;
         }
 
         let result_bytes = result_doc.to_bytes()?;
