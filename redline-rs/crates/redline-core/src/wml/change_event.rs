@@ -161,8 +161,9 @@ pub fn emit_change_events(
     settings: &WmlComparerSettings,
 ) -> ChangeEventResult {
     let author = settings.author_for_revisions.clone()
-        .unwrap_or_else(|| "redline-rs".to_string());
-    let date = settings.date_time_for_revisions.clone();
+        .unwrap_or_else(|| "Unknown".to_string());
+    let date = settings.date_time_for_revisions.clone()
+        .unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string());
     
     let mut result = ChangeEventResult::default();
     let mut i = 0;

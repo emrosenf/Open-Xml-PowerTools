@@ -135,8 +135,8 @@ pub fn mark_content_as_deleted_or_inserted(
     settings: &WmlComparerSettings,
 ) {
     let revision_settings = RevisionSettings {
-        author: settings.author_for_revisions.clone().unwrap_or_else(|| "redline-rs".to_string()),
-        date_time: settings.date_time_for_revisions.clone(),
+        author: settings.author_for_revisions.clone().unwrap_or_else(|| "Unknown".to_string()),
+        date_time: settings.date_time_for_revisions.clone().unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()),
     };
 
     // Transform in-place following C# pattern
@@ -1266,7 +1266,7 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
     if settings.track_formatting_changes && format_changed {
         let existing_rpr = doc.children(run).find(|&c| is_r_pr(doc, c));
         let rpr = match existing_rpr { Some(node) => node, None => doc.add_child(run, XmlNodeData::element(W::rPr())) };
-        let revision_settings = RevisionSettings { author: settings.author_for_revisions.clone().unwrap_or_else(|| "redline-rs".to_string()), date_time: settings.date_time_for_revisions.clone() };
+        let revision_settings = RevisionSettings { author: settings.author_for_revisions.clone().unwrap_or_else(|| "Unknown".to_string()), date_time: settings.date_time_for_revisions.clone().unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()) };
         let _rpr_change = create_run_property_change(doc, rpr, &revision_settings);
     }
 }
@@ -1444,14 +1444,15 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
         let first = &group_atoms[0];
         let del = first.correlation_status == ComparisonCorrelationStatus::Deleted;
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
+        let date_str = settings.date_time_for_revisions.as_deref().unwrap_or("");
         if del {
             for gcc in group_atoms {
                 let del_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::del(), vec![
                     XAttribute::new(W::id(), "0"),  // w:id MUST come first per ECMA-376
                     XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")),
-                    XAttribute::new(W::date(), &settings.date_time_for_revisions),
+                    XAttribute::new(W::date(), date_str),
                     // Add w16du:dateUtc for modern Word timezone handling
-                    XAttribute::new(W16DU::dateUtc(), &settings.date_time_for_revisions),
+                    XAttribute::new(W16DU::dateUtc(), date_str),
                 ]));
                 if let Some(content) = create_content_element(doc, gcc, "") { doc.reparent(del_elem, content); }
             }
@@ -1460,9 +1461,9 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
                 let ins_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::ins(), vec![
                     XAttribute::new(W::id(), "0"),  // w:id MUST come first per ECMA-376
                     XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")),
-                    XAttribute::new(W::date(), &settings.date_time_for_revisions),
+                    XAttribute::new(W::date(), date_str),
                     // Add w16du:dateUtc for modern Word timezone handling
-                    XAttribute::new(W16DU::dateUtc(), &settings.date_time_for_revisions),
+                    XAttribute::new(W16DU::dateUtc(), date_str),
                 ]));
                 if let Some(content) = create_content_element(doc, gcc, "") { doc.reparent(ins_elem, content); }
             }

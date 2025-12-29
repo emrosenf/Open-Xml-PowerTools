@@ -1,5 +1,6 @@
 use crate::error::{RedlineError, Result};
 use crate::xml::XmlDocument;
+use crate::xml::namespaces::{CP, DC, DCTERMS};
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Write};
 use zip::read::ZipArchive;
@@ -8,6 +9,17 @@ use zip::CompressionMethod;
 
 use super::content_types::ContentTypes;
 use super::relationships::Relationship;
+
+/// Core document properties extracted from docProps/core.xml
+#[derive(Debug, Clone, Default)]
+pub struct CoreProperties {
+    /// Last person who modified the document (cp:lastModifiedBy)
+    pub last_modified_by: Option<String>,
+    /// Original creator of the document (dc:creator)
+    pub creator: Option<String>,
+    /// Date/time the document was last modified (dcterms:modified)
+    pub modified: Option<String>,
+}
 
 pub struct OoxmlPackage {
     parts: HashMap<String, Vec<u8>>,
@@ -105,6 +117,58 @@ impl OoxmlPackage {
 
     pub fn part_names(&self) -> impl Iterator<Item = &String> {
         self.parts.keys()
+    }
+
+    /// Extract core document properties from docProps/core.xml
+    /// 
+    /// Returns properties like lastModifiedBy, creator, and modified date.
+    /// These are used to determine default author and date for revisions.
+    pub fn get_core_properties(&self) -> CoreProperties {
+        let mut props = CoreProperties::default();
+        
+        // Try to get docProps/core.xml
+        let core_xml = match self.get_xml_part("docProps/core.xml") {
+            Ok(doc) => doc,
+            Err(_) => return props,
+        };
+        
+        let root = match core_xml.root() {
+            Some(r) => r,
+            None => return props,
+        };
+        
+        // Helper to get text content of first matching element
+        fn get_element_text(doc: &XmlDocument, root: indextree::NodeId, ns: &str, local: &str) -> Option<String> {
+            for node in doc.descendants(root) {
+                if let Some(data) = doc.get(node) {
+                    if let Some(name) = data.name() {
+                        if name.namespace.as_deref() == Some(ns) && name.local_name == local {
+                            // Get text content from first text child
+                            for child in doc.children(node) {
+                                if let Some(text) = doc.text(child) {
+                                    let trimmed = text.trim();
+                                    if !trimmed.is_empty() {
+                                        return Some(trimmed.to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            None
+        }
+        
+        // Extract cp:lastModifiedBy
+        props.last_modified_by = get_element_text(&core_xml, root, CP::NS, "lastModifiedBy");
+        
+        // Extract dc:creator
+        props.creator = get_element_text(&core_xml, root, DC::NS, "creator");
+        
+        // Extract dcterms:modified
+        props.modified = get_element_text(&core_xml, root, DCTERMS::NS, "modified");
+        
+        props
     }
 }
 

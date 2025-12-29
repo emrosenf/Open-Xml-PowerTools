@@ -286,10 +286,14 @@ pub mod CP {
     pub const NS: &str = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties";
     
     pub fn revision() -> XName { XName::new(NS, "revision") }
+    pub fn lastModifiedBy() -> XName { XName::new(NS, "lastModifiedBy") }
 }
 
 pub mod DC {
+    use super::XName;
     pub const NS: &str = "http://purl.org/dc/elements/1.1/";
+    
+    pub fn creator() -> XName { XName::new(NS, "creator") }
 }
 
 pub mod PT {

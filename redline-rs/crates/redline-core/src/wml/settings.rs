@@ -1,4 +1,3 @@
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 /// Settings for WmlComparer document comparison.
@@ -14,8 +13,9 @@ pub struct WmlComparerSettings {
     pub author_for_revisions: Option<String>,
     
     /// Date/time for tracked revisions in ISO 8601 format.
-    /// Defaults to current time when created.
-    pub date_time_for_revisions: String,
+    /// If None, the date will be extracted from the modified document's
+    /// dcterms:modified property, falling back to current time.
+    pub date_time_for_revisions: Option<String>,
     
     /// Threshold for detail level in comparison (0.0-1.0).
     /// Lower values provide more detailed comparison.
@@ -54,10 +54,8 @@ impl Default for WmlComparerSettings {
                 '：', // U+FF1A FULLWIDTH COLON
                 '的', // U+7684 CJK UNIFIED IDEOGRAPH (Chinese possessive particle)
             ],
-            author_for_revisions: None, // C# default: null
-            // OOXML spec requires ISO 8601 format without microseconds: YYYY-MM-DDTHH:MM:SSZ
-            // Note: C# DateTime.Now.ToString("o") includes microseconds, but Word rejects this format
-            date_time_for_revisions: Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+            author_for_revisions: None, // Extract from source2 if not set
+            date_time_for_revisions: None, // Extract from source2 if not set
             detail_threshold: 0.15, // C# default: 0.15
             case_insensitive: false, // C# default: false
             conflate_breaking_and_nonbreaking_spaces: true, // C# default: true
@@ -100,7 +98,7 @@ impl WmlComparerSettings {
 
     /// Builder method to set date/time for revisions.
     pub fn with_date_time(mut self, date_time: impl Into<String>) -> Self {
-        self.date_time_for_revisions = date_time.into();
+        self.date_time_for_revisions = Some(date_time.into());
         self
     }
     
@@ -231,7 +229,7 @@ mod tests {
         assert!(settings.case_insensitive);
         assert!(!settings.track_formatting_changes);
         assert_eq!(settings.culture_info, Some("en-US".to_string()));
-        assert_eq!(settings.date_time_for_revisions, "2025-12-28T12:00:00Z");
+        assert_eq!(settings.date_time_for_revisions, Some("2025-12-28T12:00:00Z".to_string()));
     }
     
     #[test]

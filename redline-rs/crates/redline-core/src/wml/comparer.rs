@@ -38,6 +38,7 @@ use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::W;
 use crate::xml::node::XmlNodeData;
 use crate::xml::xname::{XAttribute, XName};
+use chrono::Utc;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
 use std::collections::HashMap;
@@ -413,7 +414,12 @@ impl WmlComparer {
         source2: &WmlDocument,
         settings: Option<&WmlComparerSettings>,
     ) -> Result<WmlComparisonResult> {
-        let settings = settings.cloned().unwrap_or_default();
+        let mut settings = settings.cloned().unwrap_or_default();
+        
+        // C# WmlComparer.cs lines 171-176: Extract author/date from source2 if not set
+        // This matches MS Word behavior where revision metadata comes from the modified document
+        Self::resolve_revision_metadata(&mut settings, source2);
+        
         reset_revision_id_counter(1);
 
         let mut doc1 = source1.main_document()?;
@@ -543,6 +549,36 @@ impl WmlComparer {
             format_changes,
             revision_count: insertions + deletions + format_changes,
         })
+    }
+
+    /// Resolve author and date/time for revisions from the modified document's core properties.
+    /// C# WmlComparer.cs lines 155-176: ExtractAuthorFromDocument and CompareInternal
+    /// 
+    /// Priority for author:
+    /// 1. Explicitly set in settings (author_for_revisions)
+    /// 2. cp:lastModifiedBy from source2's docProps/core.xml
+    /// 3. dc:creator from source2's docProps/core.xml
+    /// 4. "Unknown" as fallback
+    /// 
+    /// Priority for date:
+    /// 1. Explicitly set in settings (date_time_for_revisions)
+    /// 2. dcterms:modified from source2's docProps/core.xml
+    /// 3. Current time as fallback
+    fn resolve_revision_metadata(settings: &mut WmlComparerSettings, source2: &WmlDocument) {
+        let core_props = source2.package().get_core_properties();
+        
+        // Resolve author if not explicitly set
+        if settings.author_for_revisions.is_none() {
+            settings.author_for_revisions = core_props.last_modified_by
+                .or(core_props.creator)
+                .or_else(|| Some("Unknown".to_string()));
+        }
+        
+        // Resolve date if not explicitly set
+        if settings.date_time_for_revisions.is_none() {
+            settings.date_time_for_revisions = core_props.modified
+                .or_else(|| Some(Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()));
+        }
     }
 
     /// Legacy compare implementation for backward compatibility

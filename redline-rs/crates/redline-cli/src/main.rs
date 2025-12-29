@@ -35,11 +35,11 @@ enum Commands {
         #[arg(long)]
         json: bool,
 
-        /// Author name for revisions
-        #[arg(long, default_value = "Redline")]
-        author: String,
+        /// Author name for revisions (defaults to source2's LastModifiedBy or Creator)
+        #[arg(long)]
+        author: Option<String>,
 
-        /// Date/time for revisions (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ)
+        /// Date/time for revisions in ISO 8601 format (defaults to source2's modified date)
         #[arg(long)]
         date: Option<String>,
     },
@@ -97,7 +97,7 @@ fn main() {
             json,
             author,
             date,
-        } => run_compare(&source1, &source2, &output, &doc_type, json, &author, date.as_deref()),
+        } => run_compare(&source1, &source2, &output, &doc_type, json, author, date),
         
         Commands::Count {
             source1,
@@ -120,8 +120,8 @@ fn run_compare(
     output: &PathBuf,
     doc_type: &str,
     json: bool,
-    author: &str,
-    date: Option<&str>,
+    author: Option<String>,
+    date: Option<String>,
 ) -> Result<(), String> {
     let doc_type = detect_doc_type(source1, doc_type)?;
     
@@ -138,11 +138,23 @@ fn run_compare(
             let doc2 = redline_core::WmlDocument::from_bytes(&bytes2)
                 .map_err(|e| format!("Failed to parse {}: {}", source2.display(), e))?;
 
-            // Create settings with author and optional date
+            // Extract metadata from doc2 for defaults
+            let props = doc2.package().get_core_properties();
+            
+            // Determine author: CLI arg -> lastModifiedBy -> creator -> "Redline"
+            let final_author = author
+                .or(props.last_modified_by)
+                .or(props.creator)
+                .unwrap_or_else(|| "Redline".to_string());
+                
+            // Determine date: CLI arg -> modified -> None (lets Settings default to current time)
+            let final_date = date.or(props.modified);
+
+            // Create settings with resolved author and date
             let mut settings = redline_core::WmlComparerSettings::default();
-            settings.author_for_revisions = Some(author.to_string());
-            if let Some(d) = date {
-                settings.date_time_for_revisions = d.to_string();
+            settings.author_for_revisions = Some(final_author);
+            if let Some(d) = final_date {
+                settings.date_time_for_revisions = Some(d);
             }
 
             // Compare documents
