@@ -106,6 +106,10 @@ pub struct AncestorInfo {
     /// Used by DoLcsAlgorithmForTable to detect merged cells
     #[allow(dead_code)]
     pub has_merged_cells: bool,
+    /// Serialized run properties (w:rPr) for run elements (w:r)
+    /// This is needed to preserve formatting when reconstructing runs
+    /// in comparison output. The rPr is a child element, not an attribute.
+    pub rpr_xml: Option<String>,
 }
 
 /// Content type classification for atoms
@@ -1520,6 +1524,7 @@ mod tests {
                 unid: "abc123".to_string(),
                 attributes: Arc::new(Vec::new()),
                 has_merged_cells: false,
+                rpr_xml: None,
             }],
             "main",
             &settings,

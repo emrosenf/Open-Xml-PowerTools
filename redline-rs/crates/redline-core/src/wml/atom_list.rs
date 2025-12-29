@@ -386,6 +386,15 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     .map(|a| a.value.clone())
                     .unwrap_or_default();
                 
+                // For run elements (w:r), capture the rPr child element for reconstruction
+                // This is critical for preserving formatting in comparison output
+                // C# equivalent: ancestorBeingConstructed.Element(W.rPr) in CoalesceRecurse
+                let rpr_xml = if ns == Some(W::NS) && local == "r" {
+                    extract_rpr_xml(doc, ancestor_id)
+                } else {
+                    None
+                };
+                
                 ancestors.push(AncestorInfo {
                     node_id: ancestor_id,
                     namespace: name.namespace.clone(),
@@ -393,6 +402,7 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                     unid,
                     attributes: attrs,
                     has_merged_cells: false,  // Stub - not implemented yet
+                    rpr_xml,
                 });
             }
         }
@@ -400,6 +410,116 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
     
     ancestors.reverse();
     ancestors
+}
+
+/// Extract and serialize the w:rPr child element from a run element.
+/// Returns None if no rPr is present.
+fn extract_rpr_xml(doc: &XmlDocument, run_id: NodeId) -> Option<String> {
+    // Find the w:rPr child element
+    for child in doc.children(run_id) {
+        if let Some(child_data) = doc.get(child) {
+            if let Some(child_name) = child_data.name() {
+                if child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "rPr" {
+                    // Serialize the rPr element and all its children
+                    return Some(serialize_element_tree(doc, child));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Serialize an XML element and its descendants to a string.
+/// This produces a compact XML representation without unnecessary whitespace.
+fn serialize_element_tree(doc: &XmlDocument, node: NodeId) -> String {
+    let mut result = String::new();
+    serialize_element_recursive(doc, node, &mut result);
+    result
+}
+
+fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut String) {
+    let Some(data) = doc.get(node) else { return };
+    
+    match data {
+        XmlNodeData::Element { name, attributes } => {
+            result.push('<');
+            
+            // Add namespace prefix
+            if let Some(ns) = &name.namespace {
+                if let Some(prefix) = get_prefix_for_ns(ns) {
+                    result.push_str(prefix);
+                    result.push(':');
+                }
+            }
+            result.push_str(&name.local_name);
+            
+            // Add attributes (skip internal pt: namespace attributes)
+            for attr in attributes {
+                // Skip PowerTools internal tracking attributes
+                if attr.name.namespace.as_deref() == Some("http://powertools.codeplex.com/2011") {
+                    continue;
+                }
+                
+                result.push(' ');
+                if let Some(ns) = &attr.name.namespace {
+                    if let Some(prefix) = get_prefix_for_ns(ns) {
+                        result.push_str(prefix);
+                        result.push(':');
+                    }
+                }
+                result.push_str(&attr.name.local_name);
+                result.push_str("=\"");
+                result.push_str(&escape_xml_attr(&attr.value));
+                result.push('"');
+            }
+            
+            let children: Vec<_> = doc.children(node).collect();
+            if children.is_empty() {
+                result.push_str("/>");
+            } else {
+                result.push('>');
+                for child in children {
+                    serialize_element_recursive(doc, child, result);
+                }
+                result.push_str("</");
+                if let Some(ns) = &name.namespace {
+                    if let Some(prefix) = get_prefix_for_ns(ns) {
+                        result.push_str(prefix);
+                        result.push(':');
+                    }
+                }
+                result.push_str(&name.local_name);
+                result.push('>');
+            }
+        }
+        XmlNodeData::Text(text) => {
+            result.push_str(&escape_xml_text(text));
+        }
+        _ => {}
+    }
+}
+
+fn get_prefix_for_ns(ns: &str) -> Option<&'static str> {
+    match ns {
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main" => Some("w"),
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships" => Some("r"),
+        "http://schemas.openxmlformats.org/markup-compatibility/2006" => Some("mc"),
+        "http://www.w3.org/XML/1998/namespace" => Some("xml"),
+        _ => None,
+    }
+}
+
+fn escape_xml_attr(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+fn escape_xml_text(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 fn extract_text_content(doc: &XmlDocument, node: NodeId) -> String {

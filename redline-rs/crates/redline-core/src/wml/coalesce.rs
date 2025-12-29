@@ -41,6 +41,9 @@ struct AncestorElementInfo {
     namespace: Option<String>,
     local_name: String,
     attributes: Vec<XAttribute>,
+    /// Serialized run properties (w:rPr) for run elements (w:r)
+    /// This is needed to preserve formatting when reconstructing runs
+    rpr_xml: Option<String>,
 }
 
 /// VML-related element names (from C# VmlRelatedElements set)
@@ -1185,6 +1188,18 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
     let mut run_attrs = ancestor.attributes.clone();
     run_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     let run = doc.add_child(parent, XmlNodeData::element_with_attrs(W::r(), run_attrs));
+    
+    // CRITICAL FIX: Restore the w:rPr (run properties) from the ancestor
+    // This matches C# WmlComparer.cs line 5362-5368:
+    //   XElement rPr = ancestorBeingConstructed.Element(W.rPr);
+    //   if (rPr != null) rPr = new XElement(rPr);
+    //   var newRun = new XElement(W.r, ..., rPr, ...);
+    if let Some(ref rpr_xml) = ancestor.rpr_xml {
+        if let Some(rpr_node) = parse_rpr_xml(doc, rpr_xml) {
+            doc.reparent(run, rpr_node);
+        }
+    }
+    
     let format_changed = grouped_children.iter().any(|(_, start, end)| {
         atoms[*start..*end].iter().any(|atom| atom.correlation_status == ComparisonCorrelationStatus::FormatChanged)
     });
@@ -1204,6 +1219,35 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
         let revision_settings = RevisionSettings { author: settings.author_for_revisions.clone().unwrap_or_else(|| "redline-rs".to_string()), date_time: settings.date_time_for_revisions.clone() };
         let _rpr_change = create_run_property_change(doc, rpr, &revision_settings);
     }
+}
+
+/// Parse serialized rPr XML string and create nodes in the document.
+/// Returns the root node of the parsed rPr element.
+fn parse_rpr_xml(doc: &mut XmlDocument, rpr_xml: &str) -> Option<NodeId> {
+    use crate::xml::parser;
+    
+    // Parse the XML fragment
+    let parsed_doc = parser::parse(rpr_xml).ok()?;
+    let parsed_root = parsed_doc.root()?;
+    
+    // Deep clone the parsed tree into our document
+    clone_tree_into_doc(doc, &parsed_doc, parsed_root)
+}
+
+/// Clone an entire subtree from one document into another.
+fn clone_tree_into_doc(target_doc: &mut XmlDocument, source_doc: &XmlDocument, source_node: NodeId) -> Option<NodeId> {
+    let source_data = source_doc.get(source_node)?;
+    let cloned_data = source_data.clone();
+    let new_node = target_doc.new_node(cloned_data);
+    
+    // Recursively clone children
+    for child in source_doc.children(source_node) {
+        if let Some(cloned_child) = clone_tree_into_doc(target_doc, source_doc, child) {
+            target_doc.reparent(new_node, cloned_child);
+        }
+    }
+    
+    Some(new_node)
 }
 
 fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
@@ -1590,6 +1634,7 @@ fn get_ancestor_element_for_level(
                         namespace: before_ancestors[level].namespace.clone(),
                         local_name: before_ancestors[level].local_name.clone(),
                         attributes: before_ancestors[level].attributes.as_ref().clone(),
+                        rpr_xml: before_ancestors[level].rpr_xml.clone(),
                     };
                 }
             }
@@ -1599,6 +1644,7 @@ fn get_ancestor_element_for_level(
         namespace: first_atom.ancestor_elements[level].namespace.clone(),
         local_name: first_atom.ancestor_elements[level].local_name.clone(),
         attributes: first_atom.ancestor_elements[level].attributes.as_ref().clone(),
+        rpr_xml: first_atom.ancestor_elements[level].rpr_xml.clone(),
     }
 }
 
@@ -1914,5 +1960,72 @@ mod tests {
         let text = collect_text_from_group(&doc, &group, "Wt");
         
         assert_eq!(text, "Hello World");
+    }
+
+    #[test]
+    fn test_parse_rpr_xml_with_bold() {
+        let mut doc = XmlDocument::new();
+        let rpr_xml = r#"<w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:b/></w:rPr>"#;
+        
+        let rpr_node = parse_rpr_xml(&mut doc, rpr_xml);
+        
+        assert!(rpr_node.is_some());
+        let rpr_node = rpr_node.unwrap();
+        
+        // Check that the node is an rPr element
+        let data = doc.get(rpr_node).unwrap();
+        let name = data.name().unwrap();
+        assert_eq!(name.local_name, "rPr");
+        assert_eq!(name.namespace.as_deref(), Some(W::NS));
+        
+        // Check that it has a w:b child
+        let children: Vec<_> = doc.children(rpr_node).collect();
+        assert_eq!(children.len(), 1);
+        let b_data = doc.get(children[0]).unwrap();
+        let b_name = b_data.name().unwrap();
+        assert_eq!(b_name.local_name, "b");
+    }
+
+    #[test]
+    fn test_parse_rpr_xml_with_multiple_properties() {
+        let mut doc = XmlDocument::new();
+        let rpr_xml = r#"<w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:b/><w:szCs w:val="24"/></w:rPr>"#;
+        
+        let rpr_node = parse_rpr_xml(&mut doc, rpr_xml);
+        
+        assert!(rpr_node.is_some());
+        let rpr_node = rpr_node.unwrap();
+        
+        // Check that it has two children (w:b and w:szCs)
+        let children: Vec<_> = doc.children(rpr_node).collect();
+        assert_eq!(children.len(), 2);
+        
+        // First child should be w:b
+        let first_data = doc.get(children[0]).unwrap();
+        let first_name = first_data.name().unwrap();
+        assert_eq!(first_name.local_name, "b");
+        
+        // Second child should be w:szCs with val="24"
+        let second_data = doc.get(children[1]).unwrap();
+        let second_name = second_data.name().unwrap();
+        assert_eq!(second_name.local_name, "szCs");
+        let attrs = second_data.attributes().unwrap();
+        let val_attr = attrs.iter().find(|a| a.name.local_name == "val");
+        assert!(val_attr.is_some());
+        assert_eq!(val_attr.unwrap().value, "24");
+    }
+
+    #[test]
+    fn test_ancestor_element_info_rpr_xml_field() {
+        // Test that AncestorElementInfo can hold rpr_xml
+        let ancestor = AncestorElementInfo {
+            namespace: Some(W::NS.to_string()),
+            local_name: "r".to_string(),
+            attributes: vec![],
+            rpr_xml: Some("<w:rPr><w:b/></w:rPr>".to_string()),
+        };
+        
+        assert!(ancestor.rpr_xml.is_some());
+        assert!(ancestor.rpr_xml.as_ref().unwrap().contains("w:b"));
     }
 }
