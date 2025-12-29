@@ -190,7 +190,13 @@ fn create_atom_list_recurse(
             }
         }
         
-        let ancestors = build_ancestor_chain(doc, node);
+        // Build ancestor chain INCLUDING the paragraph itself
+        // This is critical for footnotes/endnotes where the paragraph is the first ancestor
+        // (since build_ancestor_chain stops at footnote/endnote container)
+        let mut ancestors = build_ancestor_chain(doc, node);
+        // Prepend the paragraph itself as the first ancestor
+        ancestors.insert(0, build_ancestor_info_for_node(doc, node));
+        
         let mut atom = ComparisonUnitAtom::new(
             ContentElement::ParagraphProperties { element_xml: ppr_xml },
             ancestors,
@@ -232,7 +238,13 @@ fn create_atom_list_recurse(
     
     if ns == Some(W::NS) && (local == "t" || local == "delText") {
         let text = extract_text_content(doc, node);
-        let ancestors = build_ancestor_chain(doc, node);
+        
+        // Build ancestor chain INCLUDING the w:t element itself at the END
+        // This ensures coalesce_recurse reaches the "t" case at line 1167
+        // at the correct depth level (after paragraphs and runs are created)
+        // Note: ancestors[0] is outermost (p), higher indices are inner (r, t)
+        let mut ancestors = build_ancestor_chain(doc, node);
+        ancestors.push(build_ancestor_info_for_node(doc, node));
         
         for ch in text.chars() {
             let mut atom = ComparisonUnitAtom::new(
@@ -372,7 +384,9 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
     let pt_unid = PT::Unid();
     let mut ancestors = Vec::new();
     
-    for ancestor_id in doc.ancestors(node) {
+    // Note: indextree's ancestors() includes the node itself as the first element,
+    // so we skip it to get only the true ancestors (parent, grandparent, etc.)
+    for ancestor_id in doc.ancestors(node).skip(1) {
         if let Some(data) = doc.get(ancestor_id) {
             if let Some(name) = data.name() {
                 let ns = name.namespace.as_deref();
@@ -432,6 +446,43 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
     
     ancestors.reverse();
     ancestors
+}
+
+/// Build an AncestorInfo for a single node.
+/// Used to include the current node in its own ancestor chain.
+fn build_ancestor_info_for_node(doc: &XmlDocument, node: NodeId) -> AncestorInfo {
+    let pt_unid = PT::Unid();
+    let data = doc.get(node).expect("node must exist");
+    let name = data.name().expect("node must have a name");
+    
+    // Filter out namespace declarations
+    let attrs = std::sync::Arc::new(
+        data.attributes()
+            .map(|a| a.iter()
+                .filter(|attr| {
+                    let is_xmlns_ns = attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
+                    let is_xmlns_attr = attr.name.namespace.is_none() && attr.name.local_name == "xmlns";
+                    !is_xmlns_ns && !is_xmlns_attr
+                })
+                .cloned()
+                .collect::<Vec<_>>())
+            .unwrap_or_default()
+    );
+    
+    let unid = attrs.iter()
+        .find(|a| a.name == pt_unid)
+        .map(|a| a.value.clone())
+        .unwrap_or_default();
+    
+    AncestorInfo {
+        node_id: node,
+        namespace: name.namespace.clone(),
+        local_name: name.local_name.clone(),
+        unid,
+        attributes: attrs,
+        has_merged_cells: false,
+        rpr_xml: None,
+    }
 }
 
 /// Extract and serialize the w:rPr child element from a run element.

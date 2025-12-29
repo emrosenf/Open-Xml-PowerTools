@@ -32,7 +32,7 @@ use super::revision::{count_revisions, reset_revision_id_counter};
 use super::revision_accepter::accept_revisions;
 use super::settings::WmlComparerSettings;
 use super::types::WmlComparisonResult;
-use crate::error::Result;
+use crate::error::{RedlineError, Result};
 use crate::util::lcs::{self, compute_correlation, Hashable, LcsSettings};
 use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::W;
@@ -1593,6 +1593,12 @@ fn build_note_doc_with_status(
         return Ok((0, 0, 0, super::coalesce::CoalesceResult { document: doc, root }));
     };
 
+    // Preprocess the footnote/endnote content to add UNIDs
+    // This is critical for the coalesce grouping to work correctly
+    let preprocess_settings = PreProcessSettings::for_comparison();
+    preprocess_markup(&mut doc, note_id, &preprocess_settings)
+        .map_err(RedlineError::ComparisonFailed)?;
+
     let mut atoms = create_comparison_unit_atom_list(&mut doc, note_id, part_type, settings);
     for atom in atoms.iter_mut() {
         atom.correlation_status = status;
@@ -1626,6 +1632,14 @@ fn compare_part_content(
     part_name: &str,
     settings: &WmlComparerSettings,
 ) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult)> {
+    // Preprocess both documents to add UNIDs
+    // This is critical for the coalesce grouping to work correctly
+    let preprocess_settings = PreProcessSettings::for_comparison();
+    preprocess_markup(doc1, root1, &preprocess_settings)
+        .map_err(RedlineError::ComparisonFailed)?;
+    preprocess_markup(doc2, root2, &preprocess_settings)
+        .map_err(RedlineError::ComparisonFailed)?;
+    
     let atoms1 = create_comparison_unit_atom_list(doc1, root1, part_name, settings);
     let atoms2 = create_comparison_unit_atom_list(doc2, root2, part_name, settings);
     
