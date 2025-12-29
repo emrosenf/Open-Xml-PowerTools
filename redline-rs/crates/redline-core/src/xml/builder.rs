@@ -192,6 +192,8 @@ fn get_prefix(namespace: &str) -> &'static str {
         "http://schemas.openxmlformats.org/spreadsheetml/2006/main" => "x",
         "http://schemas.openxmlformats.org/presentationml/2006/main" => "p",
         "http://schemas.openxmlformats.org/drawingml/2006/main" => "a",
+        "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" => "wp",
+        "http://schemas.openxmlformats.org/drawingml/2006/picture" => "pic",
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships" => "r",
         "http://schemas.openxmlformats.org/markup-compatibility/2006" => "mc",
         "http://powertools.codeplex.com/2011" => "pt",
