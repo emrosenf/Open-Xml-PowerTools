@@ -57,8 +57,8 @@ pub fn create_insertion(
 ) -> NodeId {
     let rev_id = get_next_revision_id();
     let attrs = vec![
+        XAttribute::new(W::id(), &rev_id.to_string()),  // w:id MUST come first per ECMA-376
         XAttribute::new(W::author(), &settings.author),
-        XAttribute::new(W::id(), &rev_id.to_string()),
         XAttribute::new(W::date(), &settings.date_time),
         // Add w16du:dateUtc for modern Word timezone handling
         XAttribute::new(W16DU::dateUtc(), &settings.date_time),
@@ -74,8 +74,8 @@ pub fn create_deletion(
 ) -> NodeId {
     let rev_id = get_next_revision_id();
     let attrs = vec![
+        XAttribute::new(W::id(), &rev_id.to_string()),  // w:id MUST come first per ECMA-376
         XAttribute::new(W::author(), &settings.author),
-        XAttribute::new(W::id(), &rev_id.to_string()),
         XAttribute::new(W::date(), &settings.date_time),
         // Add w16du:dateUtc for modern Word timezone handling
         XAttribute::new(W16DU::dateUtc(), &settings.date_time),
@@ -91,8 +91,8 @@ pub fn create_run_property_change(
 ) -> NodeId {
     let rev_id = get_next_revision_id();
     let attrs = vec![
+        XAttribute::new(W::id(), &rev_id.to_string()),  // w:id MUST come first per ECMA-376
         XAttribute::new(W::author(), &settings.author),
-        XAttribute::new(W::id(), &rev_id.to_string()),
         XAttribute::new(W::date(), &settings.date_time),
     ];
     
@@ -106,8 +106,8 @@ pub fn create_paragraph_property_change(
 ) -> NodeId {
     let rev_id = get_next_revision_id();
     let attrs = vec![
+        XAttribute::new(W::id(), &rev_id.to_string()),  // w:id MUST come first per ECMA-376
         XAttribute::new(W::author(), &settings.author),
-        XAttribute::new(W::id(), &rev_id.to_string()),
         XAttribute::new(W::date(), &settings.date_time),
     ];
     

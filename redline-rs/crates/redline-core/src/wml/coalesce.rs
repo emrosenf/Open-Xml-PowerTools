@@ -95,7 +95,36 @@ pub fn coalesce(atoms: &[ComparisonUnitAtom], settings: &WmlComparerSettings, ro
         coalesce_recurse(&mut doc, doc_root, atoms, 0, None, settings);
     }
     
+    // Clean up empty w:rPr elements before returning
+    // Empty rPr elements are non-standard and can cause issues with MS Word
+    remove_empty_rpr_elements(&mut doc, doc_root);
+    
     CoalesceResult { document: doc, root: doc_root }
+}
+
+/// Remove empty w:rPr elements from the document tree.
+/// Empty w:rPr elements (those with no children) are non-standard OOXML
+/// and may cause MS Word to reject the file.
+pub fn remove_empty_rpr_elements(doc: &mut XmlDocument, root: NodeId) {
+    // Collect all empty rPr elements first to avoid borrowing issues
+    let empty_rprs: Vec<NodeId> = std::iter::once(root)
+        .chain(doc.descendants(root))
+        .filter(|&node| {
+            // Check if this is a w:rPr element
+            let is_rpr = doc.get(node)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "rPr")
+                .unwrap_or(false);
+            
+            // Check if it has no children
+            is_rpr && doc.children(node).next().is_none()
+        })
+        .collect();
+    
+    // Remove all empty rPr elements
+    for node in empty_rprs {
+        doc.remove(node);
+    }
 }
 
 /// Mark content as deleted or inserted - faithful port of C# MarkContentAsDeletedOrInserted (line 2646-2740)
@@ -185,8 +214,8 @@ fn handle_run_element(doc: &mut XmlDocument, run: NodeId, settings: &RevisionSet
     if status == "Deleted" {
         let id_str = next_revision_id().to_string();
         let del_attrs = vec![
+            XAttribute::new(W::id(), &id_str),  // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
-            XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
             // Add w16du:dateUtc for modern Word timezone handling
             XAttribute::new(W16DU::dateUtc(), &settings.date_time),
@@ -199,8 +228,8 @@ fn handle_run_element(doc: &mut XmlDocument, run: NodeId, settings: &RevisionSet
     } else if status == "Inserted" {
         let id_str = next_revision_id().to_string();
         let ins_attrs = vec![
+            XAttribute::new(W::id(), &id_str),  // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
-            XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
             // Add w16du:dateUtc for modern Word timezone handling
             XAttribute::new(W16DU::dateUtc(), &settings.date_time),
@@ -300,8 +329,8 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
     if status == "Deleted" {
         let id_str = next_revision_id().to_string();
         let del_attrs = vec![
+            XAttribute::new(W::id(), &id_str),  // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
-            XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
             // Add w16du:dateUtc for modern Word timezone handling
             XAttribute::new(W16DU::dateUtc(), &settings.date_time),
@@ -310,8 +339,8 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
     } else if status == "Inserted" {
         let id_str = next_revision_id().to_string();
         let ins_attrs = vec![
+            XAttribute::new(W::id(), &id_str),  // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
-            XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
             // Add w16du:dateUtc for modern Word timezone handling
             XAttribute::new(W16DU::dateUtc(), &settings.date_time),
@@ -894,10 +923,12 @@ fn merge_run_group(doc: &mut XmlDocument, group: &[NodeId], text: &str, preserve
     // Create new run element
     let new_run = doc.new_node(XmlNodeData::element_with_attrs(W::r(), first_attrs));
     
-    // Add rPr if present
+    // Add rPr if present and non-empty
     if let Some(rpr) = first_rpr {
-        let cloned_rpr = clone_element_deep(doc, rpr);
-        doc.reparent(new_run, cloned_rpr);
+        if doc.children(rpr).next().is_some() {
+            let cloned_rpr = clone_element_deep(doc, rpr);
+            doc.reparent(new_run, cloned_rpr);
+        }
     }
     
     // Create text element (w:t or w:instrText)
@@ -934,10 +965,12 @@ fn merge_ins_group(doc: &mut XmlDocument, group: &[NodeId], text: &str, preserve
     // Create inner w:r
     let new_r = doc.add_child(new_ins, XmlNodeData::element_with_attrs(W::r(), r_attrs));
     
-    // Add rPr if present
+    // Add rPr if present and non-empty
     if let Some(rpr) = r_rpr {
-        let cloned_rpr = clone_element_deep(doc, rpr);
-        doc.reparent(new_r, cloned_rpr);
+        if doc.children(rpr).next().is_some() {
+            let cloned_rpr = clone_element_deep(doc, rpr);
+            doc.reparent(new_r, cloned_rpr);
+        }
     }
     
     // Create w:t with text
@@ -972,10 +1005,12 @@ fn merge_del_group(doc: &mut XmlDocument, group: &[NodeId], text: &str, preserve
     // Create inner w:r
     let new_r = doc.add_child(new_del, XmlNodeData::element_with_attrs(W::r(), r_attrs));
     
-    // Add rPr if present
+    // Add rPr if present and non-empty
     if let Some(rpr) = r_rpr {
-        let cloned_rpr = clone_element_deep(doc, rpr);
-        doc.reparent(new_r, cloned_rpr);
+        if doc.children(rpr).next().is_some() {
+            let cloned_rpr = clone_element_deep(doc, rpr);
+            doc.reparent(new_r, cloned_rpr);
+        }
     }
     
     // Create w:delText with text
@@ -1232,10 +1267,17 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
 }
 
 /// Parse serialized rPr XML string and create nodes in the document.
-/// Returns the root node of the parsed rPr element.
+/// Returns the root node of the parsed rPr element, or None if empty.
 fn parse_rpr_xml(doc: &mut XmlDocument, rpr_xml: &str) -> Option<NodeId> {
     // Use the namespace wrapper parser to handle prefix-only serialized XML
-    parse_xml_fragment(doc, rpr_xml)
+    let node = parse_xml_fragment(doc, rpr_xml)?;
+    
+    // Don't return empty rPr elements - they're non-standard OOXML
+    if doc.children(node).next().is_none() {
+        return None;
+    }
+    
+    Some(node)
 }
 
 /// Wrapper XML with all necessary namespace declarations for parsing XML fragments
@@ -1378,8 +1420,8 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
         if del {
             for gcc in group_atoms {
                 let del_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::del(), vec![
+                    XAttribute::new(W::id(), "0"),  // w:id MUST come first per ECMA-376
                     XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")),
-                    XAttribute::new(W::id(), "0"),
                     XAttribute::new(W::date(), &settings.date_time_for_revisions),
                     // Add w16du:dateUtc for modern Word timezone handling
                     XAttribute::new(W16DU::dateUtc(), &settings.date_time_for_revisions),
@@ -1389,8 +1431,8 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
         } else if ins {
             for gcc in group_atoms {
                 let ins_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::ins(), vec![
+                    XAttribute::new(W::id(), "0"),  // w:id MUST come first per ECMA-376
                     XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")),
-                    XAttribute::new(W::id(), "0"),
                     XAttribute::new(W::date(), &settings.date_time_for_revisions),
                     // Add w16du:dateUtc for modern Word timezone handling
                     XAttribute::new(W16DU::dateUtc(), &settings.date_time_for_revisions),
@@ -1890,9 +1932,9 @@ mod tests {
     fn test_get_consolidation_key_ins_element() {
         let mut doc = XmlDocument::new();
         let ins = doc.add_root(XmlNodeData::element_with_attrs(W::ins(), vec![
+            XAttribute::new(W::id(), "1"),  // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), "Test Author"),
             XAttribute::new(W::date(), "2023-01-15T10:30:00Z"),
-            XAttribute::new(W::id(), "1"),
         ]));
         let run = doc.add_child(ins, XmlNodeData::element(W::r()));
         let t = doc.add_child(run, XmlNodeData::element(W::t()));
@@ -1911,6 +1953,7 @@ mod tests {
     fn test_get_consolidation_key_del_element() {
         let mut doc = XmlDocument::new();
         let del = doc.add_root(XmlNodeData::element_with_attrs(W::del(), vec![
+            XAttribute::new(W::id(), "1"),  // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), "Test Author"),
             XAttribute::new(W::date(), "2023-01-15T10:30:00Z"),
         ]));
@@ -2106,5 +2149,76 @@ mod tests {
         
         assert!(ancestor.rpr_xml.is_some());
         assert!(ancestor.rpr_xml.as_ref().unwrap().contains("w:b"));
+    }
+
+    #[test]
+    fn test_remove_empty_rpr_elements() {
+        let mut doc = XmlDocument::new();
+        
+        // Create a structure with some empty and non-empty rPr elements
+        let root = doc.add_root(XmlNodeData::element(W::body()));
+        let para = doc.add_child(root, XmlNodeData::element(W::p()));
+        
+        // Run 1: has empty rPr (should be removed)
+        let run1 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let _empty_rpr = doc.add_child(run1, XmlNodeData::element(W::rPr()));
+        let t1 = doc.add_child(run1, XmlNodeData::element(W::t()));
+        doc.add_child(t1, XmlNodeData::Text("Hello".to_string()));
+        
+        // Run 2: has non-empty rPr (should be kept)
+        let run2 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let nonempty_rpr = doc.add_child(run2, XmlNodeData::element(W::rPr()));
+        doc.add_child(nonempty_rpr, XmlNodeData::element(XName::new(W::NS, "b")));
+        let t2 = doc.add_child(run2, XmlNodeData::element(W::t()));
+        doc.add_child(t2, XmlNodeData::Text("World".to_string()));
+        
+        // Run 3: has another empty rPr (should be removed)
+        let run3 = doc.add_child(para, XmlNodeData::element(W::r()));
+        let _empty_rpr2 = doc.add_child(run3, XmlNodeData::element(W::rPr()));
+        let t3 = doc.add_child(run3, XmlNodeData::element(W::t()));
+        doc.add_child(t3, XmlNodeData::Text("!".to_string()));
+        
+        // Count rPr elements before
+        let rpr_count_before: usize = std::iter::once(root)
+            .chain(doc.descendants(root))
+            .filter(|&n| {
+                doc.get(n)
+                    .and_then(|d| d.name())
+                    .map(|name| name.namespace.as_deref() == Some(W::NS) && name.local_name == "rPr")
+                    .unwrap_or(false)
+            })
+            .count();
+        assert_eq!(rpr_count_before, 3);
+        
+        // Run the cleanup
+        remove_empty_rpr_elements(&mut doc, root);
+        
+        // Count rPr elements after
+        let rpr_count_after: usize = std::iter::once(root)
+            .chain(doc.descendants(root))
+            .filter(|&n| {
+                doc.get(n)
+                    .and_then(|d| d.name())
+                    .map(|name| name.namespace.as_deref() == Some(W::NS) && name.local_name == "rPr")
+                    .unwrap_or(false)
+            })
+            .count();
+        
+        // Should only have 1 rPr left (the non-empty one)
+        assert_eq!(rpr_count_after, 1);
+    }
+
+    #[test]
+    fn test_parse_rpr_xml_returns_none_for_empty() {
+        let mut doc = XmlDocument::new();
+        
+        // Empty rPr element should return None
+        let rpr_xml = r#"<w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+        let result = parse_rpr_xml(&mut doc, rpr_xml);
+        assert!(result.is_none(), "Empty rPr should return None");
+        
+        // Empty string should return None
+        let result2 = parse_rpr_xml(&mut doc, "");
+        assert!(result2.is_none(), "Empty string should return None");
     }
 }
