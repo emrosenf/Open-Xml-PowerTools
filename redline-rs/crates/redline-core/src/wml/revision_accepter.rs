@@ -1,5 +1,5 @@
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{M, W, W14};
+use crate::xml::namespaces::{M, W};
 use crate::xml::node::XmlNodeData;
 use crate::xml::xname::XAttribute;
 use indextree::NodeId;
@@ -147,24 +147,10 @@ fn transform_node(
 }
 
 fn filter_rsid_attributes(attributes: &[XAttribute]) -> Vec<XAttribute> {
-    attributes
-        .iter()
-        .filter(|attr| {
-            let local = &attr.name.local_name;
-            let ns = attr.name.namespace.as_deref();
-            
-            if ns == Some(W::NS) && local.starts_with("rsid") {
-                return false;
-            }
-            
-            if ns == Some(W14::NS) && (local == "paraId" || local == "textId") {
-                return false;
-            }
-            
-            true
-        })
-        .cloned()
-        .collect()
+    // Note: We preserve rsid*, paraId, and textId attributes during revision acceptance.
+    // These are important for document identity and should appear in the output.
+    // They are stripped only during hash computation (in block_hash.rs) for comparison purposes.
+    attributes.to_vec()
 }
 
 fn is_deleted_table_row(doc: &XmlDocument, tr_node: NodeId) -> bool {
@@ -261,7 +247,9 @@ mod tests {
     }
 
     #[test]
-    fn filter_rsid_removes_rsid_attrs() {
+    fn filter_rsid_preserves_all_attrs() {
+        // Note: rsid, paraId, and textId attributes are now preserved during revision acceptance.
+        // They are stripped only during hash computation (in block_hash.rs) for comparison purposes.
         let attrs = vec![
             XAttribute::new(XName::new(W::NS, "rsidR"), "00123456"),
             XAttribute::new(XName::new(W::NS, "val"), "test"),
@@ -269,7 +257,9 @@ mod tests {
         
         let filtered = filter_rsid_attributes(&attrs);
         
-        assert_eq!(filtered.len(), 1);
-        assert_eq!(filtered[0].name.local_name, "val");
+        // All attributes should be preserved
+        assert_eq!(filtered.len(), 2);
+        assert!(filtered.iter().any(|a| a.name.local_name == "rsidR"));
+        assert!(filtered.iter().any(|a| a.name.local_name == "val"));
     }
 }

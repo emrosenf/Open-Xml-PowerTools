@@ -71,6 +71,7 @@ pub fn coalesce(atoms: &[ComparisonUnitAtom], settings: &WmlComparerSettings, ro
         ("wp", "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"),
         ("a", "http://schemas.openxmlformats.org/drawingml/2006/main"),
         ("pic", "http://schemas.openxmlformats.org/drawingml/2006/picture"),
+        ("w14", "http://schemas.microsoft.com/office/word/2010/wordml"),
     ];
     for (prefix, uri) in standard_namespaces {
         if !attrs.iter().any(|a| a.name.local_name == prefix && a.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/")) {
