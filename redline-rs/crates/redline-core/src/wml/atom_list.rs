@@ -360,7 +360,11 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                 let ns = name.namespace.as_deref();
                 let local = name.local_name.as_str();
                 
-                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes") {
+                // Stop at container elements - these are not included in ancestor chain.
+                // For main document: body is the container
+                // For footnotes/endnotes: the individual footnote/endnote element is the container
+                // (footnotes/endnotes are the outer wrapper, but footnote/endnote is the actual root)
+                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes" || local == "footnote" || local == "endnote") {
                     break;
                 }
                 
