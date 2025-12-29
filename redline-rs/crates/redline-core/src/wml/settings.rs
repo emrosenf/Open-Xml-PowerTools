@@ -55,7 +55,9 @@ impl Default for WmlComparerSettings {
                 '的', // U+7684 CJK UNIFIED IDEOGRAPH (Chinese possessive particle)
             ],
             author_for_revisions: None, // C# default: null
-            date_time_for_revisions: Utc::now().to_rfc3339(), // C# default: DateTime.Now.ToString("o")
+            // OOXML spec requires ISO 8601 format without microseconds: YYYY-MM-DDTHH:MM:SSZ
+            // Note: C# DateTime.Now.ToString("o") includes microseconds, but Word rejects this format
+            date_time_for_revisions: Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
             detail_threshold: 0.15, // C# default: 0.15
             case_insensitive: false, // C# default: false
             conflate_breaking_and_nonbreaking_spaces: true, // C# default: true
