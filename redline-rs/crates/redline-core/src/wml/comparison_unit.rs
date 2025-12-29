@@ -170,6 +170,10 @@ pub enum ContentElement {
     FootnoteReference { id: String },
     /// Endnote reference with ID
     EndnoteReference { id: String },
+    /// Comment range start marker (w:commentRangeStart)
+    CommentRangeStart { id: String },
+    /// Comment range end marker (w:commentRangeEnd)
+    CommentRangeEnd { id: String },
     /// Textbox start marker
     TextboxStart,
     /// Textbox end marker
@@ -204,6 +208,7 @@ impl ContentElement {
             ContentElement::Math { .. } => ContentType::Math,
             ContentElement::FootnoteReference { .. } => ContentType::FootnoteReference,
             ContentElement::EndnoteReference { .. } => ContentType::EndnoteReference,
+            ContentElement::CommentRangeStart { .. } | ContentElement::CommentRangeEnd { .. } => ContentType::Unknown,
             ContentElement::TextboxStart | ContentElement::TextboxEnd => ContentType::Textbox,
             ContentElement::FieldBegin | ContentElement::FieldSeparator | 
             ContentElement::FieldEnd | ContentElement::SimpleField { .. } => ContentType::Field,
@@ -227,6 +232,8 @@ impl ContentElement {
             ContentElement::Math { .. } => "oMath",
             ContentElement::FootnoteReference { .. } => "footnoteReference",
             ContentElement::EndnoteReference { .. } => "endnoteReference",
+            ContentElement::CommentRangeStart { .. } => "commentRangeStart",
+            ContentElement::CommentRangeEnd { .. } => "commentRangeEnd",
             ContentElement::TextboxStart => "txbxContent", // start marker
             ContentElement::TextboxEnd => "txbxContent",   // end marker
             ContentElement::FieldBegin => "fldChar",
@@ -259,6 +266,8 @@ impl ContentElement {
             ContentElement::Math { hash, .. } => hash.clone(),
             ContentElement::FootnoteReference { .. } => String::new(),
             ContentElement::EndnoteReference { .. } => String::new(),
+            ContentElement::CommentRangeStart { .. } => String::new(),
+            ContentElement::CommentRangeEnd { .. } => String::new(),
             ContentElement::TextboxStart => String::new(),
             ContentElement::TextboxEnd => String::new(),
             ContentElement::FieldBegin => "begin".to_string(),
@@ -603,6 +612,8 @@ impl ComparisonUnitAtom {
             ContentElement::Math { .. } => "oMath",
             ContentElement::FootnoteReference { .. } => "footnoteRef",
             ContentElement::EndnoteReference { .. } => "endnoteRef",
+            ContentElement::CommentRangeStart { .. } => "commentRangeStart",
+            ContentElement::CommentRangeEnd { .. } => "commentRangeEnd",
             ContentElement::TextboxStart => "txbxStart",
             ContentElement::TextboxEnd => "txbxEnd",
             ContentElement::FieldBegin => "fldBegin",

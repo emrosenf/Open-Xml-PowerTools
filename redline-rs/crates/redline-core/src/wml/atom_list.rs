@@ -16,6 +16,7 @@ fn allowable_run_children() -> HashSet<String> {
         "br", "drawing", "cr", "dayLong", "dayShort", "footnoteReference", "endnoteReference",
         "monthLong", "monthShort", "noBreakHyphen", "pgNum", "ptab", "softHyphen", "sym",
         "tab", "yearLong", "yearShort", "fldChar", "instrText",
+        "commentRangeStart", "commentRangeEnd",
     ]
     .iter()
     .map(|s| s.to_string())
@@ -28,7 +29,6 @@ fn allowable_run_children_math() -> HashSet<String> {
 
 fn elements_to_throw_away() -> HashSet<String> {
     [
-        "commentRangeStart", "commentRangeEnd",
         "lastRenderedPageBreak", "proofErr", "tblPr", "sectPr", "permEnd", "permStart",
         "footnoteRef", "endnoteRef", "separator", "continuationSeparator",
     ]
@@ -393,10 +393,10 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                 let local = name.local_name.as_str();
                 
                 // Stop at container elements - these are not included in ancestor chain.
-                // For main document: body is the container
-                // For footnotes/endnotes: the individual footnote/endnote element is the container
-                // (footnotes/endnotes are the outer wrapper, but footnote/endnote is the actual root)
-                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes" || local == "footnote" || local == "endnote") {
+                // C# WmlComparer.cs line 8054/8088: TakeWhile(a => a.Name != W.body && a.Name != W.footnotes && a.Name != W.endnotes)
+                // Note: W.footnote and W.endnote (singular) are NOT in the stop list - they ARE included in ancestors!
+                // This is critical for proper tree reconstruction in CoalesceRecurse.
+                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes") {
                     break;
                 }
                 
@@ -627,11 +627,26 @@ fn create_content_element_with_package(
             let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();
             ContentElement::EndnoteReference { id }
         }
+        (W::NS, "commentRangeStart") => {
+            let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();
+            ContentElement::CommentRangeStart { id }
+        }
+        (W::NS, "commentRangeEnd") => {
+            let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();
+            ContentElement::CommentRangeEnd { id }
+        }
         (W::NS, "drawing") => {
             // Use the new drawing identity module for stable SHA1-based identity
             let hash = compute_drawing_identity(doc, node, package, part_name);
             // Serialize the full element content so it can be reconstructed
             let element_xml = serialize_subtree(doc, node).unwrap_or_default();
+            // DEBUG: Check if we're capturing children
+            if element_xml.is_empty() || !element_xml.contains("inline") {
+                eprintln!("WARNING: Drawing element_xml appears empty or missing children!");
+                eprintln!("  Hash: {}", hash);
+                eprintln!("  XML length: {}", element_xml.len());
+                eprintln!("  First 200 chars: {}", &element_xml.chars().take(200).collect::<String>());
+            }
             ContentElement::Drawing { hash, element_xml }
         }
         (W::NS, "sym") => {

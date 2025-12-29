@@ -523,14 +523,15 @@ impl WmlComparer {
             result_doc.package_mut().put_xml_part("word/endnotes.xml", &res.document)?;
         }
 
-        // Process comments - merge from both source documents
-        // MS Word's compare feature preserves comments from both source documents
-        let comments1 = extract_comments_data(source1.package())?;
-        let comments2 = extract_comments_data(source2.package())?;
-        let merged_comments = merge_comments(&comments1, &comments2);
-        if !merged_comments.is_empty() {
-            add_comments_to_package(result_doc.package_mut(), &merged_comments)?;
-        }
+        // NOTE: Comments from source documents are intentionally NOT preserved.
+        // WmlComparer (C#) throws away commentRangeStart/End markers during comparison
+        // and doesn't preserve existing comments. Including comments.xml without
+        // corresponding markers in document.xml creates an invalid OOXML package
+        // that MS Word cannot open. To match C# behavior, we skip comment handling.
+        // 
+        // Future enhancement: If we want to preserve comments, we need to also
+        // preserve commentRangeStart, commentRangeEnd, and commentReference elements
+        // in the document body by NOT throwing them away during atom list creation.
 
         let result_bytes = result_doc.to_bytes()?;
 
@@ -1169,7 +1170,10 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
             }
         });
 
-    // Phase 2a: First pass - process non-textbox paragraphs (C# lines 3515-3578)
+    // Phase 2a: First pass - process non-textbox paragraphs (C# lines 3531-3578)
+    // Key insight: C# iterates in reverse and propagates currentAncestorUnids to ALL
+    // subsequent atoms until the next pPr is hit. No paragraph boundary checking needed
+    // because pPr is always last in a paragraph (document order), so first in reverse.
     let mut current_ancestor_unids: Vec<String> = Vec::new();
     
     for atom in atoms.iter_mut().rev() {
@@ -1178,11 +1182,12 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
                 .any(|ae| ae.local_name == "txbxContent");
             
             if !ppr_in_textbox {
-                // Collect ancestor unids for the paragraph
+                // C# lines 3544-3554: Collect ancestor unids for the paragraph
                 current_ancestor_unids = atom.ancestor_elements.iter()
                     .map(|ae| ae.unid.clone())
                     .collect();
                 atom.ancestor_unids = current_ancestor_unids.clone();
+                // C# lines 3555-3556: Override deepest ancestor with footnote/endnote UNID
                 if let Some(ref unid) = deepest_ancestor_unid {
                     if !atom.ancestor_unids.is_empty() {
                         atom.ancestor_unids[0] = unid.clone();
@@ -1192,29 +1197,22 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
             }
         }
         
-        // For non-pPr atoms, propagate ancestor unids from current paragraph
-        if !current_ancestor_unids.is_empty() {
-            let additional_unids: Vec<String> = atom.ancestor_elements.iter()
-                .skip(current_ancestor_unids.len())
-                .map(|ae| ae.unid.clone())
-                .collect();
-            
-            let mut this_ancestor_unids = current_ancestor_unids.clone();
-            this_ancestor_unids.extend(additional_unids);
-            atom.ancestor_unids = this_ancestor_unids;
-            if let Some(ref unid) = deepest_ancestor_unid {
-                if !atom.ancestor_unids.is_empty() {
-                    atom.ancestor_unids[0] = unid.clone();
-                }
-            }
-        } else {
-            atom.ancestor_unids = atom.ancestor_elements.iter()
-                .map(|ae| ae.unid.clone())
-                .collect();
-            if let Some(ref unid) = deepest_ancestor_unid {
-                if !atom.ancestor_unids.is_empty() {
-                    atom.ancestor_unids[0] = unid.clone();
-                }
+        // C# lines 3561-3577: For non-pPr atoms, propagate ancestor unids from current paragraph
+        // Note: C# does NOT check if atom belongs to same paragraph - it just propagates
+        // currentAncestorUnids to all atoms until the next pPr is encountered.
+        let additional_unids: Vec<String> = atom.ancestor_elements.iter()
+            .skip(current_ancestor_unids.len())
+            .map(|ae| ae.unid.clone())
+            .collect();
+        
+        let mut this_ancestor_unids = current_ancestor_unids.clone();
+        this_ancestor_unids.extend(additional_unids);
+        atom.ancestor_unids = this_ancestor_unids;
+        
+        // C# lines 3576-3577: Override deepest ancestor with footnote/endnote UNID
+        if let Some(ref unid) = deepest_ancestor_unid {
+            if !atom.ancestor_unids.is_empty() {
+                atom.ancestor_unids[0] = unid.clone();
             }
         }
     }
@@ -1290,8 +1288,6 @@ fn compare_atoms_internal(
 
     // Count revisions from atom list (C# GetRevisions algorithm)
     // This groups adjacent atoms by correlation status, which is how C# counts
-    let (insertions, deletions) = count_revisions_from_atoms(&flattened_atoms);
-    
     let mut coalesce_result = coalesce(&flattened_atoms, settings, root_name, root_attrs);
     
     // Wrap content in revision marks (C# line 2173)
@@ -1305,10 +1301,15 @@ fn compare_atoms_internal(
     // because those functions can create new empty rPr elements
     super::coalesce::remove_empty_rpr_elements(&mut coalesce_result.document, coalesce_result.root);
     
-    // Format changes are counted from XML as they're added during mark_content_as_deleted_or_inserted
-    // This matches C# GetFormattingRevisionList which scans the final XML for rPrChange/pPrChange
+    // CRITICAL: Count revisions AFTER coalescing and merging, not before
+    // This ensures we count the actual w:ins/w:del elements in the final XML,
+    // not the pre-merged atoms. The C# code's GetRevisions function operates
+    // on the final XML tree after CoalesceAdjacentRunsWithIdenticalFormatting.
     strip_pt_attributes(&mut coalesce_result.document, coalesce_result.root);
-    let format_changes = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
+    let revision_counts = count_revisions(&coalesce_result.document, coalesce_result.root);
+    let insertions = revision_counts.insertions;
+    let deletions = revision_counts.deletions;
+    let format_changes = revision_counts.format_changes;
     
     // Return flattened atoms for note reference collection
     Ok((insertions, deletions, format_changes, coalesce_result, flattened_atoms))

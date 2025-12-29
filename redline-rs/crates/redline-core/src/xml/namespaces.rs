@@ -114,6 +114,7 @@ pub mod W {
     pub fn instr_text() -> XName { XName::new(NS, "instrText") }
     pub fn fld_simple() -> XName { XName::new(NS, "fldSimple") }
     pub fn r_style() -> XName { XName::new(NS, "rStyle") }
+    pub fn p_style() -> XName { XName::new(NS, "pStyle") }
     pub fn web_hidden() -> XName { XName::new(NS, "webHidden") }
     pub fn r_pr() -> XName { XName::new(NS, "rPr") }
     pub fn p_pr() -> XName { XName::new(NS, "pPr") }

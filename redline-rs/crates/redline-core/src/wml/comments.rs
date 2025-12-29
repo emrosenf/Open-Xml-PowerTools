@@ -433,6 +433,32 @@ pub fn build_comments_xml(data: &CommentsData) -> XmlDocument {
             XmlNodeData::element_with_attrs(W::p(), para_attrs),
         );
 
+        // Add paragraph properties with CommentText style
+        let p_pr = doc.add_child(para, XmlNodeData::element(W::p_pr()));
+        doc.add_child(
+            p_pr,
+            XmlNodeData::element_with_attrs(
+                W::p_style(),
+                vec![XAttribute::new(W::val(), "CommentText")],
+            ),
+        );
+
+        // Add first run with annotationRef (required for comment reference marker)
+        let ref_run = doc.add_child(para, XmlNodeData::element(W::r()));
+        
+        // Add run properties with CommentReference style
+        let ref_r_pr = doc.add_child(ref_run, XmlNodeData::element(W::r_pr()));
+        doc.add_child(
+            ref_r_pr,
+            XmlNodeData::element_with_attrs(
+                W::r_style(),
+                vec![XAttribute::new(W::val(), "CommentReference")],
+            ),
+        );
+        
+        // Add annotationRef element (the actual reference marker)
+        doc.add_child(ref_run, XmlNodeData::element(W::annotation_ref()));
+
         // Add run with text
         let run = doc.add_child(para, XmlNodeData::element(W::r()));
         let text_elem = doc.add_child(run, XmlNodeData::element(W::t()));

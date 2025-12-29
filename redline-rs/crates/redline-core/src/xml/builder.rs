@@ -188,17 +188,33 @@ fn write_node<W: std::io::Write>(
 
 fn get_prefix(namespace: &str) -> &'static str {
     match namespace {
+        // WordprocessingML
         "http://schemas.openxmlformats.org/wordprocessingml/2006/main" => "w",
+        "http://schemas.microsoft.com/office/word/2010/wordml" => "w14",
+        "http://schemas.microsoft.com/office/word/2012/wordml" => "w15",
+        "http://schemas.microsoft.com/office/word/2010/wordprocessingShape" => "wps",
+        "http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" => "wpg",
+        "http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" => "wp14",
+        "http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" => "wpc",
+        "http://schemas.microsoft.com/office/word/2010/wordprocessingInk" => "wpi",
+        "http://schemas.microsoft.com/office/word/2023/wordml/word16du" => "w16du",
+        // SpreadsheetML
         "http://schemas.openxmlformats.org/spreadsheetml/2006/main" => "x",
+        // PresentationML
         "http://schemas.openxmlformats.org/presentationml/2006/main" => "p",
+        // DrawingML
         "http://schemas.openxmlformats.org/drawingml/2006/main" => "a",
         "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" => "wp",
         "http://schemas.openxmlformats.org/drawingml/2006/picture" => "pic",
+        "http://schemas.openxmlformats.org/drawingml/2006/chart" => "c",
+        // Office Math
+        "http://schemas.openxmlformats.org/officeDocument/2006/math" => "m",
+        // Relationships
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships" => "r",
+        // Markup Compatibility
         "http://schemas.openxmlformats.org/markup-compatibility/2006" => "mc",
+        // PowerTools
         "http://powertools.codeplex.com/2011" => "pt",
-        // Word 2023 Date UTC namespace for revision timestamps
-        "http://schemas.microsoft.com/office/word/2023/wordml/word16du" => "w16du",
         // xmlns namespace for namespace declarations (xmlns:mc="...", etc.)
         "http://www.w3.org/2000/xmlns/" => "xmlns",
         // xml namespace for xml:space, xml:lang, etc.

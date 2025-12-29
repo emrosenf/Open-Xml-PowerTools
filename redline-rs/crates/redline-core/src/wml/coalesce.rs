@@ -622,10 +622,14 @@ fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
         return DONT_CONSOLIDATE.to_string();
     }
 
-    // Build key: "Wins2" + author + date + id + rPr strings
+    // Build key: "Wins2" + author + date + rPr strings
+    // NOTE: We intentionally exclude the w:id attribute from the key.
+    // Each w:ins we create gets a unique ID, but adjacent insertions with
+    // the same author/date/formatting should be merged. The merged element
+    // will use the first element's ID. This matches the intended C# behavior
+    // for newly-created revision elements.
     let author = get_attr(doc, ins, W::NS, "author").unwrap_or_default();
     let date = format_date_for_key(&get_attr(doc, ins, W::NS, "date").unwrap_or_default());
-    let id = get_attr(doc, ins, W::NS, "id").unwrap_or_default();
 
     // Concatenate rPr strings from all child runs (C# lines 883-886)
     let rpr_strings: String = doc.children(ins)
@@ -639,7 +643,7 @@ fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
         .collect::<Vec<_>>()
         .join("");
 
-    format!("Wins2{}{}{}{}", author, date, id, rpr_strings)
+    format!("Wins2{}{}{}", author, date, rpr_strings)
 }
 
 /// Get consolidation key for w:del element (C# lines 889-907)
@@ -1282,7 +1286,7 @@ fn parse_rpr_xml(doc: &mut XmlDocument, rpr_xml: &str) -> Option<NodeId> {
 
 /// Wrapper XML with all necessary namespace declarations for parsing XML fragments
 /// that use prefixes like w:, a:, r:, m:, etc.
-const NS_WRAPPER_PREFIX: &str = r#"<ns_wrapper xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">"#;
+const NS_WRAPPER_PREFIX: &str = r#"<ns_wrapper xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:pt="http://powertools.codeplex.com/2011">"#;
 const NS_WRAPPER_SUFFIX: &str = "</ns_wrapper>";
 
 /// Parse an XML fragment that uses prefixes without namespace declarations.
@@ -1369,6 +1373,12 @@ fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[
         if del || ins {
             for gcc in group_atoms {
                 if let ContentElement::Drawing { element_xml, .. } = &gcc.content_element {
+                    // DEBUG: Check element_xml content
+                    if element_xml.is_empty() || !element_xml.contains("inline") {
+                        eprintln!("BUG in reconstruct_drawing_elements: element_xml empty or missing inline!");
+                        eprintln!("  Length: {}", element_xml.len());
+                        eprintln!("  First 200 chars: {}", &element_xml.chars().take(200).collect::<String>());
+                    }
                     // Parse the stored element XML and deep-copy it
                     if let Some(drawing_node) = copy_element_from_xml(doc, parent, element_xml) {
                         let status = if del { "Deleted" } else { "Inserted" };
@@ -1379,6 +1389,12 @@ fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[
         } else {
             for gcc in group_atoms {
                 if let ContentElement::Drawing { element_xml, .. } = &gcc.content_element {
+                    // DEBUG: Check element_xml content
+                    if element_xml.is_empty() || !element_xml.contains("inline") {
+                        eprintln!("BUG in reconstruct_drawing_elements (non-revision): element_xml empty or missing inline!");
+                        eprintln!("  Length: {}", element_xml.len());
+                        eprintln!("  First 200 chars: {}", &element_xml.chars().take(200).collect::<String>());
+                    }
                     // Parse the stored element XML and deep-copy it
                     copy_element_from_xml(doc, parent, element_xml);
                 }
@@ -1389,8 +1405,18 @@ fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[
 
 /// Parse serialized XML and deep-copy the root element into the target document as a child of parent
 fn copy_element_from_xml(target_doc: &mut XmlDocument, parent: NodeId, element_xml: &str) -> Option<NodeId> {
+    // DEBUG: Check what we're parsing
+    if element_xml.len() < 100 {
+        eprintln!("WARN copy_element_from_xml: element_xml very short: {}", element_xml);
+    }
     // Use the namespace wrapper parser and attach to parent
     let node = parse_xml_fragment(target_doc, element_xml)?;
+    // DEBUG: Count children
+    let child_count = target_doc.descendants(node).count();
+    eprintln!("DEBUG copy_element_from_xml: parsed node has {} descendants", child_count);
+    if child_count == 0 {
+        eprintln!("  WARNING: No descendants! element_xml first 200 chars: {}", &element_xml.chars().take(200).collect::<String>());
+    }
     target_doc.reparent(parent, node);
     Some(node)
 }
@@ -1546,16 +1572,26 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
         ContentElement::Drawing { element_xml, .. } => {
             // Parse and deep-copy the drawing element from stored XML
             if element_xml.is_empty() {
+                eprintln!("BUG: Drawing element_xml is EMPTY in create_content_element!");
                 // Fallback: create empty drawing if no stored XML
                 let drawing = doc.new_node(XmlNodeData::element(W::drawing()));
                 if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
                 Some(drawing)
             } else {
+                eprintln!("DEBUG: Drawing element_xml length={}, contains 'inline'={}", element_xml.len(), element_xml.contains("inline"));
                 // Parse and deep-copy the original drawing using namespace wrapper
                 if let Some(new_node) = parse_xml_fragment(doc, element_xml) {
+                    let child_count = doc.descendants(new_node).count();
+                    eprintln!("DEBUG: parse_xml_fragment returned node with {} descendants", child_count);
+                    if child_count == 0 {
+                        eprintln!("BUG: parse_xml_fragment returned node with NO children!");
+                        eprintln!("  element_xml first 300 chars: {}", &element_xml.chars().take(300).collect::<String>());
+                    }
                     if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
                     Some(new_node)
                 } else {
+                    eprintln!("BUG: parse_xml_fragment returned None!");
+                    eprintln!("  element_xml first 300 chars: {}", &element_xml.chars().take(300).collect::<String>());
                     // Fallback: create empty drawing
                     let drawing = doc.new_node(XmlNodeData::element(W::drawing()));
                     if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
@@ -1601,6 +1637,16 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
                 if !status.is_empty() { doc.set_attribute(math, &pt_status(), status); }
                 Some(math)
             }
+        }
+        ContentElement::CommentRangeStart { id } => {
+            let mut attrs = vec![XAttribute::new(W::id(), id)];
+            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::commentRangeStart(), attrs)))
+        }
+        ContentElement::CommentRangeEnd { id } => {
+            let mut attrs = vec![XAttribute::new(W::id(), id)];
+            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::commentRangeEnd(), attrs)))
         }
         _ => None,
     }

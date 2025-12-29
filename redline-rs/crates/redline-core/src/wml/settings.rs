@@ -97,6 +97,12 @@ impl WmlComparerSettings {
         self.culture_info = Some(culture.into());
         self
     }
+
+    /// Builder method to set date/time for revisions.
+    pub fn with_date_time(mut self, date_time: impl Into<String>) -> Self {
+        self.date_time_for_revisions = date_time.into();
+        self
+    }
     
     /// Check if a character is a word separator.
     /// C# equivalent: IsWordSeparator(char c)
@@ -218,12 +224,14 @@ mod tests {
             .with_author("Test Author")
             .with_case_insensitive(true)
             .with_track_formatting(false)
-            .with_culture_info("en-US");
+            .with_culture_info("en-US")
+            .with_date_time("2025-12-28T12:00:00Z");
         
         assert_eq!(settings.author_for_revisions, Some("Test Author".to_string()));
         assert!(settings.case_insensitive);
         assert!(!settings.track_formatting_changes);
         assert_eq!(settings.culture_info, Some("en-US".to_string()));
+        assert_eq!(settings.date_time_for_revisions, "2025-12-28T12:00:00Z");
     }
     
     #[test]

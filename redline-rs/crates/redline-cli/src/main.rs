@@ -38,6 +38,10 @@ enum Commands {
         /// Author name for revisions
         #[arg(long, default_value = "Redline")]
         author: String,
+
+        /// Date/time for revisions (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ)
+        #[arg(long)]
+        date: Option<String>,
     },
     /// Count revisions between two documents (without generating output)
     Count {
@@ -92,7 +96,8 @@ fn main() {
             doc_type,
             json,
             author,
-        } => run_compare(&source1, &source2, &output, &doc_type, json, &author),
+            date,
+        } => run_compare(&source1, &source2, &output, &doc_type, json, &author, date.as_deref()),
         
         Commands::Count {
             source1,
@@ -116,6 +121,7 @@ fn run_compare(
     doc_type: &str,
     json: bool,
     author: &str,
+    date: Option<&str>,
 ) -> Result<(), String> {
     let doc_type = detect_doc_type(source1, doc_type)?;
     
@@ -132,9 +138,12 @@ fn run_compare(
             let doc2 = redline_core::WmlDocument::from_bytes(&bytes2)
                 .map_err(|e| format!("Failed to parse {}: {}", source2.display(), e))?;
 
-            // Create settings with author
+            // Create settings with author and optional date
             let mut settings = redline_core::WmlComparerSettings::default();
             settings.author_for_revisions = Some(author.to_string());
+            if let Some(d) = date {
+                settings.date_time_for_revisions = d.to_string();
+            }
 
             // Compare documents
             let result = redline_core::WmlComparer::compare(&doc1, &doc2, Some(&settings))
