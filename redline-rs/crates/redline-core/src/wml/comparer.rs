@@ -984,7 +984,7 @@ fn normalize_txbx_content_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
             let atom = &atoms[atom_idx];
             
             // Check if this atom is a pPr (paragraph properties) - marks start of new paragraph
-            if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+            if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
                 // Start new paragraph
                 if let Some(para) = current_paragraph.take() {
                     paragraph_sub_groups.push(para);
@@ -1130,7 +1130,7 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
         let is_in_textbox = atom.ancestor_elements.iter()
             .any(|a| a.local_name == "txbxContent");
         
-        let do_set = if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+        let do_set = if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
             // pPr: normalize if in textbox OR if status is Equal
             is_in_textbox || atom.correlation_status == ComparisonCorrelationStatus::Equal
         } else {
@@ -1164,7 +1164,7 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
     let mut current_ancestor_unids: Vec<String> = Vec::new();
     
     for atom in atoms.iter_mut().rev() {
-        if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+        if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
             let ppr_in_textbox = atom.ancestor_elements.iter()
                 .any(|ae| ae.local_name == "txbxContent");
             
@@ -1221,7 +1221,7 @@ fn assemble_ancestor_unids(atoms: &mut [ComparisonUnitAtom]) {
             continue;
         }
         
-        if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+        if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
             let ppr_in_textbox = atom.ancestor_elements.iter()
                 .any(|ae| ae.local_name == "txbxContent");
             

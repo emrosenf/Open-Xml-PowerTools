@@ -1171,7 +1171,7 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
-                if !matches!(&gcc.content_element, ContentElement::ParagraphProperties) { continue; }
+                if !matches!(&gcc.content_element, ContentElement::ParagraphProperties { .. }) { continue; }
                 if is_inside_vml && spl.get(1) == Some(&"Inserted") { continue; }
                 let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
@@ -1186,7 +1186,7 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
                 // Skip pPr - already added in first pass
-                if matches!(&gcc.content_element, ContentElement::ParagraphProperties) { continue; }
+                if matches!(&gcc.content_element, ContentElement::ParagraphProperties { .. }) { continue; }
                 let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
             }
@@ -1234,14 +1234,55 @@ fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorEle
 /// Parse serialized rPr XML string and create nodes in the document.
 /// Returns the root node of the parsed rPr element.
 fn parse_rpr_xml(doc: &mut XmlDocument, rpr_xml: &str) -> Option<NodeId> {
-    use crate::xml::parser;
+    // Use the namespace wrapper parser to handle prefix-only serialized XML
+    parse_xml_fragment(doc, rpr_xml)
+}
+
+/// Wrapper XML with all necessary namespace declarations for parsing XML fragments
+/// that use prefixes like w:, a:, r:, m:, etc.
+const NS_WRAPPER_PREFIX: &str = r#"<ns_wrapper xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">"#;
+const NS_WRAPPER_SUFFIX: &str = "</ns_wrapper>";
+
+/// Parse an XML fragment that uses prefixes without namespace declarations.
+/// Wraps the fragment in a temporary element with all necessary xmlns declarations,
+/// parses it, then returns a deep copy of the first child (the actual element we want).
+fn parse_xml_fragment(target_doc: &mut XmlDocument, fragment_xml: &str) -> Option<NodeId> {
+    if fragment_xml.is_empty() {
+        return None;
+    }
     
-    // Parse the XML fragment
-    let parsed_doc = parser::parse(rpr_xml).ok()?;
-    let parsed_root = parsed_doc.root()?;
+    // Wrap the fragment with namespace declarations
+    let wrapped_xml = format!("{}{}{}", NS_WRAPPER_PREFIX, fragment_xml, NS_WRAPPER_SUFFIX);
     
-    // Deep clone the parsed tree into our document
-    clone_tree_into_doc(doc, &parsed_doc, parsed_root)
+    // Parse the wrapped XML
+    let source_doc = parse(&wrapped_xml).ok()?;
+    let wrapper_root = source_doc.root()?;
+    
+    // Get the first child (our actual element) and deep copy it
+    let first_child = source_doc.children(wrapper_root).next()?;
+    
+    // Create a temporary parent for detaching
+    let temp_parent = target_doc.new_node(XmlNodeData::element(XName::local("temp")));
+    let new_node = deep_copy_node_standalone(target_doc, temp_parent, &source_doc, first_child)?;
+    target_doc.detach(new_node);
+    
+    Some(new_node)
+}
+
+/// Deep-copy a node from source_doc to target_doc as a child of parent (for standalone nodes)
+fn deep_copy_node_standalone(target_doc: &mut XmlDocument, parent: NodeId, source_doc: &XmlDocument, source_node: NodeId) -> Option<NodeId> {
+    let source_data = source_doc.get(source_node)?;
+
+    // Clone the node data
+    let new_data = source_data.clone();
+    let new_node = target_doc.add_child(parent, new_data);
+
+    // Recursively copy children
+    for child in source_doc.children(source_node) {
+        deep_copy_node_standalone(target_doc, new_node, source_doc, child);
+    }
+
+    Some(new_node)
 }
 
 /// Clone an entire subtree from one document into another.
@@ -1306,12 +1347,10 @@ fn reconstruct_drawing_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[
 
 /// Parse serialized XML and deep-copy the root element into the target document as a child of parent
 fn copy_element_from_xml(target_doc: &mut XmlDocument, parent: NodeId, element_xml: &str) -> Option<NodeId> {
-    // Parse the element XML
-    let source_doc = parse(element_xml).ok()?;
-    let source_root = source_doc.root()?;
-
-    // Deep-copy the element into the target document
-    deep_copy_node(target_doc, parent, &source_doc, source_root)
+    // Use the namespace wrapper parser and attach to parent
+    let node = parse_xml_fragment(target_doc, element_xml)?;
+    target_doc.reparent(parent, node);
+    Some(node)
 }
 
 /// Deep-copy a node from source_doc to target_doc as a child of parent
@@ -1441,10 +1480,26 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
             if !status.is_empty() { doc.set_attribute(tab, &pt_status(), status); }
             Some(tab)
         }
-        ContentElement::ParagraphProperties => {
-            let mut attrs = Vec::new();
-            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
-            Some(doc.new_node(XmlNodeData::element_with_attrs(W::pPr(), attrs)))
+        ContentElement::ParagraphProperties { element_xml } => {
+            // Parse and deep-copy the pPr element from stored XML
+            // This preserves pStyle, jc, rPr, and other children
+            if element_xml.is_empty() {
+                // Fallback: create empty pPr if no stored XML
+                let mut attrs = Vec::new();
+                if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+                Some(doc.new_node(XmlNodeData::element_with_attrs(W::pPr(), attrs)))
+            } else {
+                // Parse and deep-copy the original pPr with all children using namespace wrapper
+                if let Some(new_node) = parse_xml_fragment(doc, element_xml) {
+                    if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
+                    Some(new_node)
+                } else {
+                    // Fallback: create empty pPr
+                    let mut attrs = Vec::new();
+                    if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+                    Some(doc.new_node(XmlNodeData::element_with_attrs(W::pPr(), attrs)))
+                }
+            }
         }
         ContentElement::Drawing { element_xml, .. } => {
             // Parse and deep-copy the drawing element from stored XML
@@ -1454,23 +1509,16 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
                 if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
                 Some(drawing)
             } else {
-                // Parse and deep-copy the original drawing
-                if let Ok(source_doc) = parse(element_xml) {
-                    if let Some(source_root) = source_doc.root() {
-                        // Create a temporary parent to copy into
-                        let temp_parent = doc.new_node(XmlNodeData::element(XName::local("temp")));
-                        if let Some(new_node) = deep_copy_node(doc, temp_parent, &source_doc, source_root) {
-                            // Detach from temporary parent
-                            doc.detach(new_node);
-                            if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
-                            return Some(new_node);
-                        }
-                    }
+                // Parse and deep-copy the original drawing using namespace wrapper
+                if let Some(new_node) = parse_xml_fragment(doc, element_xml) {
+                    if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
+                    Some(new_node)
+                } else {
+                    // Fallback: create empty drawing
+                    let drawing = doc.new_node(XmlNodeData::element(W::drawing()));
+                    if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
+                    Some(drawing)
                 }
-                // Fallback: create empty drawing
-                let drawing = doc.new_node(XmlNodeData::element(W::drawing()));
-                if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
-                Some(drawing)
             }
         }
         ContentElement::Picture { element_xml, .. } => {
@@ -1480,15 +1528,10 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
                 if !status.is_empty() { doc.set_attribute(pict, &pt_status(), status); }
                 Some(pict)
             } else {
-                if let Ok(source_doc) = parse(element_xml) {
-                    if let Some(source_root) = source_doc.root() {
-                        let temp_parent = doc.new_node(XmlNodeData::element(XName::local("temp")));
-                        if let Some(new_node) = deep_copy_node(doc, temp_parent, &source_doc, source_root) {
-                            doc.detach(new_node);
-                            if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
-                            return Some(new_node);
-                        }
-                    }
+                // Parse and deep-copy the original pict using namespace wrapper
+                if let Some(new_node) = parse_xml_fragment(doc, element_xml) {
+                    if !status.is_empty() { doc.set_attribute(new_node, &pt_status(), status); }
+                    return Some(new_node);
                 }
                 let pict = doc.new_node(XmlNodeData::element(W::pict()));
                 if !status.is_empty() { doc.set_attribute(pict, &pt_status(), status); }

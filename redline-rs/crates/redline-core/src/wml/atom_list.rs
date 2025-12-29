@@ -167,6 +167,19 @@ fn create_atom_list_recurse(
     
     if ns == Some(W::NS) && local == "p" {
         let children: Vec<_> = doc.children(node).collect();
+        
+        // Find the pPr element and serialize it for later reconstruction
+        // This matches C# behavior where the full pPr element (with pStyle, jc, rPr, etc.) is stored
+        let ppr_xml = children.iter()
+            .find(|&&child| {
+                doc.get(child)
+                    .and_then(|d| d.name())
+                    .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPr")
+                    .unwrap_or(false)
+            })
+            .map(|&ppr_node| serialize_element_tree(doc, ppr_node))
+            .unwrap_or_else(String::new);
+        
         for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
@@ -178,7 +191,12 @@ fn create_atom_list_recurse(
         }
         
         let ancestors = build_ancestor_chain(doc, node);
-        let mut atom = ComparisonUnitAtom::new(ContentElement::ParagraphProperties, ancestors, part_name, settings);
+        let mut atom = ComparisonUnitAtom::new(
+            ContentElement::ParagraphProperties { element_xml: ppr_xml },
+            ancestors,
+            part_name,
+            settings,
+        );
         atom.formatting_signature = None;
         atoms.push(atom);
         return;

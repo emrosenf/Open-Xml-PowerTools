@@ -151,8 +151,9 @@ pub enum ContentType {
 pub enum ContentElement {
     /// Text character - single character from w:t
     Text(char),
-    /// Paragraph properties marker
-    ParagraphProperties,
+    /// Paragraph properties with serialized element content
+    /// The element_xml contains the full w:pPr element including children like w:pStyle, w:jc, etc.
+    ParagraphProperties { element_xml: String },
     /// Run properties marker
     RunProperties,
     /// Line break (w:br)
@@ -194,7 +195,7 @@ impl ContentElement {
     pub fn content_type(&self) -> ContentType {
         match self {
             ContentElement::Text(_) => ContentType::Text,
-            ContentElement::ParagraphProperties => ContentType::ParagraphMark,
+            ContentElement::ParagraphProperties { .. } => ContentType::ParagraphMark,
             ContentElement::RunProperties => ContentType::Unknown, // rPr atoms are rare
             ContentElement::Break => ContentType::Break,
             ContentElement::Tab => ContentType::Tab,
@@ -217,7 +218,7 @@ impl ContentElement {
     pub fn local_name(&self) -> &'static str {
         match self {
             ContentElement::Text(_) => "t",
-            ContentElement::ParagraphProperties => "pPr",
+            ContentElement::ParagraphProperties { .. } => "pPr",
             ContentElement::RunProperties => "rPr",
             ContentElement::Break => "br",
             ContentElement::Tab => "tab",
@@ -249,7 +250,7 @@ impl ContentElement {
     pub fn text_value(&self) -> String {
         match self {
             ContentElement::Text(ch) => ch.to_string(),
-            ContentElement::ParagraphProperties => String::new(), // pPr has no text value
+            ContentElement::ParagraphProperties { .. } => String::new(), // pPr has no text value
             ContentElement::RunProperties => String::new(),
             ContentElement::Break => String::new(),
             ContentElement::Tab => String::new(),
@@ -309,7 +310,7 @@ impl ContentElement {
     pub fn display_value(&self) -> String {
         match self {
             ContentElement::Text(ch) => ch.to_string(),
-            ContentElement::ParagraphProperties => "¶".to_string(),
+            ContentElement::ParagraphProperties { .. } => "¶".to_string(),
             ContentElement::Break => "⏎".to_string(),
             ContentElement::Tab => "→".to_string(),
             _ => "".to_string(),
@@ -593,7 +594,7 @@ impl ComparisonUnitAtom {
 
         let element_name = match &self.content_element {
             ContentElement::Text(_) => "t",
-            ContentElement::ParagraphProperties => "pPr",
+            ContentElement::ParagraphProperties { .. } => "pPr",
             ContentElement::RunProperties => "rPr",
             ContentElement::Break => "br",
             ContentElement::Tab => "tab",
@@ -754,7 +755,7 @@ impl ComparisonUnitWord {
         self.atoms.len() == 1
             && matches!(
                 self.atoms[0].content_element,
-                ContentElement::ParagraphProperties
+                ContentElement::ParagraphProperties { .. }
             )
     }
 
@@ -1158,7 +1159,7 @@ fn assign_grouping_keys(
                     next_index
                 }
             }
-            ContentElement::ParagraphProperties => {
+            ContentElement::ParagraphProperties { .. } => {
                 // pPr is a word break element
                 next_index += 1;
                 let key = next_index;
@@ -1495,7 +1496,7 @@ mod tests {
         let text = ContentElement::Text('a');
         assert_eq!(text.hash_string(), "ta");
 
-        let ppr = ContentElement::ParagraphProperties;
+        let ppr = ContentElement::ParagraphProperties { element_xml: String::new() };
         assert_eq!(ppr.hash_string(), "pPr");
 
         let drawing = ContentElement::Drawing {
@@ -1585,7 +1586,7 @@ mod tests {
         assert_eq!(text.content_type(), ContentType::Text);
         
         // Paragraph mark
-        let ppr = ContentElement::ParagraphProperties;
+        let ppr = ContentElement::ParagraphProperties { element_xml: String::new() };
         assert_eq!(ppr.content_type(), ContentType::ParagraphMark);
         
         // Drawing
@@ -1604,7 +1605,7 @@ mod tests {
     #[test]
     fn test_content_element_local_name() {
         assert_eq!(ContentElement::Text('a').local_name(), "t");
-        assert_eq!(ContentElement::ParagraphProperties.local_name(), "pPr");
+        assert_eq!(ContentElement::ParagraphProperties { element_xml: String::new() }.local_name(), "pPr");
         assert_eq!(ContentElement::Drawing { hash: "x".to_string(), element_xml: String::new() }.local_name(), "drawing");
         assert_eq!(ContentElement::Picture { hash: "x".to_string(), element_xml: String::new() }.local_name(), "pict");
         assert_eq!(ContentElement::Break.local_name(), "br");
@@ -1620,7 +1621,7 @@ mod tests {
         assert_eq!(ContentElement::Text(' ').text_value(), " ");
         
         // ParagraphProperties has empty text value
-        assert_eq!(ContentElement::ParagraphProperties.text_value(), "");
+        assert_eq!(ContentElement::ParagraphProperties { element_xml: String::new() }.text_value(), "");
         
         // Drawing has hash as text value
         assert_eq!(ContentElement::Drawing { hash: "abc123".to_string(), element_xml: String::new() }.text_value(), "abc123");
@@ -1639,7 +1640,7 @@ mod tests {
         assert_eq!(text.hash_string(), "tH");
         
         // ParagraphProperties: "pPr" + "" = "pPr"
-        let ppr = ContentElement::ParagraphProperties;
+        let ppr = ContentElement::ParagraphProperties { element_xml: String::new() };
         assert_eq!(ppr.hash_string(), "pPr");
         
         // Drawing: "drawing" + hash

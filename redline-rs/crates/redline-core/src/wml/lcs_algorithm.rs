@@ -429,7 +429,7 @@ fn split_at_paragraph_mark(units: &[ComparisonUnit]) -> Vec<Vec<ComparisonUnit>>
         // Get the first descendant atom from this comparison unit
         let first_atom = units[i].descendant_atoms().first().cloned();
         if let Some(atom) = first_atom {
-            if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+            if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
                 // C# WmlComparer.cs:4990-4994: Split at this position
                 // Note: C# uses Take(i) then Skip(i), so first part is [0..i), second is [i..end]
                 return vec![
@@ -540,11 +540,11 @@ fn find_common_at_beginning_and_end(
                 // C# WmlComparer.cs:4576: Check if both last atoms are NOT paragraph properties
                 let left_not_ppr = last_content_atom_left
                     .as_ref()
-                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties))
+                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties { .. }))
                     .unwrap_or(false);
                 let right_not_ppr = last_content_atom_right
                     .as_ref()
-                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties))
+                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties { .. }))
                     .unwrap_or(false);
                 
                 if left_not_ppr && right_not_ppr {
@@ -623,7 +623,7 @@ fn find_common_at_beginning_and_end(
         if let Some(word) = units1[first_common_idx1].as_word() {
             if word.atoms.len() == 1 {
                 if let Some(atom) = word.atoms.first() {
-                    if matches!(atom.content_element, ContentElement::ParagraphProperties) {
+                    if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
                         is_only_paragraph_mark = true;
                     }
                 }
@@ -645,7 +645,7 @@ fn find_common_at_beginning_and_end(
                     first_word.atoms.first(),
                     second_word.atoms.first(),
                 ) {
-                    if matches!(second_atom.content_element, ContentElement::ParagraphProperties) {
+                    if matches!(second_atom.content_element, ContentElement::ParagraphProperties { .. }) {
                         is_only_paragraph_mark = true;
                     }
                 }
@@ -691,7 +691,7 @@ fn find_common_at_beginning_and_end(
             let has_paragraph_mark = common_end_seq.iter().any(|cu| {
                 if let Some(word) = cu.as_word() {
                     if let Some(first_atom) = word.atoms.first() {
-                        return matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                        return matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
                     }
                 }
                 false
@@ -707,7 +707,7 @@ fn find_common_at_beginning_and_end(
                         if let Some(word) = cu.as_word() {
                             if let Some(first_atom) = word.atoms.first() {
                                 // Continue while NOT a paragraph mark
-                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
                             }
                             // No atoms means continue
                             return true;
@@ -725,7 +725,7 @@ fn find_common_at_beginning_and_end(
                     .take_while(|cu| {
                         if let Some(word) = cu.as_word() {
                             if let Some(first_atom) = word.atoms.first() {
-                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
                             }
                             return true;
                         }
@@ -1010,7 +1010,7 @@ fn do_lcs_algorithm(
                 let has_paragraph_mark = common_seq.iter().any(|cu| {
                     if let Some(word) = cu.as_word() {
                         if let Some(first_atom) = word.atoms.first() {
-                            return matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                            return matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
                         }
                     }
                     false
@@ -1026,7 +1026,7 @@ fn do_lcs_algorithm(
                             if let Some(word) = cu.as_word() {
                                 if let Some(first_atom) = word.atoms.first() {
                                     // Continue while NOT a paragraph mark
-                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
                                 }
                                 // No atoms means continue
                                 return true;
@@ -1043,7 +1043,7 @@ fn do_lcs_algorithm(
                         .take_while(|cu| {
                             if let Some(word) = cu.as_word() {
                                 if let Some(first_atom) = word.atoms.first() {
-                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties);
+                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
                                 }
                                 return true;
                             }
@@ -1119,7 +1119,7 @@ fn do_lcs_algorithm(
             
             // If the middleEqual did not end with a paragraph mark (C# 7103)
             let ends_with_para = last_atom
-                .map(|a| matches!(a.content_element, ContentElement::ParagraphProperties))
+                .map(|a| matches!(a.content_element, ContentElement::ParagraphProperties { .. }))
                 .unwrap_or(false);
             
             if !ends_with_para {
@@ -1172,7 +1172,7 @@ fn find_index_of_next_para_mark(units: &[ComparisonUnit]) -> usize {
         if let Some(word) = unit.as_word() {
             // Get the last atom from the word (C# uses DescendantContentAtoms().LastOrDefault())
             if let Some(last_atom) = word.atoms.last() {
-                if matches!(last_atom.content_element, ContentElement::ParagraphProperties) {
+                if matches!(last_atom.content_element, ContentElement::ParagraphProperties { .. }) {
                     return i;
                 }
             }
@@ -1311,8 +1311,8 @@ fn handle_no_match_cases(
             .last();
 
         if let (Some(left), Some(right)) = (last_atom_left, last_atom_right) {
-            let left_is_ppr = matches!(left.content_element, ContentElement::ParagraphProperties);
-            let right_is_ppr = matches!(right.content_element, ContentElement::ParagraphProperties);
+            let left_is_ppr = matches!(left.content_element, ContentElement::ParagraphProperties { .. });
+            let right_is_ppr = matches!(right.content_element, ContentElement::ParagraphProperties { .. });
 
             if left_is_ppr && !right_is_ppr {
                 // Left ends with pPr, right doesn't → Insert first, then Delete
@@ -1736,7 +1736,7 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
             "polyline", "roundrect",
         ];
 
-        let is_ppr = matches!(atom.content_element, ContentElement::ParagraphProperties);
+        let is_ppr = matches!(atom.content_element, ContentElement::ParagraphProperties { .. });
         let mut is_in_textbox = false;
         let mut is_vml = false;
 
@@ -2215,7 +2215,7 @@ mod tests {
     fn make_para_mark() -> ComparisonUnitWord {
         let settings = WmlComparerSettings::default();
         let atoms = vec![ComparisonUnitAtom::new(
-            ContentElement::ParagraphProperties,
+            ContentElement::ParagraphProperties { element_xml: String::new() },
             vec![],
             "main",
             &settings,
