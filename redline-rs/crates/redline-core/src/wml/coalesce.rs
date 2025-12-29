@@ -622,12 +622,15 @@ fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
         return DONT_CONSOLIDATE.to_string();
     }
 
-    // Build key: "Wins2" + author + date + id + rPr strings (C# lines 877-886)
-    // C# includes w:id in the key, so adjacent w:ins elements with different IDs
-    // will NOT be merged. This matches C# behavior for parity.
+    // Build key: "Wins2" + author + date + rPr strings
+    // DEVIATION FROM C#: We intentionally EXCLUDE w:id from the key.
+    // C# includes w:id (PtOpenXmlUtil.cs lines 877-886), but since we generate
+    // unique IDs for each w:ins, including it prevents merging of adjacent
+    // insertions with identical author/date/formatting. Excluding it produces
+    // cleaner XML with fewer, larger revision blocks.
+    // To restore C# parity, see commit 39a834a.
     let author = get_attr(doc, ins, W::NS, "author").unwrap_or_default();
     let date = format_date_for_key(&get_attr(doc, ins, W::NS, "date").unwrap_or_default());
-    let id = get_attr(doc, ins, W::NS, "id").unwrap_or_default();
 
     // Concatenate rPr strings from all child runs (C# lines 883-886)
     let rpr_strings: String = doc.children(ins)
@@ -641,7 +644,7 @@ fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
         .collect::<Vec<_>>()
         .join("");
 
-    format!("Wins2{}{}{}{}", author, date, id, rpr_strings)
+    format!("Wins2{}{}{}", author, date, rpr_strings)
 }
 
 /// Get consolidation key for w:del element (C# lines 889-907)
