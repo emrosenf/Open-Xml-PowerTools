@@ -622,14 +622,12 @@ fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
         return DONT_CONSOLIDATE.to_string();
     }
 
-    // Build key: "Wins2" + author + date + rPr strings
-    // NOTE: We intentionally exclude the w:id attribute from the key.
-    // Each w:ins we create gets a unique ID, but adjacent insertions with
-    // the same author/date/formatting should be merged. The merged element
-    // will use the first element's ID. This matches the intended C# behavior
-    // for newly-created revision elements.
+    // Build key: "Wins2" + author + date + id + rPr strings (C# lines 877-886)
+    // C# includes w:id in the key, so adjacent w:ins elements with different IDs
+    // will NOT be merged. This matches C# behavior for parity.
     let author = get_attr(doc, ins, W::NS, "author").unwrap_or_default();
     let date = format_date_for_key(&get_attr(doc, ins, W::NS, "date").unwrap_or_default());
+    let id = get_attr(doc, ins, W::NS, "id").unwrap_or_default();
 
     // Concatenate rPr strings from all child runs (C# lines 883-886)
     let rpr_strings: String = doc.children(ins)
@@ -643,7 +641,7 @@ fn get_ins_consolidation_key(doc: &XmlDocument, ins: NodeId) -> String {
         .collect::<Vec<_>>()
         .join("");
 
-    format!("Wins2{}{}{}", author, date, rpr_strings)
+    format!("Wins2{}{}{}{}", author, date, id, rpr_strings)
 }
 
 /// Get consolidation key for w:del element (C# lines 889-907)
