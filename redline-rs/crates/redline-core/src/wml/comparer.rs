@@ -1300,6 +1300,11 @@ fn compare_atoms_internal(
     // Consolidate adjacent revisions (C# line 2174)
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, &settings);
     
+    // Clean up empty w:rPr elements after all processing
+    // This MUST happen after mark_content_as_deleted_or_inserted and coalesce_adjacent_runs
+    // because those functions can create new empty rPr elements
+    super::coalesce::remove_empty_rpr_elements(&mut coalesce_result.document, coalesce_result.root);
+    
     // Format changes are counted from XML as they're added during mark_content_as_deleted_or_inserted
     // This matches C# GetFormattingRevisionList which scans the final XML for rPrChange/pPrChange
     strip_pt_attributes(&mut coalesce_result.document, coalesce_result.root);
@@ -1627,6 +1632,10 @@ fn build_note_doc_with_status(
     let mut coalesce_result = coalesce(&atoms, settings, root_name, root_attrs);
     mark_content_as_deleted_or_inserted(&mut coalesce_result.document, coalesce_result.root, settings);
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, settings);
+    
+    // Clean up empty w:rPr elements after all processing
+    super::coalesce::remove_empty_rpr_elements(&mut coalesce_result.document, coalesce_result.root);
+    
     strip_pt_attributes(&mut coalesce_result.document, coalesce_result.root);
     let fmt = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
 

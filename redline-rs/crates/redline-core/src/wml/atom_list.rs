@@ -28,7 +28,7 @@ fn allowable_run_children_math() -> HashSet<String> {
 
 fn elements_to_throw_away() -> HashSet<String> {
     [
-        "bookmarkStart", "bookmarkEnd", "commentRangeStart", "commentRangeEnd",
+        "commentRangeStart", "commentRangeEnd",
         "lastRenderedPageBreak", "proofErr", "tblPr", "sectPr", "permEnd", "permStart",
         "footnoteRef", "endnoteRef", "separator", "continuationSeparator",
     ]

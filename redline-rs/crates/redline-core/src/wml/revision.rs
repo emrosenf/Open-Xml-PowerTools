@@ -5,7 +5,7 @@ use crate::xml::xname::{XAttribute, XName};
 use indextree::NodeId;
 use std::sync::atomic::{AtomicI32, Ordering};
 
-static REVISION_ID_COUNTER: AtomicI32 = AtomicI32::new(1);
+static REVISION_ID_COUNTER: AtomicI32 = AtomicI32::new(0);
 
 #[derive(Debug, Clone)]
 pub struct RevisionSettings {
@@ -185,7 +185,7 @@ pub fn fix_up_revision_ids(doc: &mut XmlDocument, start: NodeId) {
         }
     }
     
-    let mut next_id = 1;
+    let mut next_id = 0;
     for node_id in revision_nodes {
         if let Some(data) = doc.get_mut(node_id) {
             if let Some(attrs) = data.attributes_mut() {
@@ -315,6 +315,14 @@ mod tests {
         assert_eq!(get_next_revision_id(), 100);
         assert_eq!(get_next_revision_id(), 101);
         assert_eq!(get_next_revision_id(), 102);
+    }
+
+    #[test]
+    fn revision_id_starts_at_zero() {
+        reset_revision_id_counter(0);
+        assert_eq!(get_next_revision_id(), 0);
+        assert_eq!(get_next_revision_id(), 1);
+        assert_eq!(get_next_revision_id(), 2);
     }
 
     #[test]

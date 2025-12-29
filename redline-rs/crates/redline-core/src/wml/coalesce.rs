@@ -95,9 +95,8 @@ pub fn coalesce(atoms: &[ComparisonUnitAtom], settings: &WmlComparerSettings, ro
         coalesce_recurse(&mut doc, doc_root, atoms, 0, None, settings);
     }
     
-    // Clean up empty w:rPr elements before returning
-    // Empty rPr elements are non-standard and can cause issues with MS Word
-    remove_empty_rpr_elements(&mut doc, doc_root);
+    // NOTE: Do NOT remove empty rPr here - other functions will create more after this
+    // The cleanup happens at the very end of the processing pipeline in comparer.rs
     
     CoalesceResult { document: doc, root: doc_root }
 }
@@ -145,7 +144,8 @@ pub fn mark_content_as_deleted_or_inserted(
 }
 
 /// Static counter for revision IDs (matching C# s_MaxId)
-static REVISION_ID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
+/// NOTE: Starts at 0 to match gold standard (w:id="0", "1", "2"...)
+static REVISION_ID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 fn next_revision_id() -> u32 {
     REVISION_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
@@ -154,7 +154,7 @@ fn next_revision_id() -> u32 {
 /// Reset revision ID counter (for testing)
 #[allow(dead_code)]
 pub fn reset_revision_id() {
-    REVISION_ID.store(1, std::sync::atomic::Ordering::SeqCst);
+    REVISION_ID.store(0, std::sync::atomic::Ordering::SeqCst);
 }
 
 /// Recursive transform matching C# MarkContentAsDeletedOrInsertedTransform (line 2652-2740)
