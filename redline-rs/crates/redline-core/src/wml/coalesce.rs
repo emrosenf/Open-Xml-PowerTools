@@ -6,7 +6,7 @@ use super::comparison_unit::{ComparisonCorrelationStatus, ComparisonUnitAtom, Co
 use super::settings::WmlComparerSettings;
 use crate::wml::revision::{create_run_property_change, RevisionSettings};
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::W;
+use crate::xml::namespaces::{W, W16DU};
 use crate::xml::node::XmlNodeData;
 use crate::xml::parser::parse;
 use crate::xml::xname::{XAttribute, XName};
@@ -75,6 +75,8 @@ pub fn coalesce(atoms: &[ComparisonUnitAtom], settings: &WmlComparerSettings, ro
         ("a", "http://schemas.openxmlformats.org/drawingml/2006/main"),
         ("pic", "http://schemas.openxmlformats.org/drawingml/2006/picture"),
         ("w14", "http://schemas.microsoft.com/office/word/2010/wordml"),
+        // Word 2023 Date UTC namespace for revision timestamps
+        ("w16du", W16DU::NS),
     ];
     for (prefix, uri) in standard_namespaces {
         if !attrs.iter().any(|a| a.name.local_name == prefix && a.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/")) {
@@ -186,6 +188,8 @@ fn handle_run_element(doc: &mut XmlDocument, run: NodeId, settings: &RevisionSet
             XAttribute::new(W::author(), &settings.author),
             XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
+            // Add w16du:dateUtc for modern Word timezone handling
+            XAttribute::new(W16DU::dateUtc(), &settings.date_time),
         ];
         let del_elem = doc.new_node(XmlNodeData::element_with_attrs(W::del(), del_attrs));
         
@@ -198,6 +202,8 @@ fn handle_run_element(doc: &mut XmlDocument, run: NodeId, settings: &RevisionSet
             XAttribute::new(W::author(), &settings.author),
             XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
+            // Add w16du:dateUtc for modern Word timezone handling
+            XAttribute::new(W16DU::dateUtc(), &settings.date_time),
         ];
         let ins_elem = doc.new_node(XmlNodeData::element_with_attrs(W::ins(), ins_attrs));
         
@@ -297,6 +303,8 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
             XAttribute::new(W::author(), &settings.author),
             XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
+            // Add w16du:dateUtc for modern Word timezone handling
+            XAttribute::new(W16DU::dateUtc(), &settings.date_time),
         ];
         doc.add_child(rpr, XmlNodeData::element_with_attrs(W::del(), del_attrs));
     } else if status == "Inserted" {
@@ -305,6 +313,8 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
             XAttribute::new(W::author(), &settings.author),
             XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::date(), &settings.date_time),
+            // Add w16du:dateUtc for modern Word timezone handling
+            XAttribute::new(W16DU::dateUtc(), &settings.date_time),
         ];
         doc.add_child(rpr, XmlNodeData::element_with_attrs(W::ins(), ins_attrs));
     }
@@ -1328,12 +1338,24 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
         if del {
             for gcc in group_atoms {
-                let del_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::del(), vec![XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")), XAttribute::new(W::id(), "0"), XAttribute::new(W::date(), &settings.date_time_for_revisions)]));
+                let del_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::del(), vec![
+                    XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")),
+                    XAttribute::new(W::id(), "0"),
+                    XAttribute::new(W::date(), &settings.date_time_for_revisions),
+                    // Add w16du:dateUtc for modern Word timezone handling
+                    XAttribute::new(W16DU::dateUtc(), &settings.date_time_for_revisions),
+                ]));
                 if let Some(content) = create_content_element(doc, gcc, "") { doc.reparent(del_elem, content); }
             }
         } else if ins {
             for gcc in group_atoms {
-                let ins_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::ins(), vec![XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")), XAttribute::new(W::id(), "0"), XAttribute::new(W::date(), &settings.date_time_for_revisions)]));
+                let ins_elem = doc.add_child(parent, XmlNodeData::element_with_attrs(W::ins(), vec![
+                    XAttribute::new(W::author(), settings.author_for_revisions.as_deref().unwrap_or("Unknown")),
+                    XAttribute::new(W::id(), "0"),
+                    XAttribute::new(W::date(), &settings.date_time_for_revisions),
+                    // Add w16du:dateUtc for modern Word timezone handling
+                    XAttribute::new(W16DU::dateUtc(), &settings.date_time_for_revisions),
+                ]));
                 if let Some(content) = create_content_element(doc, gcc, "") { doc.reparent(ins_elem, content); }
             }
         } else {

@@ -8,4 +8,4 @@ pub mod xname;
 pub use arena::XmlDocument;
 pub use node::{XmlNode, XmlNodeData};
 pub use xname::{XName, XAttribute};
-pub use namespaces::{W, S, P, A, R, MC, CP, DC, PT};
+pub use namespaces::{W, S, P, A, R, MC, CP, DC, PT, W16DU};

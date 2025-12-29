@@ -195,6 +195,8 @@ fn get_prefix(namespace: &str) -> &'static str {
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships" => "r",
         "http://schemas.openxmlformats.org/markup-compatibility/2006" => "mc",
         "http://powertools.codeplex.com/2011" => "pt",
+        // Word 2023 Date UTC namespace for revision timestamps
+        "http://schemas.microsoft.com/office/word/2023/wordml/word16du" => "w16du",
         // xmlns namespace for namespace declarations (xmlns:mc="...", etc.)
         "http://www.w3.org/2000/xmlns/" => "xmlns",
         // xml namespace for xml:space, xml:lang, etc.

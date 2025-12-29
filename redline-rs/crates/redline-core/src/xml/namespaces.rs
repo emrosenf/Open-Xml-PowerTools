@@ -440,6 +440,19 @@ pub mod W16CEX {
     pub fn dateUtc() -> XName { XName::new(NS, "dateUtc") }
 }
 
+/// Word 2023 Date UTC namespace (w16du)
+/// Used for UTC timestamps on revision elements (w:ins, w:del)
+pub mod W16DU {
+    use super::XName;
+    pub const NS: &str = "http://schemas.microsoft.com/office/word/2023/wordml/word16du";
+
+    /// Returns the xmlns:w16du namespace declaration attribute name
+    pub fn w16du() -> XName { XName::new("http://www.w3.org/2000/xmlns/", "w16du") }
+
+    /// Returns the w16du:dateUtc attribute name for UTC timestamps on revision elements
+    pub fn dateUtc() -> XName { XName::new(NS, "dateUtc") }
+}
+
 pub mod W16SE {
     use super::XName;
     pub const NS: &str = "http://schemas.microsoft.com/office/word/2015/wordml/symex";

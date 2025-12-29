@@ -1,5 +1,5 @@
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::W;
+use crate::xml::namespaces::{W, W16DU};
 use crate::xml::node::XmlNodeData;
 use crate::xml::xname::{XAttribute, XName};
 use indextree::NodeId;
@@ -60,6 +60,8 @@ pub fn create_insertion(
         XAttribute::new(W::author(), &settings.author),
         XAttribute::new(W::id(), &rev_id.to_string()),
         XAttribute::new(W::date(), &settings.date_time),
+        // Add w16du:dateUtc for modern Word timezone handling
+        XAttribute::new(W16DU::dateUtc(), &settings.date_time),
     ];
     
     doc.add_child(parent, XmlNodeData::element_with_attrs(W::ins(), attrs))
@@ -75,6 +77,8 @@ pub fn create_deletion(
         XAttribute::new(W::author(), &settings.author),
         XAttribute::new(W::id(), &rev_id.to_string()),
         XAttribute::new(W::date(), &settings.date_time),
+        // Add w16du:dateUtc for modern Word timezone handling
+        XAttribute::new(W16DU::dateUtc(), &settings.date_time),
     ];
     
     doc.add_child(parent, XmlNodeData::element_with_attrs(W::del(), attrs))
