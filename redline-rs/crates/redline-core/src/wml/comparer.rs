@@ -18,7 +18,7 @@
 //! 7. ProduceNewWmlMarkupFromCorrelatedSequence (generate result document)
 
 use super::atom_list::create_comparison_unit_atom_list;
-use super::coalesce::{coalesce, mark_content_as_deleted_or_inserted, coalesce_adjacent_runs};
+use super::coalesce::{coalesce, mark_content_as_deleted_or_inserted, coalesce_adjacent_runs, strip_pt_attributes};
 use super::comparison_unit::{get_comparison_unit_list, WordSeparatorSettings, ComparisonUnitAtom, ComparisonCorrelationStatus, ContentElement};
 use super::change_event::detect_format_changes;
 use super::document::{
@@ -922,6 +922,7 @@ fn compare_atoms_internal(
     
     // Format changes are counted from XML as they're added during mark_content_as_deleted_or_inserted
     // This matches C# GetFormattingRevisionList which scans the final XML for rPrChange/pPrChange
+    strip_pt_attributes(&mut coalesce_result.document, coalesce_result.root);
     let format_changes = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
     
     // Return flattened atoms for note reference collection
@@ -1240,6 +1241,7 @@ fn build_note_doc_with_status(
     let mut coalesce_result = coalesce(&atoms, settings, root_name, root_attrs);
     mark_content_as_deleted_or_inserted(&mut coalesce_result.document, coalesce_result.root, settings);
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, settings);
+    strip_pt_attributes(&mut coalesce_result.document, coalesce_result.root);
     let fmt = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;
 
     Ok((ins, del, fmt, coalesce_result))

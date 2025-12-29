@@ -25,6 +25,15 @@ pub fn pt_unid() -> XName {
     XName::new(PT_STATUS_NS, "Unid")
 }
 
+pub fn strip_pt_attributes(doc: &mut XmlDocument, root: NodeId) {
+    let nodes: Vec<_> = std::iter::once(root).chain(doc.descendants(root)).collect();
+    for node in nodes {
+        let Some(node_data) = doc.get_mut(node) else { continue; };
+        let Some(attrs) = node_data.attributes_mut() else { continue; };
+        attrs.retain(|attr| attr.name.namespace.as_deref() != Some(PT_STATUS_NS));
+    }
+}
+
 /// Helper struct to represent an ancestor element's information
 #[derive(Clone, Debug)]
 struct AncestorElementInfo {
