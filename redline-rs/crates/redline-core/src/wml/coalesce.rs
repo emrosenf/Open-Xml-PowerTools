@@ -1650,10 +1650,24 @@ fn group_adjacent_by_correlation_ranges(
                 } else if atom.correlation_status == ComparisonCorrelationStatus::Equal {
                     format!("{}|{}|SIG:{}", ancestor_unid, status_str, 
                         atom.formatting_signature.as_deref().unwrap_or("<null>"))
+                } else if atom.correlation_status == ComparisonCorrelationStatus::Inserted 
+                       || atom.correlation_status == ComparisonCorrelationStatus::Deleted {
+                    // For Inserted/Deleted, don't include ancestor_unid to allow coalescing
+                    // of contiguous revisions from different source runs
+                    format!("{}|SIG:{}", status_str, 
+                        atom.formatting_signature.as_deref().unwrap_or("<null>"))
                 } else { 
+                    // Keep ancestor_unid for Equal content to preserve source structure
                     format!("{}|{}", ancestor_unid, status_str) 
                 }
+            } else if atom.correlation_status == ComparisonCorrelationStatus::Inserted 
+                   || atom.correlation_status == ComparisonCorrelationStatus::Deleted {
+                // For Inserted/Deleted, don't include ancestor_unid to allow coalescing
+                // of contiguous revisions from different source runs
+                format!("{}|SIG:{}", status_str, 
+                    atom.formatting_signature.as_deref().unwrap_or("<null>"))
             } else { 
+                // Keep ancestor_unid for Equal content to preserve source structure
                 format!("{}|{}", ancestor_unid, status_str) 
             }
         };

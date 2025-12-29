@@ -27,7 +27,7 @@ use super::document::{
     find_endnotes_root, find_note_paragraphs, find_note_by_id, WmlDocument,
 };
 use super::lcs_algorithm::{lcs, flatten_to_atoms};
-use super::preprocess::{preprocess_markup, PreProcessSettings};
+use super::preprocess::{preprocess_markup, repair_unids_after_revision_acceptance, PreProcessSettings};
 use super::revision::{count_revisions, reset_revision_id_counter};
 use super::revision_accepter::accept_revisions;
 use super::settings::WmlComparerSettings;
@@ -447,6 +447,15 @@ impl WmlComparer {
         // Find body nodes in the accepted documents
         let body1 = find_document_body(&doc1).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 1".to_string()))?;
         let body2 = find_document_body(&doc2).ok_or_else(|| crate::error::RedlineError::ComparisonFailed("No body in accepted document 2".to_string()))?;
+
+        // C# WmlComparer.cs:270-279 - Repair UNIDs after revision acceptance
+        // The accept_revisions function may create new elements (e.g., by unwrapping w:ins)
+        // that don't have pt:Unid attributes. Re-assign UNIDs to ensure all elements have them.
+        // This is critical for proper run boundary preservation during coalesce grouping.
+        repair_unids_after_revision_acceptance(&mut doc1, body1)
+            .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
+        repair_unids_after_revision_acceptance(&mut doc2, body2)
+            .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
 
         let atoms1 = create_comparison_unit_atom_list(&mut doc1, body1, "main", &settings);
         let atoms2 = create_comparison_unit_atom_list(&mut doc2, body2, "main", &settings);

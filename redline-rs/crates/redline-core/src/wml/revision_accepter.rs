@@ -262,4 +262,88 @@ mod tests {
         assert!(filtered.iter().any(|a| a.name.local_name == "rsidR"));
         assert!(filtered.iter().any(|a| a.name.local_name == "val"));
     }
+
+    #[test]
+    fn accept_revisions_preserves_pt_unid() {
+        use crate::xml::namespaces::PT;
+        
+        let mut source = XmlDocument::new();
+        let body = source.add_root(XmlNodeData::element(W::body()));
+        
+        // Add pt:Unid to the body element
+        let pt_unid = PT::Unid();
+        source.set_attribute(body, &pt_unid, "body-unid-123");
+        
+        // Add a paragraph with pt:Unid
+        let para = source.add_child(body, XmlNodeData::element(W::p()));
+        source.set_attribute(para, &pt_unid, "para-unid-456");
+        
+        // Add a run with pt:Unid
+        let run = source.add_child(para, XmlNodeData::element(W::r()));
+        source.set_attribute(run, &pt_unid, "run-unid-789");
+        
+        let result = accept_revisions(&source, body);
+        
+        // Verify the result document has the pt:Unid attributes preserved
+        let result_body = result.root().unwrap();
+        let body_attrs = result.get(result_body).unwrap().attributes().unwrap();
+        assert!(body_attrs.iter().any(|a| a.name == pt_unid && a.value == "body-unid-123"),
+            "Body should have pt:Unid preserved");
+        
+        let para_node = result.children(result_body).next().unwrap();
+        let para_attrs = result.get(para_node).unwrap().attributes().unwrap();
+        assert!(para_attrs.iter().any(|a| a.name == pt_unid && a.value == "para-unid-456"),
+            "Paragraph should have pt:Unid preserved");
+        
+        let run_node = result.children(para_node).next().unwrap();
+        let run_attrs = result.get(run_node).unwrap().attributes().unwrap();
+        assert!(run_attrs.iter().any(|a| a.name == pt_unid && a.value == "run-unid-789"),
+            "Run should have pt:Unid preserved");
+    }
+
+    #[test]
+    fn accept_revisions_preserves_pt_unid_with_document_root() {
+        use crate::xml::namespaces::PT;
+        
+        // This test mirrors the actual usage in comparer.rs:
+        // accept_revisions(&doc1, doc1_root) where doc1_root is w:document
+        
+        let mut source = XmlDocument::new();
+        // Create document structure: w:document > w:body > w:p > w:r
+        let document = source.add_root(XmlNodeData::element(XName::new(W::NS, "document")));
+        let body = source.add_child(document, XmlNodeData::element(W::body()));
+        let para = source.add_child(body, XmlNodeData::element(W::p()));
+        let run = source.add_child(para, XmlNodeData::element(W::r()));
+        
+        // Add pt:Unid to all elements
+        let pt_unid = PT::Unid();
+        source.set_attribute(document, &pt_unid, "doc-unid-000");
+        source.set_attribute(body, &pt_unid, "body-unid-123");
+        source.set_attribute(para, &pt_unid, "para-unid-456");
+        source.set_attribute(run, &pt_unid, "run-unid-789");
+        
+        // Accept revisions starting from document root (like comparer.rs does)
+        let result = accept_revisions(&source, document);
+        
+        // Verify the result document has the pt:Unid attributes preserved
+        let result_document = result.root().unwrap();
+        let doc_attrs = result.get(result_document).unwrap().attributes().unwrap();
+        assert!(doc_attrs.iter().any(|a| a.name == pt_unid && a.value == "doc-unid-000"),
+            "Document should have pt:Unid preserved");
+        
+        let result_body = result.children(result_document).next().unwrap();
+        let body_attrs = result.get(result_body).unwrap().attributes().unwrap();
+        assert!(body_attrs.iter().any(|a| a.name == pt_unid && a.value == "body-unid-123"),
+            "Body should have pt:Unid preserved");
+        
+        let para_node = result.children(result_body).next().unwrap();
+        let para_attrs = result.get(para_node).unwrap().attributes().unwrap();
+        assert!(para_attrs.iter().any(|a| a.name == pt_unid && a.value == "para-unid-456"),
+            "Paragraph should have pt:Unid preserved");
+        
+        let run_node = result.children(para_node).next().unwrap();
+        let run_attrs = result.get(run_node).unwrap().attributes().unwrap();
+        assert!(run_attrs.iter().any(|a| a.name == pt_unid && a.value == "run-unid-789"),
+            "Run should have pt:Unid preserved");
+    }
 }
