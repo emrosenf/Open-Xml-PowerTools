@@ -865,6 +865,43 @@ fn count_revisions_smart(
     (insertions, deletions)
 }
 
+/// Debug helper: count pt:Status attributes in the document
+fn count_pt_status(doc: &XmlDocument, root: NodeId, status_value: &str) -> usize {
+    use crate::wml::coalesce::pt_status;
+    let mut count = 0;
+    for node in std::iter::once(root).chain(doc.descendants(root)) {
+        if let Some(data) = doc.get(node) {
+            if let Some(attrs) = data.attributes() {
+                if attrs.iter().any(|a| a.name == pt_status() && a.value == status_value) {
+                    count += 1;
+                }
+            }
+        }
+    }
+    count
+}
+
+/// Debug helper: count w:del and w:ins elements
+fn count_del_ins(doc: &XmlDocument, root: NodeId) -> (usize, usize) {
+    use crate::xml::namespaces::W;
+    let mut del_count = 0;
+    let mut ins_count = 0;
+    for node in std::iter::once(root).chain(doc.descendants(root)) {
+        if let Some(data) = doc.get(node) {
+            if let Some(name) = data.name() {
+                if name.namespace.as_deref() == Some(W::NS) {
+                    if name.local_name == "del" {
+                        del_count += 1;
+                    } else if name.local_name == "ins" {
+                        ins_count += 1;
+                    }
+                }
+            }
+        }
+    }
+    (del_count, ins_count)
+}
+
 fn reconcile_formatting_changes(atoms: &mut [ComparisonUnitAtom], settings: &WmlComparerSettings) {
     detect_format_changes(atoms, settings);
 }
@@ -1322,12 +1359,26 @@ fn compare_atoms_internal(
         reconcile_formatting_changes(&mut flattened_atoms, settings);
     }
 
+    // DEBUG: Count atoms with Deleted/Inserted status
+    let deleted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
+    let inserted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
+    eprintln!("DEBUG: After flatten_to_atoms - Deleted atoms: {}, Inserted atoms: {}", deleted_atoms, inserted_atoms);
+    
     // Count revisions from atom list (C# GetRevisions algorithm)
     // This groups adjacent atoms by correlation status, which is how C# counts
     let mut coalesce_result = coalesce(&flattened_atoms, settings, root_name, root_attrs);
     
+    // DEBUG: Count pt:Status attributes before mark_content
+    let pt_deleted = count_pt_status(&coalesce_result.document, coalesce_result.root, "Deleted");
+    let pt_inserted = count_pt_status(&coalesce_result.document, coalesce_result.root, "Inserted");
+    eprintln!("DEBUG: After coalesce - pt:Status Deleted: {}, pt:Status Inserted: {}", pt_deleted, pt_inserted);
+    
     // Wrap content in revision marks (C# line 2173)
     mark_content_as_deleted_or_inserted(&mut coalesce_result.document, coalesce_result.root, settings);
+    
+    // DEBUG: Count w:del/w:ins after marking
+    let (del_count, ins_count) = count_del_ins(&coalesce_result.document, coalesce_result.root);
+    eprintln!("DEBUG: After mark_content - w:del: {}, w:ins: {}", del_count, ins_count);
     
     // Consolidate adjacent revisions (C# line 2174)
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, &settings);
@@ -1738,11 +1789,13 @@ fn replace_children_with(
     source_doc: &XmlDocument,
     source_parent: NodeId,
 ) {
+    // Remove all existing children from target
     let children: Vec<_> = target_doc.children(target_parent).collect();
     for child in children {
         target_doc.remove(child);
     }
 
+    // Clone children from source
     let source_children: Vec<_> = source_doc.children(source_parent).collect();
     for child in source_children {
         clone_subtree(source_doc, child, target_doc, target_parent);

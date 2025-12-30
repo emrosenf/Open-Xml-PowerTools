@@ -41,8 +41,12 @@ impl Default for WmlComparerSettings {
     fn default() -> Self {
         Self {
             // C# default: new[] { ' ', '-', ')', '(', ';', ',', '（', '）', '，', '、', '、', '，', '；', '。', '：', '的', }
+            // Extended with currency symbols to match MS Word comparison behavior
             word_separators: vec![
                 ' ', '-', ')', '(', ';', ',',
+                // Currency symbols - treat as word separators to match MS Word behavior
+                // This ensures "$100" vs "$200" shows "$" as equal, only number changed
+                '$', '€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '฿',
                 '（', // U+FF08 FULLWIDTH LEFT PARENTHESIS
                 '）', // U+FF09 FULLWIDTH RIGHT PARENTHESIS
                 '，', // U+FF0C FULLWIDTH COMMA
@@ -211,9 +215,11 @@ mod tests {
         assert!(settings.word_separators.contains(&'-'));
         assert!(settings.word_separators.contains(&'（')); // Chinese parenthesis
         assert!(settings.word_separators.contains(&'的')); // Chinese particle
+        assert!(settings.word_separators.contains(&'$')); // Currency symbol
+        assert!(settings.word_separators.contains(&'€')); // Euro
         
-        // Verify exact length matches C# (16 chars including duplicates)
-        assert_eq!(settings.word_separators.len(), 16);
+        // Verify exact length (16 from C# + 10 currency symbols = 26)
+        assert_eq!(settings.word_separators.len(), 26);
     }
 
     #[test]

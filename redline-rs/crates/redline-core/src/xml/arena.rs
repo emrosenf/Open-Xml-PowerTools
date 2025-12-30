@@ -60,7 +60,10 @@ impl XmlDocument {
     }
 
     pub fn remove(&mut self, node: NodeId) {
-        node.remove(&mut self.arena);
+        // Use detach() instead of remove() to properly remove the entire subtree.
+        // indextree's remove() reparents children to the parent, which breaks XML structure.
+        // detach() keeps the subtree intact but orphaned (no longer part of the main tree).
+        node.detach(&mut self.arena);
     }
 
     pub fn set_attribute(&mut self, node: NodeId, name: &XName, value: &str) {

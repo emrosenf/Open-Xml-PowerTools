@@ -958,17 +958,33 @@ fn do_lcs_algorithm(
     }
 
     // Apply detail threshold for text-only sequences
+    // Skip if matched sequence contains structural elements (non-text atoms)
     if !is_only_paragraph_mark && best_length > 0 && best_i1 >= 0 {
         let all_words1 = units1.iter().all(|u| u.as_word().is_some());
         let all_words2 = units2.iter().all(|u| u.as_word().is_some());
 
         if all_words1 && all_words2 {
-            let max_len = units1.len().max(units2.len());
-            let ratio = best_length as f64 / max_len as f64;
-            if ratio < settings.detail_threshold {
-                best_i1 = -1;
-                best_i2 = -1;
-                best_length = 0;
+            // Check if matched sequence contains structural (non-text) elements
+            // If so, don't discard - structural elements like tabs, footnotes should be preserved
+            let matched_seq = &units1[best_i1 as usize..best_i1 as usize + best_length];
+            let contains_structural = matched_seq.iter().any(|u| {
+                if let Some(word) = u.as_word() {
+                    word.atoms.iter().any(|atom| {
+                        !matches!(atom.content_element, ContentElement::Text(_))
+                    })
+                } else {
+                    false
+                }
+            });
+
+            if !contains_structural {
+                let max_len = units1.len().max(units2.len());
+                let ratio = best_length as f64 / max_len as f64;
+                if ratio < settings.detail_threshold {
+                    best_i1 = -1;
+                    best_i2 = -1;
+                    best_length = 0;
+                }
             }
         }
     }

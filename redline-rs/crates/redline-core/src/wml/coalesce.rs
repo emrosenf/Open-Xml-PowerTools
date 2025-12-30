@@ -54,6 +54,7 @@ static VML_RELATED_ELEMENTS: &[&str] = &[
 /// Allowable run children that can have pt:Status
 static ALLOWABLE_RUN_CHILDREN: &[&str] = &[
     "br", "tab", "sym", "ptab", "cr", "dayShort", "dayLong", "monthShort", "monthLong", "yearShort", "yearLong",
+    "footnoteReference", "endnoteReference",
 ];
 
 pub struct CoalesceResult {
@@ -1167,8 +1168,56 @@ fn coalesce_recurse(
         if level >= ca.ancestor_unids.len() { String::new() } else { ca.ancestor_unids[level].clone() }
     });
     
+    // DEBUG: Track empty group key atoms
+    static DEBUG_EMPTY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    
     for (group_key, start, end) in grouped {
-        if group_key.is_empty() { continue; }
+        if group_key.is_empty() {
+            // Handle direct children (atoms that don't have further ancestors at this level)
+            // e.g. w:ptab inside w:p, or w:br inside w:p
+            let direct_children = &list[start..end];
+            
+            // DEBUG: Log first occurrence of empty group key
+            if !DEBUG_EMPTY_GROUPS.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                let del_count = direct_children.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
+                let ins_count = direct_children.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
+                eprintln!("DEBUG empty group_key (first): level={}, direct_children={}, del={}, ins={}", level, direct_children.len(), del_count, ins_count);
+                if let Some(first) = direct_children.first() {
+                    eprintln!("  First atom: {:?}, ancestor_unids.len()={}", first.content_element.local_name(), first.ancestor_unids.len());
+                }
+            }
+            
+            let is_inside_vml = direct_children.first().map(|a| is_inside_vml_content(a, level)).unwrap_or(false);
+            let grouped_direct = group_adjacent_by_correlation_ranges(direct_children, level, is_inside_vml, settings);
+            
+            for (key, s, e) in grouped_direct {
+                let atoms = &direct_children[s..e];
+                let first = &atoms[0];
+                let del = first.correlation_status == ComparisonCorrelationStatus::Deleted;
+                let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
+                
+                let spl: Vec<&str> = key.split('|').collect();
+                // If the key indicates a specific status override from grouping (e.g. from formatting change), use it
+                // Otherwise default to the atom's status
+                let status = if spl.len() > 1 && (spl[1] == "Deleted" || spl[1] == "Inserted") {
+                    spl[1]
+                } else if del { 
+                    "Deleted" 
+                } else if ins { 
+                    "Inserted" 
+                } else { 
+                    "" 
+                };
+                
+                for atom in atoms {
+                    let content_node = create_content_element(doc, atom, status);
+                    if let Some(node) = content_node {
+                        doc.reparent(parent, node);
+                    }
+                }
+            }
+            continue;
+        }
         
         let group_atoms = &list[start..end];
         let first_atom = &group_atoms[0];
@@ -1370,6 +1419,16 @@ fn clone_tree_into_doc(target_doc: &mut XmlDocument, source_doc: &XmlDocument, s
 }
 
 fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
+    // DEBUG: Count incoming text atoms by status
+    static DEBUG_CALLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if !DEBUG_CALLED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        let total = atoms.len();
+        let text_atoms = atoms.iter().filter(|a| matches!(a.content_element, ContentElement::Text(_))).count();
+        let del_text = atoms.iter().filter(|a| matches!(a.content_element, ContentElement::Text(_)) && a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
+        let ins_text = atoms.iter().filter(|a| matches!(a.content_element, ContentElement::Text(_)) && a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
+        eprintln!("DEBUG reconstruct_text_elements (first call): total atoms={}, text_atoms={}, del_text={}, ins_text={}", total, text_atoms, del_text, ins_text);
+    }
+    
     for (_key, start, end) in grouped_children {
         let group_atoms = &atoms[*start..*end];
         let text_of_text_element: String = group_atoms.iter().filter_map(|gce| if let ContentElement::Text(ch) = gce.content_element { Some(ch) } else { None }).collect();
@@ -1496,24 +1555,18 @@ fn reconstruct_math_elements(doc: &mut XmlDocument, parent: NodeId, _ancestor: &
     }
 }
 
-fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
+fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, _ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
     for (_key, start, end) in grouped_children {
         let group_atoms = &atoms[*start..*end];
         let first = &group_atoms[0];
         let del = first.correlation_status == ComparisonCorrelationStatus::Deleted;
         let ins = first.correlation_status == ComparisonCorrelationStatus::Inserted;
-        if del || ins {
-            for _gcc in group_atoms {
-                let mut attrs = ancestor.attributes.clone();
-                attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
-                let status = if del { "Deleted" } else { "Inserted" };
-                attrs.push(XAttribute::new(pt_status(), status));
-                let elem_name = xname_from_ancestor(ancestor);
-                doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
-            }
-        } else {
-            for gcc in group_atoms {
-                if let Some(content) = create_content_element(doc, gcc, "") { doc.reparent(parent, content); }
+        // Use create_content_element for ALL cases to preserve element-specific attributes
+        // (e.g., w:id for footnoteReference/endnoteReference). Pass status for del/ins cases.
+        let status = if del { "Deleted" } else if ins { "Inserted" } else { "" };
+        for gcc in group_atoms {
+            if let Some(content) = create_content_element(doc, gcc, status) { 
+                doc.reparent(parent, content); 
             }
         }
     }
@@ -1560,7 +1613,13 @@ fn move_last_sect_pr_to_child_of_body(doc: &mut XmlDocument, doc_root: NodeId) {
 
 fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, status: &str) -> Option<NodeId> {
     match &atom.content_element {
-        ContentElement::Text(_ch) => None,
+        ContentElement::Text(_ch) => {
+            // Text atoms should go through reconstruct_text_elements, not create_content_element.
+            // Creating w:t directly here would place it under w:p without a w:r wrapper,
+            // which is invalid OOXML and causes MS Word to report corruption.
+            // Return None and let the atom be handled by the proper text reconstruction path.
+            None
+        }
         ContentElement::Break => {
             let br = doc.new_node(XmlNodeData::element(W::br()));
             if !status.is_empty() { doc.set_attribute(br, &pt_status(), status); }
@@ -1683,6 +1742,23 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
             let mut attrs = vec![XAttribute::new(W::id(), id)];
             if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
             Some(doc.new_node(XmlNodeData::element_with_attrs(W::commentRangeEnd(), attrs)))
+        }
+        ContentElement::FootnoteReference { id } => {
+            let mut attrs = vec![XAttribute::new(W::id(), id)];
+            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::footnoteReference(), attrs)))
+        }
+        ContentElement::EndnoteReference { id } => {
+            let mut attrs = vec![XAttribute::new(W::id(), id)];
+            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::endnoteReference(), attrs)))
+        }
+        ContentElement::Symbol { font, char_code } => {
+            let mut attrs = Vec::new();
+            if !font.is_empty() { attrs.push(XAttribute::new(XName::new(W::NS, "font"), font)); }
+            if !char_code.is_empty() { attrs.push(XAttribute::new(XName::new(W::NS, "char"), char_code)); }
+            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::sym(), attrs)))
         }
         _ => None,
     }

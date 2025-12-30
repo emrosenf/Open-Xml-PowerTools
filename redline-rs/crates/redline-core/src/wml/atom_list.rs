@@ -16,7 +16,8 @@ fn allowable_run_children() -> HashSet<String> {
         "br", "drawing", "cr", "dayLong", "dayShort", "footnoteReference", "endnoteReference",
         "monthLong", "monthShort", "noBreakHyphen", "pgNum", "ptab", "softHyphen", "sym",
         "tab", "yearLong", "yearShort", "fldChar", "instrText",
-        "commentRangeStart", "commentRangeEnd",
+        // NOTE: commentRangeStart/End removed - they are thrown away to match C# behavior
+        // C# WmlComparer throws away comment markers during comparison (see comparer.rs line 533)
     ]
     .iter()
     .map(|s| s.to_string())
@@ -31,6 +32,10 @@ fn elements_to_throw_away() -> HashSet<String> {
     [
         "lastRenderedPageBreak", "proofErr", "tblPr", "sectPr", "permEnd", "permStart",
         "footnoteRef", "endnoteRef", "separator", "continuationSeparator",
+        // Comment markers are thrown away to match C# WmlComparer behavior.
+        // Including them causes identical text adjacent to comments to be marked as changed
+        // because the comment marker atoms affect word hashes. See comparer.rs line 533.
+        "commentRangeStart", "commentRangeEnd", "commentReference",
     ]
     .iter()
     .map(|s| s.to_string())
@@ -407,9 +412,11 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                 
                 // Stop at container elements - these are not included in ancestor chain.
                 // C# WmlComparer.cs line 8054/8088: TakeWhile(a => a.Name != W.body && a.Name != W.footnotes && a.Name != W.endnotes)
-                // Note: W.footnote and W.endnote (singular) are NOT in the stop list - they ARE included in ancestors!
-                // This is critical for proper tree reconstruction in CoalesceRecurse.
-                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes") {
+                // Also stop at individual footnote/endnote elements to prevent nested footnotes during coalesce.
+                // When processing inserted/deleted footnotes via build_note_doc_with_status(), the coalesce
+                // code already wraps content in a new footnote element - if we include the original footnote
+                // in ancestors, we get invalid nested <w:footnote><w:footnote> structure.
+                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes" || local == "footnote" || local == "endnote") {
                     break;
                 }
                 

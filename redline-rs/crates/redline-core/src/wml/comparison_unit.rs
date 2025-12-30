@@ -226,7 +226,7 @@ impl ContentElement {
 
     /// Get the element local name for hash computation
     /// Corresponds to C# contentElement.Name.LocalName
-    pub fn local_name(&self) -> &'static str {
+    pub fn local_name(&self) -> &str {
         match self {
             ContentElement::Text(_) => "t",
             ContentElement::ParagraphProperties { .. } => "pPr",
@@ -250,12 +250,9 @@ impl ContentElement {
             ContentElement::SimpleField { .. } => "fldSimple",
             ContentElement::Symbol { .. } => "sym",
             ContentElement::Object { .. } => "object",
-            ContentElement::Unknown { name } => {
-                // Return a static str for unknown - we'll use "unknown"
-                // since we can't return a &'static str from a dynamic String
-                let _ = name; // suppress unused warning
-                "unknown"
-            },
+            // Return the actual element name for Unknown elements
+            // This ensures proper word-break detection for unrecognized elements
+            ContentElement::Unknown { name } => name.as_str(),
         }
     }
 
@@ -1063,7 +1060,9 @@ impl Default for WordSeparatorSettings {
     fn default() -> Self {
         Self {
             word_separators: vec![
-                ' ', '-', ')', '(', ';', ',', 
+                ' ', '-', ')', '(', ';', ',',
+                // Currency symbols - treat as word separators to match MS Word behavior
+                '$', '€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '฿',
                 '（', '）', '，', '、', '；', '。', '：', '的',
             ],
         }
@@ -1072,8 +1071,9 @@ impl Default for WordSeparatorSettings {
 
 impl WordSeparatorSettings {
     /// Check if a character is a word separator
+    /// C# equivalent: settings.IsWordSeparator(ch) - only checks explicit list, not whitespace
     pub fn is_word_separator(&self, ch: char) -> bool {
-        ch.is_whitespace() || self.word_separators.contains(&ch)
+        self.word_separators.contains(&ch)
     }
 }
 
@@ -1194,21 +1194,9 @@ fn assign_grouping_keys(
                 key
             }
             _ => {
-                // Check if it's a word break element based on content type
-                let is_word_break = matches!(
-                    &atom.content_element,
-                    ContentElement::Break
-                        | ContentElement::Tab
-                        | ContentElement::Drawing { .. }
-                        | ContentElement::Picture { .. }
-                        | ContentElement::Math { .. }
-                        | ContentElement::FootnoteReference { .. }
-                        | ContentElement::EndnoteReference { .. }
-                        | ContentElement::Symbol { .. }
-                        | ContentElement::Object { .. }
-                        | ContentElement::FieldBegin
-                        | ContentElement::FieldEnd
-                );
+                // Check if it's a word break element using the WORD_BREAK_ELEMENTS constant
+                // This ensures consistency with C# WordBreakElements list
+                let is_word_break = is_word_break_element(atom.content_element.local_name());
 
                 if is_word_break {
                     next_index += 1;
