@@ -1225,7 +1225,7 @@ fn coalesce_recurse(
     });
     
     // DEBUG: Track empty group_key atoms
-    static DEBUG_EMPTY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    // static DEBUG_EMPTY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     
     for (group_key, start, end) in grouped {
         if group_key.is_empty() {
@@ -1233,6 +1233,7 @@ fn coalesce_recurse(
             // e.g. w:ptab inside w:p, or w:br inside w:p
             let direct_children = &list[start..end];
             
+            /*
             // DEBUG: Log first occurrence of empty group key
             if !DEBUG_EMPTY_GROUPS.swap(true, std::sync::atomic::Ordering::SeqCst) {
                 let del_count = direct_children.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
@@ -1242,6 +1243,7 @@ fn coalesce_recurse(
                     eprintln!("  First atom: {:?}, ancestor_unids.len()={}", first.content_element.local_name(), first.ancestor_unids.len());
                 }
             }
+            */
             
             let is_inside_vml = direct_children.first().map(|a| is_inside_vml_content(a, level)).unwrap_or(false);
             let grouped_direct = group_adjacent_by_correlation_ranges(direct_children, level, is_inside_vml, settings);
@@ -1538,6 +1540,7 @@ fn clone_tree_into_doc(target_doc: &mut XmlDocument, source_doc: &XmlDocument, s
 }
 
 fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)]) {
+    /*
     // DEBUG: Count incoming text atoms by status
     static DEBUG_CALLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     if !DEBUG_CALLED.swap(true, std::sync::atomic::Ordering::SeqCst) {
@@ -1547,6 +1550,7 @@ fn reconstruct_text_elements(doc: &mut XmlDocument, parent: NodeId, atoms: &[Com
         let ins_text = atoms.iter().filter(|a| matches!(a.content_element, ContentElement::Text(_)) && a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
         eprintln!("DEBUG reconstruct_text_elements (first call): total atoms={}, text_atoms={}, del_text={}, ins_text={}", total, text_atoms, del_text, ins_text);
     }
+    */
     
     for (_key, start, end) in grouped_children {
         let group_atoms = &atoms[*start..*end];

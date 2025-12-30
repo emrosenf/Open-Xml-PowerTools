@@ -1363,25 +1363,25 @@ fn compare_atoms_internal(
     }
 
     // DEBUG: Count atoms with Deleted/Inserted status
-    let deleted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
-    let inserted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
-    eprintln!("DEBUG: After flatten_to_atoms - Deleted atoms: {}, Inserted atoms: {}", deleted_atoms, inserted_atoms);
+    // let deleted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
+    // let inserted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
+    // eprintln!("DEBUG: After flatten_to_atoms - Deleted atoms: {}, Inserted atoms: {}", deleted_atoms, inserted_atoms);
     
     // Count revisions from atom list (C# GetRevisions algorithm)
     // This groups adjacent atoms by correlation status, which is how C# counts
     let mut coalesce_result = coalesce(&flattened_atoms, settings, root_name, root_attrs);
     
     // DEBUG: Count pt:Status attributes before mark_content
-    let pt_deleted = count_pt_status(&coalesce_result.document, coalesce_result.root, "Deleted");
-    let pt_inserted = count_pt_status(&coalesce_result.document, coalesce_result.root, "Inserted");
-    eprintln!("DEBUG: After coalesce - pt:Status Deleted: {}, pt:Status Inserted: {}", pt_deleted, pt_inserted);
+    // let pt_deleted = count_pt_status(&coalesce_result.document, coalesce_result.root, "Deleted");
+    // let pt_inserted = count_pt_status(&coalesce_result.document, coalesce_result.root, "Inserted");
+    // eprintln!("DEBUG: After coalesce - pt:Status Deleted: {}, pt:Status Inserted: {}", pt_deleted, pt_inserted);
     
     // Wrap content in revision marks (C# line 2173)
     mark_content_as_deleted_or_inserted(&mut coalesce_result.document, coalesce_result.root, settings);
     
     // DEBUG: Count w:del/w:ins after marking
-    let (del_count, ins_count) = count_del_ins(&coalesce_result.document, coalesce_result.root);
-    eprintln!("DEBUG: After mark_content - w:del: {}, w:ins: {}", del_count, ins_count);
+    // let (del_count, ins_count) = count_del_ins(&coalesce_result.document, coalesce_result.root);
+    // eprintln!("DEBUG: After mark_content - w:del: {}, w:ins: {}", del_count, ins_count);
     
     // Consolidate adjacent revisions (C# line 2174)
     coalesce_adjacent_runs(&mut coalesce_result.document, coalesce_result.root, &settings);
