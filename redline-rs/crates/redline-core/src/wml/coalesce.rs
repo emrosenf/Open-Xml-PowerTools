@@ -54,7 +54,7 @@ static VML_RELATED_ELEMENTS: &[&str] = &[
 /// Allowable run children that can have pt:Status
 static ALLOWABLE_RUN_CHILDREN: &[&str] = &[
     "br", "tab", "sym", "ptab", "cr", "dayShort", "dayLong", "monthShort", "monthLong", "yearShort", "yearLong",
-    "footnoteReference", "endnoteReference",
+    "footnoteReference", "endnoteReference", "drawing", "object",
 ];
 
 pub struct CoalesceResult {
@@ -172,6 +172,13 @@ fn mark_content_transform(doc: &mut XmlDocument, node: NodeId, settings: &Revisi
     // Check if this is a w:pPr element (C# line 2694)
     if name.namespace.as_deref() == Some(W::NS) && name.local_name == "pPr" {
         handle_ppr_element(doc, node, settings);
+        return;
+    }
+
+    // Check if this is a math element (oMath or oMathPara)
+    if name.namespace.as_deref() == Some("http://schemas.openxmlformats.org/officeDocument/2006/math") 
+       && (name.local_name == "oMath" || name.local_name == "oMathPara") {
+        handle_omath_element(doc, node, settings);
         return;
     }
     
@@ -347,6 +354,55 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
             XAttribute::new(W16DU::dateUtc(), &settings.date_time),
         ];
         doc.add_child(rpr, XmlNodeData::element_with_attrs(W::ins(), ins_attrs));
+    }
+}
+
+fn handle_omath_element(doc: &mut XmlDocument, node: NodeId, settings: &RevisionSettings) {
+    // Get status attribute directly on oMath/oMathPara
+    let status = doc.get(node)
+        .and_then(|d| d.attributes())
+        .and_then(|attrs| attrs.iter().find(|a| a.name == pt_status()))
+        .map(|a| a.value.clone());
+    
+    let Some(status) = status else {
+        // No status, just recurse
+        let children: Vec<_> = doc.children(node).collect();
+        for child in children {
+            mark_content_transform(doc, child, settings);
+        }
+        return;
+    };
+    
+    // Remove pt:Status
+    doc.remove_attribute(node, &pt_status());
+    
+    // Wrap in w:del or w:ins
+    if status == "Deleted" {
+        let id_str = next_revision_id().to_string();
+        let del_attrs = vec![
+            XAttribute::new(W::id(), &id_str),
+            XAttribute::new(W::author(), &settings.author),
+            XAttribute::new(W::date(), &settings.date_time),
+            XAttribute::new(W16DU::dateUtc(), &settings.date_time),
+        ];
+        let del_elem = doc.new_node(XmlNodeData::element_with_attrs(W::del(), del_attrs));
+        
+        doc.insert_before(node, del_elem);
+        doc.detach(node);
+        doc.reparent(del_elem, node);
+    } else if status == "Inserted" {
+        let id_str = next_revision_id().to_string();
+        let ins_attrs = vec![
+            XAttribute::new(W::id(), &id_str),
+            XAttribute::new(W::author(), &settings.author),
+            XAttribute::new(W::date(), &settings.date_time),
+            XAttribute::new(W16DU::dateUtc(), &settings.date_time),
+        ];
+        let ins_elem = doc.new_node(XmlNodeData::element_with_attrs(W::ins(), ins_attrs));
+        
+        doc.insert_before(node, ins_elem);
+        doc.detach(node);
+        doc.reparent(ins_elem, node);
     }
 }
 
@@ -1168,7 +1224,7 @@ fn coalesce_recurse(
         if level >= ca.ancestor_unids.len() { String::new() } else { ca.ancestor_unids[level].clone() }
     });
     
-    // DEBUG: Track empty group key atoms
+    // DEBUG: Track empty group_key atoms
     static DEBUG_EMPTY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     
     for (group_key, start, end) in grouped {
@@ -1233,7 +1289,7 @@ fn coalesce_recurse(
             "r" => reconstruct_run(doc, parent, &ancestor_being_constructed, group_atoms, &grouped_children, level, is_inside_vml, _part, settings),
             "t" => reconstruct_text_elements(doc, parent, group_atoms, &grouped_children),
             "drawing" => reconstruct_drawing_elements(doc, parent, group_atoms, &grouped_children, _part, settings),
-            "oMath" | "oMathPara" => reconstruct_math_elements(doc, parent, &ancestor_being_constructed, group_atoms, &grouped_children, settings),
+            "oMath" | "oMathPara" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &[], group_atoms, level, _part, settings),
             elem if ALLOWABLE_RUN_CHILDREN.contains(&elem) => reconstruct_allowable_run_children(doc, parent, &ancestor_being_constructed, group_atoms, &grouped_children),
             "tbl" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["tblPr", "tblGrid"], group_atoms, level, _part, settings),
             "tr" => reconstruct_element(doc, parent, &group_key, &ancestor_being_constructed, &["trPr"], group_atoms, level, _part, settings),
@@ -1247,7 +1303,64 @@ fn coalesce_recurse(
     }
 }
 
+// Helper to check if all atoms have uniform status (Inserted or Deleted)
+fn get_uniform_status(atoms: &[ComparisonUnitAtom]) -> Option<ComparisonCorrelationStatus> {
+    if atoms.is_empty() { return None; }
+    let status = atoms[0].correlation_status;
+    if matches!(status, ComparisonCorrelationStatus::Inserted | ComparisonCorrelationStatus::Deleted) {
+        if atoms.iter().all(|a| a.correlation_status == status) {
+            return Some(status);
+        }
+    }
+    None
+}
+
+// Helper to create w:ins or w:del wrapper
+fn create_revision_wrapper(
+    doc: &mut XmlDocument, 
+    parent: NodeId, 
+    status: ComparisonCorrelationStatus, 
+    settings: &WmlComparerSettings
+) -> Option<NodeId> {
+    let name = match status {
+        ComparisonCorrelationStatus::Inserted => W::ins(),
+        ComparisonCorrelationStatus::Deleted => W::del(),
+        _ => return None,
+    };
+    
+    let id_str = next_revision_id().to_string();
+    let author = settings.author_for_revisions.as_deref().unwrap_or("Unknown");
+    let date = settings.date_time_for_revisions.as_deref().unwrap_or("1970-01-01T00:00:00Z");
+    
+    let attrs = vec![
+        XAttribute::new(W::id(), &id_str),
+        XAttribute::new(W::author(), author),
+        XAttribute::new(W::date(), date),
+        XAttribute::new(W16DU::dateUtc(), date),
+    ];
+    
+    Some(doc.add_child(parent, XmlNodeData::element_with_attrs(name, attrs)))
+}
+
 fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], level: usize, is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
+    // Check for uniform status to wrap entire paragraph in w:ins or w:del
+    let uniform_status = get_uniform_status(atoms);
+    
+    let (container, atoms_vec) = if let Some(status) = uniform_status {
+        let wrapper = create_revision_wrapper(doc, parent, status, settings).unwrap();
+        // Create modified atoms with Equal status to suppress inner revisions
+        let mut new_atoms = atoms.to_vec();
+        for atom in &mut new_atoms {
+            atom.correlation_status = ComparisonCorrelationStatus::Equal;
+        }
+        (wrapper, Some(new_atoms))
+    } else {
+        (parent, None)
+    };
+    
+    // Use either the modified atoms or the original slice
+    let atoms_ref = atoms_vec.as_deref().unwrap_or(atoms);
+    
     let mut para_attrs = ancestor.attributes.clone();
     para_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     
@@ -1259,8 +1372,9 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
     
     if has_rsid_del {
         // Check if paragraph is empty (no text content)
+        // Note: Check original grouped_children indices against atoms_ref
         let has_content = grouped_children.iter().any(|(_, start, end)| {
-            atoms[*start..*end].iter().any(|atom| {
+            atoms_ref[*start..*end].iter().any(|atom| {
                 matches!(atom.content_element, ContentElement::Text(_))
             })
         });
@@ -1272,18 +1386,20 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
     }
     
     // Note: Do NOT add pt_unid to output - it's an internal tracking attribute
-    let para = doc.add_child(parent, XmlNodeData::element_with_attrs(W::p(), para_attrs));
+    let para = doc.add_child(container, XmlNodeData::element_with_attrs(W::p(), para_attrs));
     
     // OOXML requires w:pPr to be the FIRST child of w:p
     // First pass: add pPr elements
     for (key, start, end) in grouped_children {
-        let group_atoms = &atoms[*start..*end];
+        let group_atoms = &atoms_ref[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
                 if !matches!(&gcc.content_element, ContentElement::ParagraphProperties { .. }) { continue; }
                 if is_inside_vml && spl.get(1) == Some(&"Inserted") { continue; }
-                let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
+                // Suppress status if uniform wrapper exists
+                let status_arg = if uniform_status.is_some() { "" } else { spl.get(1).unwrap_or(&"") };
+                let content_elem_node = create_content_element(doc, gcc, status_arg);
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
             }
         }
@@ -1291,18 +1407,21 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
     
     // Second pass: add all other content (runs, etc.)
     for (key, start, end) in grouped_children {
-        let group_atoms = &atoms[*start..*end];
+        let group_atoms = &atoms_ref[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
                 // Skip pPr - already added in first pass
                 if matches!(&gcc.content_element, ContentElement::ParagraphProperties { .. }) { continue; }
-                let content_elem_node = create_content_element(doc, gcc, spl.get(1).unwrap_or(&""));
+                // Suppress status if uniform wrapper exists
+                let status_arg = if uniform_status.is_some() { "" } else { spl.get(1).unwrap_or(&"") };
+                let content_elem_node = create_content_element(doc, gcc, status_arg);
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
             }
         } else { coalesce_recurse(doc, para, group_atoms, level + 1, part, settings); }
     }
 }
+
 
 fn reconstruct_run(doc: &mut XmlDocument, parent: NodeId, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], level: usize, _is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
     let mut run_attrs = ancestor.attributes.clone();
@@ -1573,14 +1692,30 @@ fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, _an
 }
 
 fn reconstruct_element(doc: &mut XmlDocument, parent: NodeId, group_key: &str, ancestor: &AncestorElementInfo, _props_names: &[&str], group_atoms: &[ComparisonUnitAtom], level: usize, part: Option<()>, settings: &WmlComparerSettings) {
+    // Check for uniform status
+    let uniform_status = get_uniform_status(group_atoms);
+    
+    let (container, atoms_vec) = if let Some(status) = uniform_status {
+        let wrapper = create_revision_wrapper(doc, parent, status, settings).unwrap();
+        let mut new_atoms = group_atoms.to_vec();
+        for atom in &mut new_atoms {
+            atom.correlation_status = ComparisonCorrelationStatus::Equal;
+        }
+        (wrapper, Some(new_atoms))
+    } else {
+        (parent, None)
+    };
+    
+    let atoms_ref = atoms_vec.as_deref().unwrap_or(group_atoms);
+    
     let temp_container = doc.new_node(XmlNodeData::element(W::body()));
-    coalesce_recurse(doc, temp_container, group_atoms, level + 1, part, settings);
+    coalesce_recurse(doc, temp_container, atoms_ref, level + 1, part, settings);
     let new_child_elements: Vec<NodeId> = doc.children(temp_container).collect();
     let mut attrs = ancestor.attributes.clone();
     attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     attrs.push(XAttribute::new(pt_unid(), group_key));
     let elem_name = xname_from_ancestor(ancestor);
-    let elem = doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
+    let elem = doc.add_child(container, XmlNodeData::element_with_attrs(elem_name, attrs));
     for child in new_child_elements { doc.reparent(elem, child); }
 }
 

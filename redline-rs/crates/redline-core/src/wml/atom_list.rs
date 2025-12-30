@@ -689,6 +689,8 @@ fn create_content_element_with_package(
                 _ => ContentElement::Unknown { name: format!("fldChar:{}", fld_char_type) },
             }
         }
+        (W::NS, "noBreakHyphen") => ContentElement::Text('\u{2011}'), // Non-breaking hyphen
+        (W::NS, "softHyphen") => ContentElement::Text('\u{00AD}'),    // Soft hyphen
         (M::NS, "oMath") | (M::NS, "oMathPara") => {
             let hash = compute_element_hash(doc, node);
             let element_xml = serialize_subtree(doc, node).unwrap_or_default();
@@ -725,8 +727,15 @@ fn hash_element_recursive(doc: &XmlDocument, node: NodeId, hasher: &mut Sha1) {
             let pt_sha1 = PT::SHA1Hash();
             for attr in attributes {
                 if attr.name != pt_unid && attr.name != pt_sha1 {
-                    hasher.update(attr.name.local_name.as_bytes());
-                    hasher.update(attr.value.as_bytes());
+                    // Skip RSID attributes (random session IDs) which change frequently
+                    // but don't represent content changes
+                    let is_rsid = attr.name.namespace.as_deref() == Some(W::NS) && 
+                        (attr.name.local_name.starts_with("rsid"));
+                    
+                    if !is_rsid {
+                        hasher.update(attr.name.local_name.as_bytes());
+                        hasher.update(attr.value.as_bytes());
+                    }
                 }
             }
             for child in doc.children(node) {
