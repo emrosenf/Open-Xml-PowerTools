@@ -239,6 +239,19 @@ fn create_atom_list_recurse(
     if ns == Some(W::NS) && (local == "t" || local == "delText") {
         let text = extract_text_content(doc, node);
         
+        // Check for xml:space="preserve"
+        let preserve_space = get_attribute_value(doc, node, "http://www.w3.org/XML/1998/namespace", "space")
+            .map(|v| v == "preserve")
+            .unwrap_or(false);
+            
+        let processed_text = if preserve_space {
+            text
+        } else {
+            // If not preserve, trim whitespace (simulating .NET LoadOptions.None behavior)
+            // This prevents XML formatting (newlines/indentation) from becoming content
+            text.trim().to_string()
+        };
+        
         // Build ancestor chain INCLUDING the w:t element itself at the END
         // This ensures coalesce_recurse reaches the "t" case at line 1167
         // at the correct depth level (after paragraphs and runs are created)
@@ -246,7 +259,7 @@ fn create_atom_list_recurse(
         let mut ancestors = build_ancestor_chain(doc, node);
         ancestors.push(build_ancestor_info_for_node(doc, node));
         
-        for ch in text.chars() {
+        for ch in processed_text.chars() {
             let mut atom = ComparisonUnitAtom::new(
                 ContentElement::Text(ch),
                 ancestors.clone(),
@@ -618,7 +631,13 @@ fn create_content_element_with_package(
     match (ns, local) {
         (W::NS, "br") => ContentElement::Break,
         (W::NS, "tab") => ContentElement::Tab,
-        (W::NS, "cr") => ContentElement::Break,
+        (W::NS, "cr") => ContentElement::CarriageReturn,
+        (W::NS, "ptab") => {
+            let alignment = get_attribute_value(doc, node, W::NS, "alignment").unwrap_or_default();
+            let relative_to = get_attribute_value(doc, node, W::NS, "relativeTo").unwrap_or_default();
+            let leader = get_attribute_value(doc, node, W::NS, "leader").unwrap_or_default();
+            ContentElement::PositionalTab { alignment, relative_to, leader }
+        }
         (W::NS, "footnoteReference") => {
             let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();
             ContentElement::FootnoteReference { id }

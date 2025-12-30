@@ -1201,6 +1201,27 @@ fn coalesce_recurse(
 fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], level: usize, is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
     let mut para_attrs = ancestor.attributes.clone();
     para_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
+    
+    // CRITICAL FIX: Filter out empty paragraphs with w:rsidDel attribute
+    // MS Word doesn't show deleted empty paragraphs in comparison output
+    let has_rsid_del = ancestor.attributes.iter().any(|a| 
+        a.name.namespace.as_deref() == Some(W::NS) && a.name.local_name == "rsidDel"
+    );
+    
+    if has_rsid_del {
+        // Check if paragraph is empty (no text content)
+        let has_content = grouped_children.iter().any(|(_, start, end)| {
+            atoms[*start..*end].iter().any(|atom| {
+                matches!(atom.content_element, ContentElement::Text(_))
+            })
+        });
+        
+        if !has_content {
+            // Skip this empty paragraph with rsidDel - MS Word filters these out
+            return;
+        }
+    }
+    
     // Note: Do NOT add pt_unid to output - it's an internal tracking attribute
     let para = doc.add_child(parent, XmlNodeData::element_with_attrs(W::p(), para_attrs));
     
@@ -1545,10 +1566,23 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
             if !status.is_empty() { doc.set_attribute(br, &pt_status(), status); }
             Some(br)
         }
+        ContentElement::CarriageReturn => {
+            let cr = doc.new_node(XmlNodeData::element(W::cr()));
+            if !status.is_empty() { doc.set_attribute(cr, &pt_status(), status); }
+            Some(cr)
+        }
         ContentElement::Tab => {
             let tab = doc.new_node(XmlNodeData::element(W::tab()));
             if !status.is_empty() { doc.set_attribute(tab, &pt_status(), status); }
             Some(tab)
+        }
+        ContentElement::PositionalTab { alignment, relative_to, leader } => {
+            let mut attrs = Vec::new();
+            if !alignment.is_empty() { attrs.push(XAttribute::new(W::alignment(), alignment)); }
+            if !relative_to.is_empty() { attrs.push(XAttribute::new(W::relativeTo(), relative_to)); }
+            if !leader.is_empty() { attrs.push(XAttribute::new(W::leader(), leader)); }
+            if !status.is_empty() { attrs.push(XAttribute::new(pt_status(), status)); }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::ptab(), attrs)))
         }
         ContentElement::ParagraphProperties { element_xml } => {
             // Parse and deep-copy the pPr element from stored XML

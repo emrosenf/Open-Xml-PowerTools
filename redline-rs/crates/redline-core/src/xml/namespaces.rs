@@ -154,6 +154,9 @@ pub mod W {
     pub fn bdo() -> XName { XName::new(NS, "bdo") }
     pub fn customXml() -> XName { XName::new(NS, "customXml") }
     pub fn dir() -> XName { XName::new(NS, "dir") }
+    pub fn alignment() -> XName { XName::new(NS, "alignment") }
+    pub fn relativeTo() -> XName { XName::new(NS, "relativeTo") }
+    pub fn leader() -> XName { XName::new(NS, "leader") }
 }
 
 pub mod S {

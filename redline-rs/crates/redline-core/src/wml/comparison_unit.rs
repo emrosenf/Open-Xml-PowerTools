@@ -158,8 +158,12 @@ pub enum ContentElement {
     RunProperties,
     /// Line break (w:br)
     Break,
+    /// Carriage return (w:cr)
+    CarriageReturn,
     /// Tab (w:tab)
     Tab,
+    /// Positional Tab (w:ptab)
+    PositionalTab { alignment: String, relative_to: String, leader: String },
     /// Drawing/image with hash and serialized element content
     Drawing { hash: String, element_xml: String },
     /// Picture (VML) with hash and serialized element content
@@ -202,7 +206,9 @@ impl ContentElement {
             ContentElement::ParagraphProperties { .. } => ContentType::ParagraphMark,
             ContentElement::RunProperties => ContentType::Unknown, // rPr atoms are rare
             ContentElement::Break => ContentType::Break,
+            ContentElement::CarriageReturn => ContentType::Break,
             ContentElement::Tab => ContentType::Tab,
+            ContentElement::PositionalTab { .. } => ContentType::Tab,
             ContentElement::Drawing { .. } => ContentType::Drawing,
             ContentElement::Picture { .. } => ContentType::Picture,
             ContentElement::Math { .. } => ContentType::Math,
@@ -226,7 +232,9 @@ impl ContentElement {
             ContentElement::ParagraphProperties { .. } => "pPr",
             ContentElement::RunProperties => "rPr",
             ContentElement::Break => "br",
+            ContentElement::CarriageReturn => "cr",
             ContentElement::Tab => "tab",
+            ContentElement::PositionalTab { .. } => "ptab",
             ContentElement::Drawing { .. } => "drawing",
             ContentElement::Picture { .. } => "pict",
             ContentElement::Math { .. } => "oMath",
@@ -260,7 +268,11 @@ impl ContentElement {
             ContentElement::ParagraphProperties { .. } => String::new(), // pPr has no text value
             ContentElement::RunProperties => String::new(),
             ContentElement::Break => String::new(),
+            ContentElement::CarriageReturn => String::new(),
             ContentElement::Tab => String::new(),
+            ContentElement::PositionalTab { alignment, relative_to, leader } => {
+                format!("{}{}{}", alignment, relative_to, leader)
+            },
             ContentElement::Drawing { hash, .. } => hash.clone(),
             ContentElement::Picture { hash, .. } => hash.clone(),
             ContentElement::Math { hash, .. } => hash.clone(),
@@ -321,7 +333,9 @@ impl ContentElement {
             ContentElement::Text(ch) => ch.to_string(),
             ContentElement::ParagraphProperties { .. } => "¶".to_string(),
             ContentElement::Break => "⏎".to_string(),
+            ContentElement::CarriageReturn => "CR".to_string(),
             ContentElement::Tab => "→".to_string(),
+            ContentElement::PositionalTab { .. } => "⇥".to_string(),
             _ => "".to_string(),
         }
     }
@@ -606,7 +620,9 @@ impl ComparisonUnitAtom {
             ContentElement::ParagraphProperties { .. } => "pPr",
             ContentElement::RunProperties => "rPr",
             ContentElement::Break => "br",
+            ContentElement::CarriageReturn => "cr",
             ContentElement::Tab => "tab",
+            ContentElement::PositionalTab { .. } => "ptab",
             ContentElement::Drawing { .. } => "drawing",
             ContentElement::Picture { .. } => "pict",
             ContentElement::Math { .. } => "oMath",
@@ -1611,6 +1627,18 @@ mod tests {
         // Picture
         let pict = ContentElement::Picture { hash: "xyz".to_string(), element_xml: String::new() };
         assert_eq!(pict.content_type(), ContentType::Picture);
+
+        // Carriage Return
+        let cr = ContentElement::CarriageReturn;
+        assert_eq!(cr.content_type(), ContentType::Break);
+
+        // Positional Tab
+        let ptab = ContentElement::PositionalTab { 
+            alignment: "right".to_string(), 
+            relative_to: "margin".to_string(), 
+            leader: "dot".to_string() 
+        };
+        assert_eq!(ptab.content_type(), ContentType::Tab);
     }
 
     #[test]
@@ -1620,7 +1648,13 @@ mod tests {
         assert_eq!(ContentElement::Drawing { hash: "x".to_string(), element_xml: String::new() }.local_name(), "drawing");
         assert_eq!(ContentElement::Picture { hash: "x".to_string(), element_xml: String::new() }.local_name(), "pict");
         assert_eq!(ContentElement::Break.local_name(), "br");
+        assert_eq!(ContentElement::CarriageReturn.local_name(), "cr");
         assert_eq!(ContentElement::Tab.local_name(), "tab");
+        assert_eq!(ContentElement::PositionalTab { 
+            alignment: String::new(), 
+            relative_to: String::new(), 
+            leader: String::new() 
+        }.local_name(), "ptab");
         assert_eq!(ContentElement::FieldBegin.local_name(), "fldChar");
         assert_eq!(ContentElement::Symbol { font: "f".to_string(), char_code: "c".to_string() }.local_name(), "sym");
     }
