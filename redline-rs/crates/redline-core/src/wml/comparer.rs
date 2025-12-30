@@ -1342,7 +1342,10 @@ fn compare_atoms_internal(
     root_attrs: Vec<XAttribute>,
     settings: &WmlComparerSettings,
 ) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult, Vec<ComparisonUnitAtom>)> {
-    let word_settings = WordSeparatorSettings::default();
+    let mut word_settings = WordSeparatorSettings::default();
+    if settings.conflate_breaking_and_nonbreaking_spaces {
+        word_settings.word_separators.push('\u{00a0}');
+    }
     
     let units1 = get_comparison_unit_list(atoms1, &word_settings);
     let units2 = get_comparison_unit_list(atoms2, &word_settings);

@@ -26,11 +26,10 @@ fn load_test_doc(relative_path: &str) -> WmlDocument {
     WmlDocument::from_bytes(&bytes).unwrap_or_else(|e| panic!("Failed to parse {}: {}", path.display(), e))
 }
 
-/// Run a comparison test
-fn run_comparison_test(test_id: &str, source1: &str, source2: &str, expected_revisions: usize) {
+/// Run a comparison test with custom settings
+fn run_comparison_test_with_settings(test_id: &str, source1: &str, source2: &str, expected_revisions: usize, settings: WmlComparerSettings) {
     let doc1 = load_test_doc(source1);
     let doc2 = load_test_doc(source2);
-    let settings = WmlComparerSettings::default();
     
     let result = WmlComparer::compare(&doc1, &doc2, Some(&settings))
         .unwrap_or_else(|e| panic!("{}: Comparison failed: {}", test_id, e));
@@ -45,6 +44,11 @@ fn run_comparison_test(test_id: &str, source1: &str, source2: &str, expected_rev
         "{}: Expected {} revisions, got {} ({} insertions, {} deletions)",
         test_id, expected_revisions, actual, result.insertions, result.deletions
     );
+}
+
+/// Run a comparison test
+fn run_comparison_test(test_id: &str, source1: &str, source2: &str, expected_revisions: usize) {
+    run_comparison_test_with_settings(test_id, source1, source2, expected_revisions, WmlComparerSettings::default());
 }
 
 // ============================================================================
@@ -607,12 +611,16 @@ fn wc_1960_text_in_cell_no_change() {
 
 #[test]
 fn wc_1970_french() {
-    run_comparison_test("WC-1970", "WC/WC055-French.docx", "WC/WC055-French-Mod.docx", 0);
+    let mut settings = WmlComparerSettings::default();
+    settings.conflate_breaking_and_nonbreaking_spaces = true;
+    run_comparison_test_with_settings("WC-1970", "WC/WC055-French.docx", "WC/WC055-French-Mod.docx", 0, settings);
 }
 
 #[test]
 fn wc_1980_french2() {
-    run_comparison_test("WC-1980", "WC/WC056-French.docx", "WC/WC056-French-Mod.docx", 0);
+    let mut settings = WmlComparerSettings::default();
+    settings.conflate_breaking_and_nonbreaking_spaces = true;
+    run_comparison_test_with_settings("WC-1980", "WC/WC056-French.docx", "WC/WC056-French-Mod.docx", 0, settings);
 }
 
 // ============================================================================
