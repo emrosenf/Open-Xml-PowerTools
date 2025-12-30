@@ -1345,6 +1345,31 @@ fn create_revision_wrapper(
 }
 
 fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str, ancestor: &AncestorElementInfo, atoms: &[ComparisonUnitAtom], grouped_children: &[(String, usize, usize)], level: usize, is_inside_vml: bool, part: Option<()>, settings: &WmlComparerSettings) {
+    let mut para_attrs = ancestor.attributes.clone();
+    para_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
+    
+    // CRITICAL FIX: Filter out empty paragraphs with w:rsidDel attribute
+    // MS Word doesn't show deleted empty paragraphs in comparison output
+    // MUST be checked BEFORE creating revision wrapper to avoid empty wrappers
+    let has_rsid_del = ancestor.attributes.iter().any(|a| 
+        a.name.namespace.as_deref() == Some(W::NS) && a.name.local_name == "rsidDel"
+    );
+    
+    if has_rsid_del {
+        // Check if paragraph is empty (no text content)
+        // Use original atoms for check
+        let has_content = grouped_children.iter().any(|(_, start, end)| {
+            atoms[*start..*end].iter().any(|atom| {
+                matches!(atom.content_element, ContentElement::Text(_))
+            })
+        });
+        
+        if !has_content {
+            // Skip this empty paragraph with rsidDel - MS Word filters these out
+            return;
+        }
+    }
+
     // Check for uniform status to wrap entire paragraph in w:ins or w:del
     let uniform_status = get_uniform_status(atoms);
     
@@ -1362,30 +1387,6 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
     
     // Use either the modified atoms or the original slice
     let atoms_ref = atoms_vec.as_deref().unwrap_or(atoms);
-    
-    let mut para_attrs = ancestor.attributes.clone();
-    para_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
-    
-    // CRITICAL FIX: Filter out empty paragraphs with w:rsidDel attribute
-    // MS Word doesn't show deleted empty paragraphs in comparison output
-    let has_rsid_del = ancestor.attributes.iter().any(|a| 
-        a.name.namespace.as_deref() == Some(W::NS) && a.name.local_name == "rsidDel"
-    );
-    
-    if has_rsid_del {
-        // Check if paragraph is empty (no text content)
-        // Note: Check original grouped_children indices against atoms_ref
-        let has_content = grouped_children.iter().any(|(_, start, end)| {
-            atoms_ref[*start..*end].iter().any(|atom| {
-                matches!(atom.content_element, ContentElement::Text(_))
-            })
-        });
-        
-        if !has_content {
-            // Skip this empty paragraph with rsidDel - MS Word filters these out
-            return;
-        }
-    }
     
     // Note: Do NOT add pt_unid to output - it's an internal tracking attribute
     let para = doc.add_child(container, XmlNodeData::element_with_attrs(W::p(), para_attrs));
