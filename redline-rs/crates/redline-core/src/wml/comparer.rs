@@ -911,6 +911,116 @@ fn reconcile_formatting_changes(atoms: &mut [ComparisonUnitAtom], settings: &Wml
     detect_format_changes(atoms, settings);
 }
 
+/// Reconcile cross-paragraph content moves.
+///
+/// When content moves from one paragraph to another (e.g., due to paragraph merging),
+/// the LCS algorithm will mark it as both Deleted (from original paragraph) and
+/// Inserted (into new paragraph). This function detects such cases and converts
+/// the matching content to Equal status, reducing false positives.
+///
+/// Algorithm:
+/// 1. Group consecutive atoms by status (ignoring paragraph boundaries)
+/// 2. Extract text content from Deleted and Inserted groups
+/// 3. If a Deleted group's text is found within an Inserted group (or vice versa),
+///    mark the matching atoms as Equal
+fn reconcile_cross_paragraph_moves(atoms: &mut [ComparisonUnitAtom], _settings: &WmlComparerSettings) {
+    // Minimum text length to consider for reconciliation (avoid matching short fragments)
+    const MIN_TEXT_LENGTH: usize = 50;
+
+    // Extract text content from an atom
+    fn get_atom_text(atom: &ComparisonUnitAtom) -> Option<char> {
+        match &atom.content_element {
+            ContentElement::Text(c) => Some(*c),
+            _ => None,
+        }
+    }
+
+    // Collect consecutive runs of Deleted and Inserted atoms
+    #[derive(Debug)]
+    struct TextRun {
+        text: String,
+        normalized: String,
+        indices: Vec<usize>,
+        status: ComparisonCorrelationStatus,
+    }
+
+    let mut runs: Vec<TextRun> = Vec::new();
+    let mut i = 0;
+
+    while i < atoms.len() {
+        let start_status = atoms[i].correlation_status;
+
+        // Skip Equal atoms
+        if start_status == ComparisonCorrelationStatus::Equal {
+            i += 1;
+            continue;
+        }
+
+        // Collect consecutive atoms with the same status
+        let mut text_content = String::new();
+        let mut atom_indices = Vec::new();
+
+        while i < atoms.len() && atoms[i].correlation_status == start_status {
+            if let Some(c) = get_atom_text(&atoms[i]) {
+                text_content.push(c);
+            }
+            atom_indices.push(i);
+            i += 1;
+        }
+
+        // Only consider substantial text content
+        let normalized = text_content.trim().to_lowercase();
+        if normalized.len() >= MIN_TEXT_LENGTH {
+            runs.push(TextRun {
+                text: text_content,
+                normalized,
+                indices: atom_indices,
+                status: start_status,
+            });
+        }
+    }
+
+    // Separate into Deleted and Inserted runs
+    let deleted_runs: Vec<_> = runs.iter()
+        .filter(|r| r.status == ComparisonCorrelationStatus::Deleted)
+        .collect();
+    let inserted_runs: Vec<_> = runs.iter()
+        .filter(|r| r.status == ComparisonCorrelationStatus::Inserted)
+        .collect();
+
+    // Find matching text - check if deleted text is contained in any inserted text (or vice versa)
+    let mut indices_to_equalize: Vec<usize> = Vec::new();
+
+    for del_run in &deleted_runs {
+        // Look for exact match first
+        for ins_run in &inserted_runs {
+            if del_run.normalized == ins_run.normalized {
+                indices_to_equalize.extend(&del_run.indices);
+                indices_to_equalize.extend(&ins_run.indices);
+            }
+        }
+    }
+
+    // Also check for substring matches - deleted text contained in inserted text
+    // This handles cases where the sentence was merged with other content
+    for del_run in &deleted_runs {
+        if del_run.normalized.len() < 100 {  // Only for longer segments to avoid false positives
+            continue;
+        }
+        for ins_run in &inserted_runs {
+            if ins_run.normalized.contains(&del_run.normalized) {
+                // Only mark the deleted portion as equal (the inserted portion has other content too)
+                indices_to_equalize.extend(&del_run.indices);
+            }
+        }
+    }
+
+    // Apply the status change
+    for idx in indices_to_equalize {
+        atoms[idx].correlation_status = ComparisonCorrelationStatus::Equal;
+    }
+}
+
 /// Port of C# GetRevisions grouping logic (WmlComparer.cs:3909-3926)
 ///
 /// Uses GroupAdjacent to group atoms by a key that combines:
@@ -1387,6 +1497,11 @@ fn compare_atoms_internal(
     if settings.track_formatting_changes {
         reconcile_formatting_changes(&mut flattened_atoms, settings);
     }
+
+    // Phase 4: Reconcile cross-paragraph content moves
+    // This detects when identical text appears as both Deleted and Inserted
+    // (due to paragraph merging/splitting) and converts it to Equal
+    reconcile_cross_paragraph_moves(&mut flattened_atoms, settings);
 
     // DEBUG: Count atoms with Deleted/Inserted status
     // let deleted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
