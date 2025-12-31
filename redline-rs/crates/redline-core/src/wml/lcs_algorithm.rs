@@ -118,7 +118,7 @@ pub fn lcs(
             .position(|cs| cs.status == CorrelationStatus::Unknown);
 
         let Some(idx) = unknown_idx else {
-            // No more Unknown sequences - we're done
+            // All sequences resolved
             return cs_list;
         };
 

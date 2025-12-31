@@ -1370,54 +1370,43 @@ fn reconstruct_paragraph(doc: &mut XmlDocument, parent: NodeId, _group_key: &str
         }
     }
 
-    // Check for uniform status to wrap entire paragraph in w:ins or w:del
-    let uniform_status = get_uniform_status(atoms);
-    
-    let (container, atoms_vec) = if let Some(status) = uniform_status {
-        let wrapper = create_revision_wrapper(doc, parent, status, settings).unwrap();
-        // Create modified atoms with Equal status to suppress inner revisions
-        let mut new_atoms = atoms.to_vec();
-        for atom in &mut new_atoms {
-            atom.correlation_status = ComparisonCorrelationStatus::Equal;
-        }
-        (wrapper, Some(new_atoms))
-    } else {
-        (parent, None)
-    };
-    
-    // Use either the modified atoms or the original slice
-    let atoms_ref = atoms_vec.as_deref().unwrap_or(atoms);
-    
+    // NOTE: Do NOT wrap entire paragraphs in w:ins or w:del at the body level.
+    // In OOXML, w:ins and w:del should only wrap run-level content (w:r, w:t, etc.),
+    // not block-level elements like w:p. Wrapping w:p in w:del causes MS Word to
+    // report document corruption.
+    //
+    // For uniform status paragraphs (all inserted or all deleted), we let the
+    // individual runs inside get wrapped instead, which is valid OOXML.
     // Note: Do NOT add pt_unid to output - it's an internal tracking attribute
-    let para = doc.add_child(container, XmlNodeData::element_with_attrs(W::p(), para_attrs));
-    
+    let para = doc.add_child(parent, XmlNodeData::element_with_attrs(W::p(), para_attrs));
+
     // OOXML requires w:pPr to be the FIRST child of w:p
     // First pass: add pPr elements
     for (key, start, end) in grouped_children {
-        let group_atoms = &atoms_ref[*start..*end];
+        let group_atoms = &atoms[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
                 if !matches!(&gcc.content_element, ContentElement::ParagraphProperties { .. }) { continue; }
                 if is_inside_vml && spl.get(1) == Some(&"Inserted") { continue; }
-                // Suppress status if uniform wrapper exists
-                let status_arg = if uniform_status.is_some() { "" } else { spl.get(1).unwrap_or(&"") };
+                // Pass through the status from grouping
+                let status_arg = spl.get(1).unwrap_or(&"");
                 let content_elem_node = create_content_element(doc, gcc, status_arg);
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
             }
         }
     }
-    
+
     // Second pass: add all other content (runs, etc.)
     for (key, start, end) in grouped_children {
-        let group_atoms = &atoms_ref[*start..*end];
+        let group_atoms = &atoms[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
         if spl.get(0) == Some(&"") {
             for gcc in group_atoms {
                 // Skip pPr - already added in first pass
                 if matches!(&gcc.content_element, ContentElement::ParagraphProperties { .. }) { continue; }
-                // Suppress status if uniform wrapper exists
-                let status_arg = if uniform_status.is_some() { "" } else { spl.get(1).unwrap_or(&"") };
+                // Pass through the status from grouping
+                let status_arg = spl.get(1).unwrap_or(&"");
                 let content_elem_node = create_content_element(doc, gcc, status_arg);
                 if let Some(node) = content_elem_node { doc.reparent(para, node); }
             }
@@ -1697,30 +1686,17 @@ fn reconstruct_allowable_run_children(doc: &mut XmlDocument, parent: NodeId, _an
 }
 
 fn reconstruct_element(doc: &mut XmlDocument, parent: NodeId, group_key: &str, ancestor: &AncestorElementInfo, _props_names: &[&str], group_atoms: &[ComparisonUnitAtom], level: usize, part: Option<()>, settings: &WmlComparerSettings) {
-    // Check for uniform status
-    let uniform_status = get_uniform_status(group_atoms);
-    
-    let (container, atoms_vec) = if let Some(status) = uniform_status {
-        let wrapper = create_revision_wrapper(doc, parent, status, settings).unwrap();
-        let mut new_atoms = group_atoms.to_vec();
-        for atom in &mut new_atoms {
-            atom.correlation_status = ComparisonCorrelationStatus::Equal;
-        }
-        (wrapper, Some(new_atoms))
-    } else {
-        (parent, None)
-    };
-    
-    let atoms_ref = atoms_vec.as_deref().unwrap_or(group_atoms);
-    
+    // NOTE: Do NOT wrap block-level elements (tables, etc.) in w:ins or w:del at the body level.
+    // In OOXML, w:ins and w:del should only wrap run-level content, not block elements.
+    // Individual runs inside will get properly wrapped instead.
     let temp_container = doc.new_node(XmlNodeData::element(W::body()));
-    coalesce_recurse(doc, temp_container, atoms_ref, level + 1, part, settings);
+    coalesce_recurse(doc, temp_container, group_atoms, level + 1, part, settings);
     let new_child_elements: Vec<NodeId> = doc.children(temp_container).collect();
     let mut attrs = ancestor.attributes.clone();
     attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     attrs.push(XAttribute::new(pt_unid(), group_key));
     let elem_name = xname_from_ancestor(ancestor);
-    let elem = doc.add_child(container, XmlNodeData::element_with_attrs(elem_name, attrs));
+    let elem = doc.add_child(parent, XmlNodeData::element_with_attrs(elem_name, attrs));
     for child in new_child_elements { doc.reparent(elem, child); }
 }
 
@@ -1813,11 +1789,9 @@ fn create_content_element(doc: &mut XmlDocument, atom: &ComparisonUnitAtom, stat
                 if !status.is_empty() { doc.set_attribute(drawing, &pt_status(), status); }
                 Some(drawing)
             } else {
-                eprintln!("DEBUG: Drawing element_xml length={}, contains 'inline'={}", element_xml.len(), element_xml.contains("inline"));
                 // Parse and deep-copy the original drawing using namespace wrapper
                 if let Some(new_node) = parse_xml_fragment(doc, element_xml) {
                     let child_count = doc.descendants(new_node).count();
-                    eprintln!("DEBUG: parse_xml_fragment returned node with {} descendants", child_count);
                     if child_count == 0 {
                         eprintln!("BUG: parse_xml_fragment returned node with NO children!");
                         eprintln!("  element_xml first 300 chars: {}", &element_xml.chars().take(300).collect::<String>());
