@@ -10,12 +10,15 @@
 //! Key insight: This processes `Unknown` CorrelatedSequences iteratively until
 //! all are resolved to Equal, Deleted, or Inserted.
 
+#[cfg(feature = "trace")]
+use super::settings::{LcsTraceOperation, LcsTraceOutput};
 use super::comparison_unit::{
     ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom, ComparisonUnitGroup,
     ComparisonUnitGroupContents, ComparisonUnitGroupType, ComparisonUnitWord, ContentElement,
     generate_unid,
 };
 use super::settings::WmlComparerSettings;
+#[cfg(feature = "trace")]
 use std::collections::HashMap;
 
 /// Correlation status for sequences
@@ -137,6 +140,385 @@ pub fn lcs(
         for seq in new_sequences.into_iter().rev() {
             cs_list.insert(idx, seq);
         }
+    }
+}
+
+// ============================================================================
+// Trace functions - only compiled when "trace" feature is enabled
+// ============================================================================
+
+/// Extract text content from a ComparisonUnit for tracing/filtering
+#[cfg(feature = "trace")]
+fn extract_unit_text(unit: &ComparisonUnit) -> String {
+    match unit {
+        ComparisonUnit::Word(word) => {
+            word.atoms.iter()
+                .map(|atom| atom.content_element.text_value())
+                .collect::<Vec<_>>()
+                .join("")
+        }
+        ComparisonUnit::Group(group) => {
+            extract_group_text(group)
+        }
+    }
+}
+
+/// Extract text from a group recursively
+#[cfg(feature = "trace")]
+fn extract_group_text(group: &ComparisonUnitGroup) -> String {
+    match &group.contents {
+        ComparisonUnitGroupContents::Words(words) => {
+            words.iter()
+                .flat_map(|word| word.atoms.iter())
+                .map(|atom| atom.content_element.text_value())
+                .collect::<Vec<_>>()
+                .join("")
+        }
+        ComparisonUnitGroupContents::Groups(groups) => {
+            groups.iter()
+                .map(extract_group_text)
+                .collect::<Vec<_>>()
+                .join("")
+        }
+    }
+}
+
+/// Extract text from a list of units
+#[cfg(feature = "trace")]
+fn extract_units_text(units: &[ComparisonUnit]) -> String {
+    units.iter().map(extract_unit_text).collect::<Vec<_>>().join("")
+}
+
+/// Convert a ComparisonUnit to a token string for tracing
+#[cfg(feature = "trace")]
+fn unit_to_token(unit: &ComparisonUnit) -> String {
+    extract_unit_text(unit)
+}
+
+/// Generate trace output from correlated sequences
+///
+/// This captures the result of the LCS algorithm in a format suitable for debugging.
+#[cfg(feature = "trace")]
+pub fn generate_lcs_trace(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+    correlated: &[CorrelatedSequence],
+    matched_text: String,
+) -> LcsTraceOutput {
+    // Extract tokens from input units
+    let tokens1: Vec<String> = units1.iter().map(unit_to_token).collect();
+    let tokens2: Vec<String> = units2.iter().map(unit_to_token).collect();
+
+    // Generate raw operations from correlated sequences
+    let mut raw_operations = Vec::new();
+    let mut pos1 = 0usize;
+    let mut pos2 = 0usize;
+
+    for seq in correlated {
+        match seq.status {
+            CorrelationStatus::Equal => {
+                if let Some(ref units) = seq.units1 {
+                    for unit in units {
+                        raw_operations.push(LcsTraceOperation {
+                            op: "equal".to_string(),
+                            tokens: vec![unit_to_token(unit)],
+                            pos1: Some(pos1),
+                            pos2: Some(pos2),
+                        });
+                        pos1 += 1;
+                        pos2 += 1;
+                    }
+                }
+            }
+            CorrelationStatus::Deleted => {
+                if let Some(ref units) = seq.units1 {
+                    for unit in units {
+                        raw_operations.push(LcsTraceOperation {
+                            op: "delete".to_string(),
+                            tokens: vec![unit_to_token(unit)],
+                            pos1: Some(pos1),
+                            pos2: None,
+                        });
+                        pos1 += 1;
+                    }
+                }
+            }
+            CorrelationStatus::Inserted => {
+                if let Some(ref units) = seq.units2 {
+                    for unit in units {
+                        raw_operations.push(LcsTraceOperation {
+                            op: "insert".to_string(),
+                            tokens: vec![unit_to_token(unit)],
+                            pos1: None,
+                            pos2: Some(pos2),
+                        });
+                        pos2 += 1;
+                    }
+                }
+            }
+            CorrelationStatus::Unknown => {
+                // Should not happen in final output
+            }
+        }
+    }
+
+    // Coalesce consecutive operations of the same type
+    let coalesced_operations = coalesce_trace_operations(&raw_operations);
+
+    // Calculate LCS length (count of equal operations)
+    let lcs_length = raw_operations.iter()
+        .filter(|op| op.op == "equal")
+        .count();
+
+    LcsTraceOutput {
+        matched_text,
+        tokens1,
+        tokens2,
+        raw_operations,
+        coalesced_operations,
+        lcs_length,
+    }
+}
+
+/// Coalesce consecutive trace operations of the same type
+#[cfg(feature = "trace")]
+fn coalesce_trace_operations(ops: &[LcsTraceOperation]) -> Vec<LcsTraceOperation> {
+    if ops.is_empty() {
+        return Vec::new();
+    }
+
+    let mut result = Vec::new();
+    let mut current = LcsTraceOperation {
+        op: ops[0].op.clone(),
+        tokens: ops[0].tokens.clone(),
+        pos1: ops[0].pos1,
+        pos2: ops[0].pos2,
+    };
+
+    for op in &ops[1..] {
+        if op.op == current.op {
+            // Same operation type - extend tokens
+            current.tokens.extend(op.tokens.iter().cloned());
+        } else {
+            // Different operation - push current and start new
+            result.push(current);
+            current = LcsTraceOperation {
+                op: op.op.clone(),
+                tokens: op.tokens.clone(),
+                pos1: op.pos1,
+                pos2: op.pos2,
+            };
+        }
+    }
+    result.push(current);
+
+    result
+}
+
+/// Information about a matched paragraph for tracing
+#[cfg(feature = "trace")]
+#[derive(Debug, Clone)]
+pub struct MatchedParagraphInfo {
+    /// The text content of the matched paragraph
+    pub text: String,
+    /// Index of the matched unit in the units array
+    pub index: usize,
+}
+
+/// Check if any unit in the list contains text matching the filter
+/// Returns the matched paragraph info if found
+#[cfg(feature = "trace")]
+pub fn units_match_filter(units: &[ComparisonUnit], settings: &WmlComparerSettings) -> Option<MatchedParagraphInfo> {
+    if !settings.is_tracing_enabled() {
+        return None;
+    }
+
+    // Check each unit (especially groups which represent paragraphs)
+    for (index, unit) in units.iter().enumerate() {
+        if let ComparisonUnit::Group(group) = unit {
+            if group.group_type == ComparisonUnitGroupType::Paragraph {
+                let text = extract_group_text(group);
+                if settings.should_trace_paragraph(&text) {
+                    return Some(MatchedParagraphInfo { text, index });
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Find the best matching paragraph in the other document
+/// Uses text similarity to find the corresponding paragraph
+#[cfg(feature = "trace")]
+fn find_corresponding_paragraph(
+    target_text: &str,
+    units: &[ComparisonUnit],
+    settings: &WmlComparerSettings,
+) -> Option<MatchedParagraphInfo> {
+    // First, try to find an exact or near-exact match using the same filter
+    for (index, unit) in units.iter().enumerate() {
+        if let ComparisonUnit::Group(group) = unit {
+            if group.group_type == ComparisonUnitGroupType::Paragraph {
+                let text = extract_group_text(group);
+                // Check if this paragraph matches the filter (same section/prefix)
+                if settings.should_trace_paragraph(&text) {
+                    return Some(MatchedParagraphInfo { text, index });
+                }
+            }
+        }
+    }
+
+    // Fallback: find paragraph with most text overlap
+    let target_words: std::collections::HashSet<&str> = target_text.split_whitespace().collect();
+    let mut best_match: Option<(usize, String, usize)> = None;
+
+    for (index, unit) in units.iter().enumerate() {
+        if let ComparisonUnit::Group(group) = unit {
+            if group.group_type == ComparisonUnitGroupType::Paragraph {
+                let text = extract_group_text(group);
+                let text_words: std::collections::HashSet<&str> = text.split_whitespace().collect();
+                let overlap = target_words.intersection(&text_words).count();
+
+                if overlap > 0 {
+                    if best_match.is_none() || overlap > best_match.as_ref().unwrap().2 {
+                        best_match = Some((index, text, overlap));
+                    }
+                }
+            }
+        }
+    }
+
+    best_match.map(|(index, text, _)| MatchedParagraphInfo { text, index })
+}
+
+/// Extract words from a paragraph unit for focused comparison
+#[cfg(feature = "trace")]
+fn extract_words_from_unit(unit: &ComparisonUnit) -> Vec<ComparisonUnit> {
+    match unit {
+        ComparisonUnit::Group(group) => {
+            match &group.contents {
+                ComparisonUnitGroupContents::Words(words) => {
+                    words.iter()
+                        .map(|w| ComparisonUnit::Word(w.clone()))
+                        .collect()
+                }
+                ComparisonUnitGroupContents::Groups(groups) => {
+                    // Recursively extract from nested groups
+                    groups.iter()
+                        .flat_map(|g| extract_words_from_unit(&ComparisonUnit::Group(g.clone())))
+                        .collect()
+                }
+            }
+        }
+        ComparisonUnit::Word(word) => vec![ComparisonUnit::Word(word.clone())],
+    }
+}
+
+/// Generate a focused LCS trace for just the matched paragraph
+/// This runs a separate LCS on just the paragraph's words for detailed debugging
+#[cfg(feature = "trace")]
+pub fn generate_focused_trace(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+    matched1: &MatchedParagraphInfo,
+    matched2: Option<&MatchedParagraphInfo>,
+    settings: &WmlComparerSettings,
+) -> LcsTraceOutput {
+    // Extract words from the matched paragraphs
+    let para1 = &units1[matched1.index];
+    let words1 = extract_words_from_unit(para1);
+
+    let (words2, matched_text2) = if let Some(m2) = matched2 {
+        let para2 = &units2[m2.index];
+        (extract_words_from_unit(para2), m2.text.clone())
+    } else {
+        // No corresponding paragraph found - compare against empty
+        (Vec::new(), String::new())
+    };
+
+    // Run LCS on just the paragraph words
+    let correlated = lcs(words1.clone(), words2.clone(), settings);
+
+    // Generate tokens from words
+    let tokens1: Vec<String> = words1.iter().map(unit_to_token).collect();
+    let tokens2: Vec<String> = words2.iter().map(unit_to_token).collect();
+
+    // Generate operations from correlated sequences
+    let mut raw_operations = Vec::new();
+    let mut pos1 = 0usize;
+    let mut pos2 = 0usize;
+
+    for seq in &correlated {
+        match seq.status {
+            CorrelationStatus::Equal => {
+                if let Some(ref units) = seq.units1 {
+                    for unit in units {
+                        raw_operations.push(LcsTraceOperation {
+                            op: "equal".to_string(),
+                            tokens: vec![unit_to_token(unit)],
+                            pos1: Some(pos1),
+                            pos2: Some(pos2),
+                        });
+                        pos1 += 1;
+                        pos2 += 1;
+                    }
+                }
+            }
+            CorrelationStatus::Deleted => {
+                if let Some(ref units) = seq.units1 {
+                    for unit in units {
+                        raw_operations.push(LcsTraceOperation {
+                            op: "delete".to_string(),
+                            tokens: vec![unit_to_token(unit)],
+                            pos1: Some(pos1),
+                            pos2: None,
+                        });
+                        pos1 += 1;
+                    }
+                }
+            }
+            CorrelationStatus::Inserted => {
+                if let Some(ref units) = seq.units2 {
+                    for unit in units {
+                        raw_operations.push(LcsTraceOperation {
+                            op: "insert".to_string(),
+                            tokens: vec![unit_to_token(unit)],
+                            pos1: None,
+                            pos2: Some(pos2),
+                        });
+                        pos2 += 1;
+                    }
+                }
+            }
+            CorrelationStatus::Unknown => {}
+        }
+    }
+
+    let coalesced_operations = coalesce_trace_operations(&raw_operations);
+    let lcs_length = raw_operations.iter().filter(|op| op.op == "equal").count();
+
+    LcsTraceOutput {
+        matched_text: format!("Para {}: {} | Para {}: {}",
+            matched1.index,
+            truncate_text(&matched1.text, 50),
+            matched2.map(|m| m.index).unwrap_or(0),
+            truncate_text(&matched_text2, 50)),
+        tokens1,
+        tokens2,
+        raw_operations,
+        coalesced_operations,
+        lcs_length,
+    }
+}
+
+/// Truncate text for display
+#[cfg(feature = "trace")]
+fn truncate_text(text: &str, max_len: usize) -> String {
+    if text.len() <= max_len {
+        text.to_string()
+    } else {
+        format!("{}...", &text[..max_len])
     }
 }
 
@@ -904,6 +1286,35 @@ fn do_lcs_algorithm(
         false
     };
 
+    // Don't use empty or near-empty paragraph groups as anchor points
+    // This prevents splitting similar paragraphs onto opposite sides of an empty anchor
+    if best_length > 0 && best_i1 >= 0 {
+        let all_groups = units1[best_i1 as usize..best_i1 as usize + best_length]
+            .iter()
+            .all(|u| u.as_group().is_some());
+        if all_groups {
+            // Check if any matched group has meaningful content (more than just whitespace/marks)
+            let has_meaningful_content = units1[best_i1 as usize..best_i1 as usize + best_length]
+                .iter()
+                .any(|u| {
+                    if let Some(g) = u.as_group() {
+                        // Count atoms that are actual text content (not just paragraph marks)
+                        let content_atoms = g.descendant_atoms().iter().filter(|a| {
+                            matches!(&a.content_element, ContentElement::Text(c) if !c.is_whitespace())
+                        }).count();
+                        content_atoms > 0
+                    } else {
+                        false
+                    }
+                });
+            if !has_meaningful_content {
+                best_i1 = -1;
+                best_i2 = -1;
+                best_length = 0;
+            }
+        }
+    }
+
     // Don't match just a single space character
     if best_length == 1 && best_i2 >= 0 {
         if let Some(word) = units2[best_i2 as usize].as_word() {
@@ -980,7 +1391,13 @@ fn do_lcs_algorithm(
             if !contains_structural {
                 let max_len = units1.len().max(units2.len());
                 let ratio = best_length as f64 / max_len as f64;
-                if ratio < settings.detail_threshold {
+                // Use a lower threshold for pure-text word-level matches
+                // The main detail_threshold controls paragraph-level decisions (flatten vs block)
+                // For word-level matches within a paragraph, we want to be more permissive
+                // to find matches like "Landlord may request" (7 tokens in 148 = 4.7%)
+                // which would fail the 15% threshold but are meaningful
+                let text_match_threshold = settings.detail_threshold / 5.0; // 3% if default is 15%
+                if ratio < text_match_threshold {
                     best_i1 = -1;
                     best_i2 = -1;
                     best_length = 0;

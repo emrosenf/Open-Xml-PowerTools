@@ -27,6 +27,8 @@ use super::document::{
     find_endnotes_root, find_note_paragraphs, find_note_by_id, WmlDocument,
 };
 use super::lcs_algorithm::{lcs, flatten_to_atoms};
+#[cfg(feature = "trace")]
+use super::lcs_algorithm::{units_match_filter, generate_focused_trace};
 use super::preprocess::{preprocess_markup, repair_unids_after_revision_acceptance, PreProcessSettings};
 use super::revision::{count_revisions, reset_revision_id_counter};
 use super::revision_accepter::accept_revisions;
@@ -475,10 +477,11 @@ impl WmlComparer {
                 deletions: 0,
                 format_changes: 0,
                 revision_count: 0,
+                lcs_traces: None,
             });
         }
 
-        let (mut insertions, mut deletions, mut format_changes, mut coalesce_result, correlated_atoms) = {
+        let (mut insertions, mut deletions, mut format_changes, mut coalesce_result, correlated_atoms, lcs_traces) = {
             let root_data = doc2.get(doc2.root().unwrap()).unwrap();
             let root_name = root_data.name().unwrap().clone();
             let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
@@ -548,6 +551,7 @@ impl WmlComparer {
             deletions,
             format_changes,
             revision_count: insertions + deletions + format_changes,
+            lcs_traces,
         })
     }
 
@@ -704,6 +708,7 @@ impl WmlComparer {
             deletions,
             format_changes: 0,
             revision_count: insertions + deletions,
+            lcs_traces: None,
         })
     }
 
@@ -1341,16 +1346,37 @@ fn compare_atoms_internal(
     root_name: XName,
     root_attrs: Vec<XAttribute>,
     settings: &WmlComparerSettings,
-) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult, Vec<ComparisonUnitAtom>)> {
+) -> Result<(usize, usize, usize, super::coalesce::CoalesceResult, Vec<ComparisonUnitAtom>, Option<Vec<super::settings::LcsTraceOutput>>)> {
     let mut word_settings = WordSeparatorSettings::default();
     if settings.conflate_breaking_and_nonbreaking_spaces {
         word_settings.word_separators.push('\u{00a0}');
     }
-    
+
     let units1 = get_comparison_unit_list(atoms1, &word_settings);
     let units2 = get_comparison_unit_list(atoms2, &word_settings);
 
-    let correlated = lcs(units1, units2, settings);
+    // Trace generation - only compiled when "trace" feature is enabled
+    #[cfg(feature = "trace")]
+    let lcs_traces = {
+        let matched1 = units_match_filter(&units1, settings);
+        let matched2 = units_match_filter(&units2, settings);
+
+        if let Some(ref m1) = matched1 {
+            let trace = generate_focused_trace(&units1, &units2, m1, matched2.as_ref(), settings);
+            Some(vec![trace])
+        } else if let Some(ref m2) = matched2 {
+            let trace = generate_focused_trace(&units2, &units1, m2, matched1.as_ref(), settings);
+            Some(vec![trace])
+        } else {
+            None
+        }
+    };
+
+    // No trace when feature is disabled - zero overhead
+    #[cfg(not(feature = "trace"))]
+    let lcs_traces: Option<Vec<super::settings::LcsTraceOutput>> = None;
+
+    let correlated = lcs(units1.clone(), units2.clone(), settings);
     
     let mut flattened_atoms = flatten_to_atoms(&correlated);
     assemble_ancestor_unids(&mut flattened_atoms);
@@ -1402,7 +1428,7 @@ fn compare_atoms_internal(
     let format_changes = revision_counts.format_changes;
     
     // Return flattened atoms for note reference collection
-    Ok((insertions, deletions, format_changes, coalesce_result, flattened_atoms))
+    Ok((insertions, deletions, format_changes, coalesce_result, flattened_atoms, lcs_traces))
 }
 
 struct NoteProcessingResult {
@@ -1756,8 +1782,8 @@ fn compare_part_content(
     let root_name = root_data.name().unwrap().clone();
     let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
     
-    // Call compare_atoms_internal and discard the flattened atoms (not needed for notes)
-    let (ins, del, fmt, coalesce_result, _flattened_atoms) = 
+    // Call compare_atoms_internal and discard the flattened atoms and traces (not needed for notes)
+    let (ins, del, fmt, coalesce_result, _flattened_atoms, _traces) =
         compare_atoms_internal(atoms1, atoms2, root_name, root_attrs, settings)?;
     
     Ok((ins, del, fmt, coalesce_result))

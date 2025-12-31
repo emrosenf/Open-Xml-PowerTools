@@ -53,8 +53,11 @@ proptest = { workspace = true }
 regex = { workspace = true }
 
 [features]
-default = []
+default = ["trace"]
 wasm = []
+# LCS algorithm tracing for debugging - adds ~2 function calls overhead when enabled
+# Disable with --no-default-features for maximum performance
+trace = []
 
 [[bench]]
 name = "wml_benchmark"

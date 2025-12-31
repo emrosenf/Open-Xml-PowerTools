@@ -3,6 +3,7 @@
 //! Defines types and enums for comparing Word documents with
 //! detailed change tracking for UI display.
 
+use super::settings::LcsTraceOutput;
 use serde::{Deserialize, Serialize};
 
 /// Types of changes detected during Word document comparison.
@@ -123,6 +124,9 @@ pub struct WmlComparisonResult {
     pub format_changes: usize,
     /// Total number of revisions
     pub revision_count: usize,
+    /// LCS trace outputs for debugging (only populated when trace filter is set)
+    /// Always None when compiled without the "trace" feature.
+    pub lcs_traces: Option<Vec<LcsTraceOutput>>,
 }
 
 /// UI-friendly representation of a change for display in a change list.

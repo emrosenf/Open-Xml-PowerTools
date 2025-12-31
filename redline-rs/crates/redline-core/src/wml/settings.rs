@@ -1,4 +1,110 @@
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "trace")]
+use std::path::PathBuf;
+
+// ============================================================================
+// Trace types - only compiled when "trace" feature is enabled
+// ============================================================================
+
+/// Filter for tracing LCS algorithm execution on specific content.
+///
+/// When set, the comparer will output detailed trace information for
+/// paragraphs matching the filter, allowing debugging of the LCS algorithm.
+#[cfg(feature = "trace")]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct LcsTraceFilter {
+    /// Trace paragraphs in a section starting with this text (e.g., "3.1", "(b)")
+    pub section: Option<String>,
+
+    /// Trace paragraphs starting with this text
+    pub paragraph_prefix: Option<String>,
+
+    /// Output file for trace JSON (default: lcs-trace.json)
+    pub output_path: Option<PathBuf>,
+}
+
+#[cfg(feature = "trace")]
+impl LcsTraceFilter {
+    /// Check if tracing is enabled
+    pub fn is_enabled(&self) -> bool {
+        self.section.is_some() || self.paragraph_prefix.is_some()
+    }
+
+    /// Check if the given paragraph text matches the filter
+    pub fn matches(&self, paragraph_text: &str) -> bool {
+        if !self.is_enabled() {
+            return false;
+        }
+
+        let text = paragraph_text.trim();
+
+        // Check section match (e.g., "3.1" matches "3.1  Rent Commencement")
+        if let Some(ref section) = self.section {
+            let section_lower = section.to_lowercase();
+            let text_lower = text.to_lowercase();
+            if text_lower.starts_with(&section_lower) {
+                // Verify it's followed by whitespace or end
+                let rest = &text_lower[section_lower.len()..];
+                if rest.is_empty() || rest.starts_with(|c: char| c.is_whitespace()) {
+                    return true;
+                }
+            }
+        }
+
+        // Check paragraph prefix match
+        if let Some(ref prefix) = self.paragraph_prefix {
+            if text.to_lowercase().starts_with(&prefix.to_lowercase()) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Get the output path for the trace file
+    pub fn get_output_path(&self) -> PathBuf {
+        self.output_path.clone().unwrap_or_else(|| PathBuf::from("lcs-trace.json"))
+    }
+}
+
+/// A single LCS operation in the trace
+#[cfg(feature = "trace")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LcsTraceOperation {
+    /// Operation type: "equal", "delete", or "insert"
+    pub op: String,
+    /// Token(s) involved in this operation
+    pub tokens: Vec<String>,
+    /// Position in source1 (for equal/delete)
+    pub pos1: Option<usize>,
+    /// Position in source2 (for equal/insert)
+    pub pos2: Option<usize>,
+}
+
+/// Trace output for a single paragraph comparison
+#[cfg(feature = "trace")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LcsTraceOutput {
+    /// The paragraph text that matched the filter
+    pub matched_text: String,
+    /// Tokens from document 1
+    pub tokens1: Vec<String>,
+    /// Tokens from document 2
+    pub tokens2: Vec<String>,
+    /// Raw LCS operations before coalescing
+    pub raw_operations: Vec<LcsTraceOperation>,
+    /// Coalesced operations (grouped consecutive same-type ops)
+    pub coalesced_operations: Vec<LcsTraceOperation>,
+    /// LCS length
+    pub lcs_length: usize,
+}
+
+/// Stub type when trace feature is disabled - never actually instantiated
+#[cfg(not(feature = "trace"))]
+#[derive(Debug, Clone)]
+pub struct LcsTraceOutput {
+    _private: (),
+}
 
 /// Settings for WmlComparer document comparison.
 /// Faithful port of WmlComparerSettings from C# OpenXmlPowerTools.
@@ -35,6 +141,13 @@ pub struct WmlComparerSettings {
     
     /// Starting ID for footnote and endnote numbering.
     pub starting_id_for_footnotes_endnotes: i32,
+
+    /// Optional filter for tracing LCS algorithm on specific paragraphs.
+    /// When set, outputs detailed trace information to help debug comparison issues.
+    /// Only available when compiled with the "trace" feature.
+    #[cfg(feature = "trace")]
+    #[serde(default)]
+    pub lcs_trace_filter: Option<LcsTraceFilter>,
 }
 
 impl Default for WmlComparerSettings {
@@ -66,6 +179,8 @@ impl Default for WmlComparerSettings {
             track_formatting_changes: true, // C# default: true
             culture_info: None, // C# default: null
             starting_id_for_footnotes_endnotes: 1, // C# default: 1
+            #[cfg(feature = "trace")]
+            lcs_trace_filter: None,
         }
     }
 }
@@ -93,7 +208,7 @@ impl WmlComparerSettings {
         self.track_formatting_changes = track;
         self
     }
-    
+
     /// Builder method to set culture info.
     pub fn with_culture_info(mut self, culture: impl Into<String>) -> Self {
         self.culture_info = Some(culture.into());
@@ -105,11 +220,49 @@ impl WmlComparerSettings {
         self.date_time_for_revisions = Some(date_time.into());
         self
     }
-    
+
+    /// Builder method to set LCS trace filter for debugging.
+    /// Only available when compiled with the "trace" feature.
+    #[cfg(feature = "trace")]
+    pub fn with_lcs_trace_filter(mut self, filter: LcsTraceFilter) -> Self {
+        self.lcs_trace_filter = Some(filter);
+        self
+    }
+
     /// Check if a character is a word separator.
     /// C# equivalent: IsWordSeparator(char c)
     pub fn is_word_separator(&self, c: char) -> bool {
         self.word_separators.contains(&c)
+    }
+
+    /// Check if LCS tracing is enabled.
+    /// Always returns false when compiled without the "trace" feature.
+    #[cfg(feature = "trace")]
+    pub fn is_tracing_enabled(&self) -> bool {
+        self.lcs_trace_filter.as_ref().map(|f| f.is_enabled()).unwrap_or(false)
+    }
+
+    /// Check if LCS tracing is enabled.
+    /// Always returns false when compiled without the "trace" feature.
+    #[cfg(not(feature = "trace"))]
+    #[inline(always)]
+    pub fn is_tracing_enabled(&self) -> bool {
+        false
+    }
+
+    /// Check if a paragraph matches the trace filter.
+    /// Only available when compiled with the "trace" feature.
+    #[cfg(feature = "trace")]
+    pub fn should_trace_paragraph(&self, paragraph_text: &str) -> bool {
+        self.lcs_trace_filter.as_ref().map(|f| f.matches(paragraph_text)).unwrap_or(false)
+    }
+
+    /// Check if a paragraph matches the trace filter.
+    /// Always returns false when compiled without the "trace" feature.
+    #[cfg(not(feature = "trace"))]
+    #[inline(always)]
+    pub fn should_trace_paragraph(&self, _paragraph_text: &str) -> bool {
+        false
     }
 }
 

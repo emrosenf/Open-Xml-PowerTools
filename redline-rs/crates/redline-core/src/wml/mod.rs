@@ -34,6 +34,8 @@ pub use comparison_unit::{
 };
 pub use comparer::WmlComparer;
 pub use lcs_algorithm::{flatten_to_atoms, lcs, CorrelatedSequence, CorrelationStatus};
+#[cfg(feature = "trace")]
+pub use lcs_algorithm::{generate_lcs_trace, generate_focused_trace, units_match_filter, MatchedParagraphInfo};
 pub use document::{
     extract_all_text, extract_paragraph_text,
     find_document_body, find_paragraphs,
@@ -60,8 +62,10 @@ pub use consolidate::{consolidate, consolidate_with_settings};
 pub use get_revisions::get_revisions;
 pub use settings::{
     WmlComparerSettings, WmlComparerConsolidateSettings, WmlRevisedDocumentInfo,
-    WmlComparerRevisionType, WmlComparerRevision,
+    WmlComparerRevisionType, WmlComparerRevision, LcsTraceOutput,
 };
+#[cfg(feature = "trace")]
+pub use settings::{LcsTraceFilter, LcsTraceOperation};
 pub use simplify::{
     SimplifyMarkupSettings, simplify_markup, merge_adjacent_superfluous_runs,
     transform_element_to_single_character_runs,
