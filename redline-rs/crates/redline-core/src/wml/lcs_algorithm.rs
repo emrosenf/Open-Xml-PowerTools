@@ -1368,6 +1368,58 @@ fn do_lcs_algorithm(
         }
     }
 
+    // Don't match sequences consisting only of common stopwords
+    // Words like "and", "shall", "the" appear in almost any sentence and
+    // don't represent meaningful shared content worth using as anchors
+    if best_length > 0 && best_length <= 5 && best_i1 >= 0 {
+        let common_seq: Vec<_> = units1[best_i1 as usize..best_i1 as usize + best_length].to_vec();
+        let all_are_words = common_seq.iter().all(|cs| cs.as_word().is_some());
+
+        if all_are_words {
+            // Extract the actual text content (lowercased) from the sequence
+            // Each Word contains multiple atoms (characters), so we concatenate them per word
+            let text_tokens: Vec<String> = common_seq.iter()
+                .filter_map(|cs| cs.as_word())
+                .map(|word| {
+                    // Concatenate all text characters in this word
+                    word.atoms.iter()
+                        .filter_map(|atom| {
+                            if let ContentElement::Text(c) = atom.content_element {
+                                Some(c.to_lowercase().to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<String>()
+                })
+                .filter(|s| !s.trim().is_empty() && s.chars().any(|c| c.is_alphanumeric()))
+                .collect();
+
+            // Common stopwords that shouldn't anchor comparisons on their own
+            const STOPWORDS: &[&str] = &[
+                "a", "an", "the", "and", "or", "but", "nor", "for", "yet", "so",
+                "is", "are", "was", "were", "be", "been", "being", "am",
+                "has", "have", "had", "do", "does", "did",
+                "shall", "will", "would", "could", "should", "may", "might", "must", "can",
+                "to", "of", "in", "on", "at", "by", "with", "from", "into", "upon",
+                "as", "if", "that", "this", "these", "those", "which", "who", "whom",
+                "it", "its", "he", "she", "they", "we", "you", "i",
+                "not", "no", "any", "all", "each", "every", "both", "either", "neither",
+                "such", "other", "another", "same", "own",
+            ];
+
+            let all_stopwords = text_tokens.iter().all(|token| {
+                STOPWORDS.contains(&token.as_str())
+            });
+
+            if all_stopwords && !text_tokens.is_empty() {
+                best_i1 = -1;
+                best_i2 = -1;
+                best_length = 0;
+            }
+        }
+    }
+
     // Apply detail threshold for text-only sequences
     // Skip if matched sequence contains structural elements (non-text atoms)
     if !is_only_paragraph_mark && best_length > 0 && best_i1 >= 0 {
