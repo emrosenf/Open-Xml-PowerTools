@@ -44,3 +44,6 @@ _ReSharper.Caches/
 # redline-js
 redline-js/node_modules
 redline-js/dist
+
+# bv (beads viewer) local config and caches
+.bv/
