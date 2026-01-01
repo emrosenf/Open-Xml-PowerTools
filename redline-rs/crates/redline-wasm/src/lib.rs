@@ -285,21 +285,101 @@ pub fn revert_sml_changes(document: &[u8], changes_json: JsValue) -> Result<Vec<
         .map_err(|e| JsError::new(&e.to_string()))
 }
 
+#[derive(Serialize)]
+pub struct PmlCompareResultWithChanges {
+    #[serde(with = "serde_bytes")]
+    pub document: Vec<u8>,
+    pub changes: Vec<redline_core::pml::PmlChange>,
+    pub insertions: usize,
+    pub deletions: usize,
+    pub revision_count: usize,
+}
+
 #[wasm_bindgen]
 pub fn compare_presentations(
     older: &[u8],
     newer: &[u8],
     settings_json: Option<String>,
 ) -> Result<JsValue, JsError> {
-    let _settings: Option<redline_core::PmlComparerSettings> = settings_json
+    let settings: Option<redline_core::PmlComparerSettings> = settings_json
         .map(|s| serde_json::from_str(&s))
         .transpose()
         .map_err(|e: serde_json::Error| JsError::new(&e.to_string()))?;
 
-    let _older_doc =
+    let older_doc =
         redline_core::PmlDocument::from_bytes(older).map_err(|e| JsError::new(&e.to_string()))?;
-    let _newer_doc =
+    let newer_doc =
         redline_core::PmlDocument::from_bytes(newer).map_err(|e| JsError::new(&e.to_string()))?;
 
-    todo!("WASM bindings not yet implemented - Phase 6")
+    // Use compare() for now, as we don't have produce_marked_presentation exposed yet for rendering
+    // But wait, m2p.5 says "return PmlComparisonResult with changes" and "WASM bindings for PML change viewer APIs"
+    // AND "render_marked_presentation" is in pml/mod.rs (re-exported).
+
+    // We should implement compare_and_render in PmlComparer if we want consistency with SML.
+    // Or just use render_marked_presentation here.
+
+    // Let's first compute the result.
+    let result = redline_core::PmlComparer::compare(&older_doc, &newer_doc, settings.as_ref())
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    // Then render the marked presentation
+    let marked_doc = redline_core::pml::render_marked_presentation(
+        &newer_doc,
+        &result,
+        settings
+            .as_ref()
+            .unwrap_or(&redline_core::PmlComparerSettings::default()),
+    )
+    .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let document_bytes = marked_doc
+        .to_bytes()
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let result_struct = PmlCompareResultWithChanges {
+        document: document_bytes,
+        changes: result.changes,
+        insertions: result.slides_inserted as usize + result.shapes_inserted as usize,
+        deletions: result.slides_deleted as usize + result.shapes_deleted as usize,
+        revision_count: result.total_changes as usize,
+    };
+
+    serde_wasm_bindgen::to_value(&result_struct).map_err(|e| JsError::new(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn build_pml_change_list(
+    changes_json: JsValue,
+    options_json: Option<String>,
+) -> Result<JsValue, JsError> {
+    let changes: Vec<redline_core::pml::PmlChange> =
+        serde_wasm_bindgen::from_value(changes_json).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let options: redline_core::pml::PmlChangeListOptions = options_json
+        .map(|s| serde_json::from_str(&s))
+        .transpose()
+        .map_err(|e: serde_json::Error| JsError::new(&e.to_string()))?
+        .unwrap_or_default();
+
+    let items = redline_core::pml::build_change_list(&changes, &options);
+
+    serde_wasm_bindgen::to_value(&items).map_err(|e| JsError::new(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn apply_pml_changes(document: &[u8], changes_json: JsValue) -> Result<Vec<u8>, JsError> {
+    let changes: Vec<redline_core::pml::PmlChange> =
+        serde_wasm_bindgen::from_value(changes_json).map_err(|e| JsError::new(&e.to_string()))?;
+
+    redline_core::pml::apply_pml_changes(document, &changes)
+        .map_err(|e| JsError::new(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn revert_pml_changes(document: &[u8], changes_json: JsValue) -> Result<Vec<u8>, JsError> {
+    let changes: Vec<redline_core::pml::PmlChange> =
+        serde_wasm_bindgen::from_value(changes_json).map_err(|e| JsError::new(&e.to_string()))?;
+
+    redline_core::pml::revert_pml_changes(document, &changes)
+        .map_err(|e| JsError::new(&e.to_string()))
 }

@@ -20,11 +20,12 @@
 //!
 //! C# Parity: Faithful port of PmlComparer.cs lines 2176-2677
 
+use super::result::PmlComparisonResult;
+use super::types::{PmlChange, PmlChangeType};
+use super::{PmlComparerSettings, PmlDocument};
 use crate::error::Result;
-use crate::xml::{XmlDocument, XmlNodeData, XName, XAttribute, P, A, R};
 use crate::xml::namespaces::XMLNS;
-use super::{PmlDocument, PmlComparisonResult, PmlComparerSettings};
-use super::result::{PmlChange, PmlChangeType};
+use crate::xml::{XAttribute, XName, XmlDocument, XmlNodeData, A, P, R};
 use std::collections::HashMap;
 
 /// Main entry point for rendering a marked presentation.
@@ -55,7 +56,9 @@ pub fn render_marked_presentation(
 
     // Process each slide with changes
     for (slide_index, changes) in changes_by_slide {
-        if let Some(slide_path) = slide_paths.get(&slide_index) {
+        if let Some(slide_path) =
+            slide_paths.get(&slide_index.expect("Slide index must be present"))
+        {
             if let Ok(mut slide_doc) = pkg.get_xml_part(slide_path) {
                 add_change_overlays(&mut slide_doc, &changes, settings);
                 pkg.put_xml_part(slide_path, &slide_doc)?;
@@ -103,7 +106,10 @@ fn get_slide_paths(pkg: &crate::package::OoxmlPackage) -> Result<HashMap<usize, 
                     }
                     // Only include slide relationships
                     if let (Some(id), Some(target), Some(type_)) = (id, target, type_attr) {
-                        if type_.contains("slide") && !type_.contains("slideLayout") && !type_.contains("slideMaster") {
+                        if type_.contains("slide")
+                            && !type_.contains("slideLayout")
+                            && !type_.contains("slideMaster")
+                        {
                             let full_path = if target.starts_with('/') {
                                 target[1..].to_string()
                             } else {
@@ -126,7 +132,9 @@ fn get_slide_paths(pkg: &crate::package::OoxmlPackage) -> Result<HashMap<usize, 
                         if let Some(attrs) = data.attributes() {
                             let mut r_id = None;
                             for attr in attrs {
-                                if attr.name.local_name == "id" && attr.name.namespace.as_deref() == Some(R::NS) {
+                                if attr.name.local_name == "id"
+                                    && attr.name.namespace.as_deref() == Some(R::NS)
+                                {
                                     r_id = Some(attr.value.clone());
                                 }
                             }
@@ -150,16 +158,12 @@ fn get_slide_paths(pkg: &crate::package::OoxmlPackage) -> Result<HashMap<usize, 
 /// Extract slide number from path (e.g., "ppt/slides/slide1.xml" -> 0)
 fn extract_slide_number(path: &str) -> usize {
     let filename = path.rsplit('/').next().unwrap_or(path);
-    let num_str: String = filename
-        .chars()
-        .filter(|c| c.is_ascii_digit())
-        .collect();
+    let num_str: String = filename.chars().filter(|c| c.is_ascii_digit()).collect();
     num_str.parse::<usize>().unwrap_or(1).saturating_sub(1)
 }
 
-/// Group changes by slide index
-fn group_changes_by_slide(changes: &[PmlChange]) -> HashMap<usize, Vec<&PmlChange>> {
-    let mut by_slide: HashMap<usize, Vec<&PmlChange>> = HashMap::new();
+fn group_changes_by_slide(changes: &[PmlChange]) -> HashMap<Option<usize>, Vec<&PmlChange>> {
+    let mut by_slide: HashMap<Option<usize>, Vec<&PmlChange>> = HashMap::new();
     for change in changes {
         by_slide.entry(change.slide_index).or_default().push(change);
     }
@@ -191,7 +195,14 @@ fn add_change_overlays(
     for change in changes {
         let (label_text, color) = get_label_for_change(change, settings);
         if !label_text.is_empty() {
-            add_change_label(slide_doc, sp_tree_id, change, &label_text, &color, &mut next_id);
+            add_change_label(
+                slide_doc,
+                sp_tree_id,
+                change,
+                &label_text,
+                &color,
+                &mut next_id,
+            );
         }
     }
 }
@@ -247,10 +258,19 @@ fn get_label_for_change(change: &PmlChange, settings: &PmlComparerSettings) -> (
         PmlChangeType::ShapeMoved => ("MOVED".to_string(), settings.moved_color.clone()),
         PmlChangeType::ShapeResized => ("RESIZED".to_string(), settings.modified_color.clone()),
         PmlChangeType::TextChanged => ("TEXT CHANGED".to_string(), settings.modified_color.clone()),
-        PmlChangeType::FormattingChanged => ("FORMATTING".to_string(), settings.modified_color.clone()),
-        PmlChangeType::ImageReplaced => ("IMAGE REPLACED".to_string(), settings.modified_color.clone()),
-        PmlChangeType::TableContentChanged => ("TABLE CHANGED".to_string(), settings.modified_color.clone()),
-        PmlChangeType::ChartDataChanged => ("CHART CHANGED".to_string(), settings.modified_color.clone()),
+        PmlChangeType::TextFormattingChanged => {
+            ("FORMATTING".to_string(), settings.modified_color.clone())
+        }
+        PmlChangeType::ImageReplaced => (
+            "IMAGE REPLACED".to_string(),
+            settings.modified_color.clone(),
+        ),
+        PmlChangeType::TableContentChanged => {
+            ("TABLE CHANGED".to_string(), settings.modified_color.clone())
+        }
+        PmlChangeType::ChartDataChanged => {
+            ("CHART CHANGED".to_string(), settings.modified_color.clone())
+        }
         _ => (String::new(), String::new()),
     }
 }
@@ -265,8 +285,11 @@ fn add_change_label(
     next_id: &mut u32,
 ) {
     // Position: use change coordinates or default
-    let x = change.new_x.unwrap_or(914400) as i64; // Default 1 inch from left
-    let y = change.new_y.map(|y| y.saturating_sub(300000) as i64).unwrap_or(457200); // Above shape
+    let x = change.new_x.unwrap_or(914400.0) as i64; // Default 1 inch from left
+    let y = change
+        .new_y
+        .map(|y: f64| (y - 300000.0).max(0.0) as i64)
+        .unwrap_or(457200); // Above shape
     let cx = 1828800_i64; // 2 inches width
     let cy = 274320_i64; // 0.3 inches height
 
@@ -278,20 +301,26 @@ fn add_change_label(
 
     // cNvPr (common non-visual properties)
     let shape_name = format!("ChangeLabel_{}", *next_id);
-    doc.add_child(nv_sp_pr, XmlNodeData::element_with_attrs(
-        P::c_nv_pr(),
-        vec![
-            XAttribute::new(XName::local("id"), &next_id.to_string()),
-            XAttribute::new(XName::local("name"), &shape_name),
-        ],
-    ));
+    doc.add_child(
+        nv_sp_pr,
+        XmlNodeData::element_with_attrs(
+            P::c_nv_pr(),
+            vec![
+                XAttribute::new(XName::local("id"), &next_id.to_string()),
+                XAttribute::new(XName::local("name"), &shape_name),
+            ],
+        ),
+    );
 
     // cNvSpPr
     let c_nv_sp_pr = doc.add_child(nv_sp_pr, XmlNodeData::element(P::c_nv_sp_pr()));
-    doc.add_child(c_nv_sp_pr, XmlNodeData::element_with_attrs(
-        P::sp_locks(),
-        vec![XAttribute::new(XName::local("noGrp"), "1")],
-    ));
+    doc.add_child(
+        c_nv_sp_pr,
+        XmlNodeData::element_with_attrs(
+            P::sp_locks(),
+            vec![XAttribute::new(XName::local("noGrp"), "1")],
+        ),
+    );
 
     // nvPr
     doc.add_child(nv_sp_pr, XmlNodeData::element(P::nv_pr()));
@@ -301,53 +330,71 @@ fn add_change_label(
 
     // xfrm (transform)
     let xfrm = doc.add_child(sp_pr, XmlNodeData::element(A::xfrm()));
-    doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        A::off(),
-        vec![
-            XAttribute::new(XName::local("x"), &x.to_string()),
-            XAttribute::new(XName::local("y"), &y.to_string()),
-        ],
-    ));
-    doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        A::ext(),
-        vec![
-            XAttribute::new(XName::local("cx"), &cx.to_string()),
-            XAttribute::new(XName::local("cy"), &cy.to_string()),
-        ],
-    ));
+    doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            A::off(),
+            vec![
+                XAttribute::new(XName::local("x"), &x.to_string()),
+                XAttribute::new(XName::local("y"), &y.to_string()),
+            ],
+        ),
+    );
+    doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            A::ext(),
+            vec![
+                XAttribute::new(XName::local("cx"), &cx.to_string()),
+                XAttribute::new(XName::local("cy"), &cy.to_string()),
+            ],
+        ),
+    );
 
     // prstGeom (preset geometry - rectangle)
-    let prst_geom = doc.add_child(sp_pr, XmlNodeData::element_with_attrs(
-        A::prst_geom(),
-        vec![XAttribute::new(XName::local("prst"), "rect")],
-    ));
+    let prst_geom = doc.add_child(
+        sp_pr,
+        XmlNodeData::element_with_attrs(
+            A::prst_geom(),
+            vec![XAttribute::new(XName::local("prst"), "rect")],
+        ),
+    );
     doc.add_child(prst_geom, XmlNodeData::element(A::avLst()));
 
     // solidFill (background color)
     let solid_fill = doc.add_child(sp_pr, XmlNodeData::element(A::solid_fill()));
-    doc.add_child(solid_fill, XmlNodeData::element_with_attrs(
-        A::srgb_clr(),
-        vec![XAttribute::new(XName::local("val"), color)],
-    ));
+    doc.add_child(
+        solid_fill,
+        XmlNodeData::element_with_attrs(
+            A::srgb_clr(),
+            vec![XAttribute::new(XName::local("val"), color)],
+        ),
+    );
 
     // ln (outline)
-    let ln = doc.add_child(sp_pr, XmlNodeData::element_with_attrs(
-        A::ln(),
-        vec![XAttribute::new(XName::local("w"), "9525")], // 0.75pt
-    ));
+    let ln = doc.add_child(
+        sp_pr,
+        XmlNodeData::element_with_attrs(
+            A::ln(),
+            vec![XAttribute::new(XName::local("w"), "9525")], // 0.75pt
+        ),
+    );
     doc.add_child(ln, XmlNodeData::element(A::no_fill()));
 
     // txBody (text body)
     let tx_body = doc.add_child(sp, XmlNodeData::element(P::tx_body()));
 
     // bodyPr
-    doc.add_child(tx_body, XmlNodeData::element_with_attrs(
-        A::body_pr(),
-        vec![
-            XAttribute::new(XName::local("wrap"), "square"),
-            XAttribute::new(XName::local("rtlCol"), "0"),
-        ],
-    ));
+    doc.add_child(
+        tx_body,
+        XmlNodeData::element_with_attrs(
+            A::body_pr(),
+            vec![
+                XAttribute::new(XName::local("wrap"), "square"),
+                XAttribute::new(XName::local("rtlCol"), "0"),
+            ],
+        ),
+    );
 
     // lstStyle
     doc.add_child(tx_body, XmlNodeData::element(A::lst_style()));
@@ -359,14 +406,17 @@ fn add_change_label(
     let run = doc.add_child(para, XmlNodeData::element(A::r()));
 
     // rPr (run properties) - white text, bold
-    doc.add_child(run, XmlNodeData::element_with_attrs(
-        A::r_pr(),
-        vec![
-            XAttribute::new(XName::local("lang"), "en-US"),
-            XAttribute::new(XName::local("sz"), "1100"), // 11pt
-            XAttribute::new(XName::local("b"), "1"), // bold
-        ],
-    ));
+    doc.add_child(
+        run,
+        XmlNodeData::element_with_attrs(
+            A::r_pr(),
+            vec![
+                XAttribute::new(XName::local("lang"), "en-US"),
+                XAttribute::new(XName::local("sz"), "1100"), // 11pt
+                XAttribute::new(XName::local("b"), "1"),     // bold
+            ],
+        ),
+    );
 
     // a:t (text)
     let t = doc.add_child(run, XmlNodeData::element(A::t()));
@@ -401,37 +451,78 @@ fn add_summary_slide(
 
     // Group shape properties (required)
     let nv_grp_sp_pr = slide_doc.add_child(sp_tree, XmlNodeData::element(P::nv_grp_sp_pr()));
-    slide_doc.add_child(nv_grp_sp_pr, XmlNodeData::element_with_attrs(
-        P::c_nv_pr(),
-        vec![
-            XAttribute::new(XName::local("id"), "1"),
-            XAttribute::new(XName::local("name"), ""),
-        ],
-    ));
-    slide_doc.add_child(nv_grp_sp_pr, XmlNodeData::element(XName::new(P::NS, "cNvGrpSpPr")));
+    slide_doc.add_child(
+        nv_grp_sp_pr,
+        XmlNodeData::element_with_attrs(
+            P::c_nv_pr(),
+            vec![
+                XAttribute::new(XName::local("id"), "1"),
+                XAttribute::new(XName::local("name"), ""),
+            ],
+        ),
+    );
+    slide_doc.add_child(
+        nv_grp_sp_pr,
+        XmlNodeData::element(XName::new(P::NS, "cNvGrpSpPr")),
+    );
     slide_doc.add_child(nv_grp_sp_pr, XmlNodeData::element(P::nv_pr()));
 
     let grp_sp_pr = slide_doc.add_child(sp_tree, XmlNodeData::element(P::grp_sp_pr()));
     let xfrm = slide_doc.add_child(grp_sp_pr, XmlNodeData::element(A::xfrm()));
-    slide_doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        A::off(),
-        vec![XAttribute::new(XName::local("x"), "0"), XAttribute::new(XName::local("y"), "0")],
-    ));
-    slide_doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        A::ext(),
-        vec![XAttribute::new(XName::local("cx"), "0"), XAttribute::new(XName::local("cy"), "0")],
-    ));
-    slide_doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        XName::new(A::NS, "chOff"),
-        vec![XAttribute::new(XName::local("x"), "0"), XAttribute::new(XName::local("y"), "0")],
-    ));
-    slide_doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        XName::new(A::NS, "chExt"),
-        vec![XAttribute::new(XName::local("cx"), "0"), XAttribute::new(XName::local("cy"), "0")],
-    ));
+    slide_doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            A::off(),
+            vec![
+                XAttribute::new(XName::local("x"), "0"),
+                XAttribute::new(XName::local("y"), "0"),
+            ],
+        ),
+    );
+    slide_doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            A::ext(),
+            vec![
+                XAttribute::new(XName::local("cx"), "0"),
+                XAttribute::new(XName::local("cy"), "0"),
+            ],
+        ),
+    );
+    slide_doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            XName::new(A::NS, "chOff"),
+            vec![
+                XAttribute::new(XName::local("x"), "0"),
+                XAttribute::new(XName::local("y"), "0"),
+            ],
+        ),
+    );
+    slide_doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            XName::new(A::NS, "chExt"),
+            vec![
+                XAttribute::new(XName::local("cx"), "0"),
+                XAttribute::new(XName::local("cy"), "0"),
+            ],
+        ),
+    );
 
     // Add title shape
-    add_text_shape(&mut slide_doc, sp_tree, 2, "Comparison Summary", 457200, 274638, 8229600, 1143000, 4400, true);
+    add_text_shape(
+        &mut slide_doc,
+        sp_tree,
+        2,
+        "Comparison Summary",
+        457200,
+        274638,
+        8229600,
+        1143000,
+        4400,
+        true,
+    );
 
     // Build summary text
     let mut summary_lines = vec![
@@ -449,7 +540,7 @@ fn add_summary_slide(
     summary_lines.push(String::new());
     summary_lines.push("Changes:".to_string());
     for (i, change) in result.changes.iter().take(20).enumerate() {
-        let desc = change.description.as_deref().unwrap_or("(no description)");
+        let desc = change.get_description();
         summary_lines.push(format!("{}. {}", i + 1, desc));
     }
     if result.changes.len() > 20 {
@@ -457,7 +548,18 @@ fn add_summary_slide(
     }
 
     let summary_text = summary_lines.join("\n");
-    add_text_shape(&mut slide_doc, sp_tree, 3, &summary_text, 457200, 1600200, 8229600, 4525963, 1800, false);
+    add_text_shape(
+        &mut slide_doc,
+        sp_tree,
+        3,
+        &summary_text,
+        457200,
+        1600200,
+        8229600,
+        4525963,
+        1800,
+        false,
+    );
 
     // Determine slide path
     let slide_num = get_next_slide_number(pkg)?;
@@ -490,37 +592,49 @@ fn add_text_shape(
     // nvSpPr
     let nv_sp_pr = doc.add_child(sp, XmlNodeData::element(P::nv_sp_pr()));
     let name = if is_title { "Title" } else { "Content" };
-    doc.add_child(nv_sp_pr, XmlNodeData::element_with_attrs(
-        P::c_nv_pr(),
-        vec![
-            XAttribute::new(XName::local("id"), &id.to_string()),
-            XAttribute::new(XName::local("name"), name),
-        ],
-    ));
+    doc.add_child(
+        nv_sp_pr,
+        XmlNodeData::element_with_attrs(
+            P::c_nv_pr(),
+            vec![
+                XAttribute::new(XName::local("id"), &id.to_string()),
+                XAttribute::new(XName::local("name"), name),
+            ],
+        ),
+    );
     doc.add_child(nv_sp_pr, XmlNodeData::element(P::c_nv_sp_pr()));
     doc.add_child(nv_sp_pr, XmlNodeData::element(P::nv_pr()));
 
     // spPr
     let sp_pr = doc.add_child(sp, XmlNodeData::element(P::sp_pr()));
     let xfrm = doc.add_child(sp_pr, XmlNodeData::element(A::xfrm()));
-    doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        A::off(),
-        vec![
-            XAttribute::new(XName::local("x"), &x.to_string()),
-            XAttribute::new(XName::local("y"), &y.to_string()),
-        ],
-    ));
-    doc.add_child(xfrm, XmlNodeData::element_with_attrs(
-        A::ext(),
-        vec![
-            XAttribute::new(XName::local("cx"), &cx.to_string()),
-            XAttribute::new(XName::local("cy"), &cy.to_string()),
-        ],
-    ));
-    let prst_geom = doc.add_child(sp_pr, XmlNodeData::element_with_attrs(
-        A::prst_geom(),
-        vec![XAttribute::new(XName::local("prst"), "rect")],
-    ));
+    doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            A::off(),
+            vec![
+                XAttribute::new(XName::local("x"), &x.to_string()),
+                XAttribute::new(XName::local("y"), &y.to_string()),
+            ],
+        ),
+    );
+    doc.add_child(
+        xfrm,
+        XmlNodeData::element_with_attrs(
+            A::ext(),
+            vec![
+                XAttribute::new(XName::local("cx"), &cx.to_string()),
+                XAttribute::new(XName::local("cy"), &cy.to_string()),
+            ],
+        ),
+    );
+    let prst_geom = doc.add_child(
+        sp_pr,
+        XmlNodeData::element_with_attrs(
+            A::prst_geom(),
+            vec![XAttribute::new(XName::local("prst"), "rect")],
+        ),
+    );
     doc.add_child(prst_geom, XmlNodeData::element(A::avLst()));
 
     // txBody
@@ -581,7 +695,8 @@ fn update_presentation_for_new_slide(
 
     // Find sldIdLst
     let sld_id_lst_name = P::sld_id_lst();
-    let sld_id_lst = pres_doc.find_child(pres_root, &sld_id_lst_name)
+    let sld_id_lst = pres_doc
+        .find_child(pres_root, &sld_id_lst_name)
         .unwrap_or_else(|| {
             pres_doc.add_child(pres_root, XmlNodeData::element(sld_id_lst_name.clone()))
         });
@@ -606,13 +721,16 @@ fn update_presentation_for_new_slide(
     // Add new sldId
     let new_id = max_id + 1;
     let rel_id = format!("rIdSummary{}", slide_num);
-    pres_doc.add_child(sld_id_lst, XmlNodeData::element_with_attrs(
-        sld_id_name,
-        vec![
-            XAttribute::new(XName::local("id"), &new_id.to_string()),
-            XAttribute::new(XName::new(R::NS, "id"), &rel_id),
-        ],
-    ));
+    pres_doc.add_child(
+        sld_id_lst,
+        XmlNodeData::element_with_attrs(
+            sld_id_name,
+            vec![
+                XAttribute::new(XName::local("id"), &new_id.to_string()),
+                XAttribute::new(XName::new(R::NS, "id"), &rel_id),
+            ],
+        ),
+    );
 
     pkg.put_xml_part(pres_path, &pres_doc)?;
 

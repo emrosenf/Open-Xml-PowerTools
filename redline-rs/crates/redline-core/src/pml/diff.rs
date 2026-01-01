@@ -6,40 +6,58 @@
 //! Ported from C# PmlComparer.cs lines 1780-2170
 //! Provides detailed comparison of PresentationSignatures, generating PmlChange records.
 
-use super::result::{PmlChange, PmlChangeType, PmlComparisonResult};
+use super::result::PmlComparisonResult;
 use super::settings::PmlComparerSettings;
 use super::shape_match::{PmlShapeMatchEngine, ShapeMatchType};
 use super::slide_matching::{
     PmlSlideMatchEngine, PresentationSignature, ShapeSignature, SlideMatch, SlideMatchType,
     TextBodySignature,
 };
+use super::types::{PmlChange, PmlChangeType};
 
 /// Helper to create PmlChange with required fields and None defaults for optional fields
 macro_rules! pml_change {
     (slide: $slide:expr, type: $typ:expr, desc: $desc:expr) => {
         PmlChange {
-            slide_index: $slide,
+            slide_index: Some($slide),
+            old_slide_index: None,
             shape_id: None,
             shape_name: None,
             change_type: $typ,
-            description: Some($desc),
+            // description: Some($desc), // Not supported in types.rs, using old_value as hack
+            old_value: Some($desc),
+            new_value: None,
             new_x: None,
             new_y: None,
+            new_cx: None,
+            new_cy: None,
             old_x: None,
             old_y: None,
+            old_cx: None,
+            old_cy: None,
+            text_changes: None,
+            match_confidence: None,
         }
     };
     (slide: $slide:expr, shape: $shape:expr, type: $typ:expr, desc: $desc:expr) => {
         PmlChange {
-            slide_index: $slide,
+            slide_index: Some($slide),
+            old_slide_index: None,
             shape_id: Some($shape),
             shape_name: None,
             change_type: $typ,
-            description: Some($desc),
+            old_value: Some($desc),
+            new_value: None,
             new_x: None,
             new_y: None,
+            new_cx: None,
+            new_cy: None,
             old_x: None,
             old_y: None,
+            old_cx: None,
+            old_cy: None,
+            text_changes: None,
+            match_confidence: None,
         }
     };
 }
@@ -49,7 +67,7 @@ macro_rules! pml_change {
 // ==================================================================================
 
 /// Core comparison engine for PowerPoint presentations.
-/// 
+///
 /// Compares two PresentationSignatures and produces a detailed PmlComparisonResult
 /// with all detected changes.
 ///
@@ -176,9 +194,17 @@ impl PmlDiffEngine {
                 }
 
                 // Compare slide contents
-                if let (Some(old_slide), Some(new_slide)) = (&slide_match.old_slide, &slide_match.new_slide) {
+                if let (Some(old_slide), Some(new_slide)) =
+                    (&slide_match.old_slide, &slide_match.new_slide)
+                {
                     let slide_index = slide_match.new_index.unwrap_or(0);
-                    Self::compare_slide_contents(old_slide, new_slide, slide_index, settings, result);
+                    Self::compare_slide_contents(
+                        old_slide,
+                        new_slide,
+                        slide_index,
+                        settings,
+                        result,
+                    );
                 }
             }
         }
@@ -372,7 +398,7 @@ impl PmlDiffEngine {
                     result.changes.push(pml_change!(
                         slide: slide_index,
                         shape: shape2.id.to_string(),
-                        type: PmlChangeType::ShapeModified,
+                        type: PmlChangeType::ShapeMoved,
                         desc: format!("Shape '{}' content changed", shape2.name)
                     ));
                 }
@@ -424,7 +450,7 @@ impl PmlDiffEngine {
                 result.changes.push(pml_change!(
                     slide: slide_index,
                     shape: shape2.id.to_string(),
-                    type: PmlChangeType::FormattingChanged,
+                    type: PmlChangeType::TextFormattingChanged,
                     desc: format!("Text formatting in shape '{}' changed", shape2.name)
                 ));
             }
@@ -471,7 +497,7 @@ impl PmlDiffEngine {
                 PmlChangeType::ShapeDeleted => result.shapes_deleted += 1,
                 PmlChangeType::ShapeMoved => result.shapes_moved += 1,
                 PmlChangeType::ShapeResized => result.shapes_resized += 1,
-                PmlChangeType::TextChanged | PmlChangeType::FormattingChanged => {
+                PmlChangeType::TextChanged | PmlChangeType::TextFormattingChanged => {
                     result.text_changes += 1
                 }
                 _ => {}
@@ -482,8 +508,8 @@ impl PmlDiffEngine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::slide_matching::SlideSignature;
+    use super::*;
 
     fn create_test_presentation(slide_count: usize) -> PresentationSignature {
         PresentationSignature {
@@ -527,7 +553,10 @@ mod tests {
         let settings = PmlComparerSettings::default();
         let result = PmlDiffEngine::compare(&sig1, &sig2, &settings);
 
-        assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideSizeChanged));
+        assert!(result
+            .changes
+            .iter()
+            .any(|c| c.change_type == PmlChangeType::SlideSizeChanged));
     }
 
     #[test]
@@ -539,7 +568,10 @@ mod tests {
         let settings = PmlComparerSettings::default();
         let result = PmlDiffEngine::compare(&sig1, &sig2, &settings);
 
-        assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::ThemeChanged));
+        assert!(result
+            .changes
+            .iter()
+            .any(|c| c.change_type == PmlChangeType::ThemeChanged));
     }
 
     #[test]
@@ -551,7 +583,10 @@ mod tests {
         let result = PmlDiffEngine::compare(&sig1, &sig2, &settings);
 
         assert_eq!(result.slides_inserted, 1);
-        assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideInserted));
+        assert!(result
+            .changes
+            .iter()
+            .any(|c| c.change_type == PmlChangeType::SlideInserted));
     }
 
     #[test]
@@ -563,7 +598,10 @@ mod tests {
         let result = PmlDiffEngine::compare(&sig1, &sig2, &settings);
 
         assert_eq!(result.slides_deleted, 1);
-        assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideDeleted));
+        assert!(result
+            .changes
+            .iter()
+            .any(|c| c.change_type == PmlChangeType::SlideDeleted));
     }
 
     #[test]
