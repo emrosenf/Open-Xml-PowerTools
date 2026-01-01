@@ -175,10 +175,8 @@ fn run_compare(
     let output = output.unwrap_or_else(|| generate_output_filename(doc_type));
 
     // Read input files
-    let bytes1 =
-        fs::read(doc1).map_err(|e| format!("Failed to read {}: {}", doc1.display(), e))?;
-    let bytes2 =
-        fs::read(doc2).map_err(|e| format!("Failed to read {}: {}", doc2.display(), e))?;
+    let bytes1 = fs::read(doc1).map_err(|e| format!("Failed to read {}: {}", doc1.display(), e))?;
+    let bytes2 = fs::read(doc2).map_err(|e| format!("Failed to read {}: {}", doc2.display(), e))?;
 
     match doc_type {
         "docx" => {
@@ -218,8 +216,9 @@ fn run_compare(
             }
 
             // Compare documents
-            let result = redline_core::WmlComparer::compare(&parsed_doc1, &parsed_doc2, Some(&settings))
-                .map_err(|e| format!("Comparison failed: {}", e))?;
+            let result =
+                redline_core::WmlComparer::compare(&parsed_doc1, &parsed_doc2, Some(&settings))
+                    .map_err(|e| format!("Comparison failed: {}", e))?;
 
             // Count revisions for reporting
             let insertions = result.insertions;
@@ -265,10 +264,102 @@ fn run_compare(
             }
         }
         "xlsx" => {
-            return Err("Excel comparison not yet implemented".to_string());
+            let parsed_doc1 = redline_core::SmlDocument::from_bytes(&bytes1)
+                .map_err(|e| format!("Failed to parse {}: {}", doc1.display(), e))?;
+            let parsed_doc2 = redline_core::SmlDocument::from_bytes(&bytes2)
+                .map_err(|e| format!("Failed to parse {}: {}", doc2.display(), e))?;
+
+            // Determine author: CLI arg -> "Redline"
+            let final_author = author.unwrap_or_else(|| "Redline".to_string());
+
+            let mut settings = redline_core::SmlComparerSettings::default();
+            settings.author_for_changes = final_author;
+            // SmlComparerSettings doesn't have a generic numeric tolerance exposed via CLI args mapping logic yet
+            // But we can map detail_threshold to something if needed, or ignore.
+            // SmlComparer uses numeric_tolerance (default 0.0).
+
+            let (marked_doc, result) = redline_core::SmlComparer::compare_and_render(
+                &parsed_doc1,
+                &parsed_doc2,
+                Some(&settings),
+            )
+            .map_err(|e| format!("Comparison failed: {}", e))?;
+
+            let output_bytes = marked_doc
+                .to_bytes()
+                .map_err(|e| format!("Failed to serialize output: {}", e))?;
+
+            fs::write(&output, output_bytes)
+                .map_err(|e| format!("Failed to write {}: {}", output.display(), e))?;
+
+            if json {
+                println!(
+                    r#"{{"insertions":{},"deletions":{},"total":{},"output":"{}","commit":"{}"}}"#,
+                    result.cells_added(),
+                    result.cells_deleted(),
+                    result.total_changes(),
+                    output.display(),
+                    GIT_HASH
+                );
+            } else {
+                println!("Comparison complete:");
+                println!("  Cells Added:   {}", result.cells_added());
+                println!("  Cells Deleted: {}", result.cells_deleted());
+                println!("  Total Changes: {}", result.total_changes());
+                println!("  Output:        {}", output.display());
+                println!("  Commit:        {}", GIT_HASH);
+            }
         }
         "pptx" => {
-            return Err("PowerPoint comparison not yet implemented".to_string());
+            let parsed_doc1 = redline_core::PmlDocument::from_bytes(&bytes1)
+                .map_err(|e| format!("Failed to parse {}: {}", doc1.display(), e))?;
+            let parsed_doc2 = redline_core::PmlDocument::from_bytes(&bytes2)
+                .map_err(|e| format!("Failed to parse {}: {}", doc2.display(), e))?;
+
+            let final_author = author.unwrap_or_else(|| "Redline".to_string());
+
+            let mut settings = redline_core::PmlComparerSettings::default();
+            settings.author_for_changes = final_author.clone();
+            settings.author_for_revisions = final_author;
+            // Parse date if provided
+            if let Some(d) = date {
+                if let Ok(parsed_date) = chrono::DateTime::parse_from_rfc3339(&d) {
+                    settings.date_time_for_revisions = parsed_date.with_timezone(&chrono::Utc);
+                }
+            }
+
+            // Get result for stats
+            let result =
+                redline_core::PmlComparer::compare(&parsed_doc1, &parsed_doc2, Some(&settings))
+                    .map_err(|e| format!("Comparison failed: {}", e))?;
+
+            // Render marked presentation
+            let marked_doc =
+                redline_core::pml::render_marked_presentation(&parsed_doc2, &result, &settings)
+                    .map_err(|e| format!("Rendering failed: {}", e))?;
+
+            let output_bytes = marked_doc
+                .to_bytes()
+                .map_err(|e| format!("Failed to serialize output: {}", e))?;
+
+            fs::write(&output, output_bytes)
+                .map_err(|e| format!("Failed to write {}: {}", output.display(), e))?;
+
+            if json {
+                println!(
+                    r#"{{"total":{},"output":"{}","commit":"{}"}}"#,
+                    result.total_changes,
+                    output.display(),
+                    GIT_HASH
+                );
+            } else {
+                println!("Comparison complete:");
+                println!("  Slides Inserted: {}", result.slides_inserted);
+                println!("  Slides Deleted:  {}", result.slides_deleted);
+                println!("  Total Changes:   {}", result.total_changes);
+                println!("  Output:          {}", output.display());
+                println!("  Commit:          {}", GIT_HASH);
+            }
         }
         _ => unreachable!(),
     }
@@ -279,10 +370,8 @@ fn run_compare(
 fn run_count(doc1: &PathBuf, doc2: &PathBuf, json: bool) -> Result<(), String> {
     let doc_type = detect_doc_type(doc1, "auto")?;
 
-    let bytes1 =
-        fs::read(doc1).map_err(|e| format!("Failed to read {}: {}", doc1.display(), e))?;
-    let bytes2 =
-        fs::read(doc2).map_err(|e| format!("Failed to read {}: {}", doc2.display(), e))?;
+    let bytes1 = fs::read(doc1).map_err(|e| format!("Failed to read {}: {}", doc1.display(), e))?;
+    let bytes2 = fs::read(doc2).map_err(|e| format!("Failed to read {}: {}", doc2.display(), e))?;
 
     match doc_type {
         "docx" => {
