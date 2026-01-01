@@ -83,7 +83,7 @@ pub use revision::{
     is_insertion, is_revision_element, is_revision_element_tag, reset_revision_id_counter,
     RevisionSettings,
 };
-pub use revision_accepter::accept_revisions;
+pub use revision_accepter::{accept_revisions, accept_revisions_by_id, reject_revisions_by_id};
 pub use revision_processor::{
     accept_revisions as accept_revisions_processor, reject_revisions, BlockContentInfo,
 };
