@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redline WASM Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Redline Comparison Demo</h1>
+            <p>Compare Word, Excel, and PowerPoint documents entirely in your browser using WebAssembly.</p>
+        </header>
+
+        <div class="drop-zones">
+            <div id="drop-zone-original" class="drop-zone">
+                <div class="icon">📄</div>
+                <div class="label">Original Document</div>
+                <div class="filename" id="filename-original">None selected</div>
+                <input type="file" id="file-original" hidden>
+            </div>
+            <div id="drop-zone-modified" class="drop-zone">
+                <div class="icon">📝</div>
+                <div class="label">Modified Document</div>
+                <div class="filename" id="filename-modified">None selected</div>
+                <input type="file" id="file-modified" hidden>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="settings">
+                <label>
+                    Author Name:
+                    <input type="text" id="author-name" value="Redline Demo">
+                </label>
+                <!-- Add more settings here -->
+            </div>
+            <button id="compare-btn" disabled>Compare Documents</button>
+        </div>
+
+        <div id="results" class="results hidden">
+            <h2>Comparison Results</h2>
+            <div class="stats-grid" id="stats-grid">
+                <!-- Stats populated by JS -->
+            </div>
+            
+            <div class="actions">
+                <button id="download-btn" class="primary">Download Redlined File</button>
+                <button id="view-changes-btn">View Change List (JSON)</button>
+            </div>
+
+            <div id="change-list-container" class="hidden">
+                <h3>Detailed Changes</h3>
+                <pre id="change-list-json"></pre>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Comparing...</p>
+        </div>
+        
+        <div id="error" class="error hidden"></div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
