@@ -2,12 +2,8 @@
 //!
 //! Tests the Rust PmlComparer against the C# implementation.
 //! Port of OpenXmlPowerTools.Tests/PmlComparerTests.cs with 100% parity.
-//!
-//! Note: Tests are initially stubbed with commented bodies since PmlComparer types
-//! may not be fully implemented yet. Uncomment test bodies as implementation progresses.
 
-// Uncomment when PmlComparer is fully implemented:
-// use redline_core::pml::{PmlComparer, PmlComparerSettings, PmlDocument, PmlChangeType};
+use redline_core::pml::{PmlComparer, PmlComparerSettings, PmlDocument, PmlChangeType};
 
 use std::path::Path;
 
@@ -31,33 +27,28 @@ fn test_files_dir() -> &'static Path {
 // ============================================================================
 
 #[test]
-#[ignore] // Remove when PmlComparer is implemented
 fn pc001_identical_presentations_no_changes() {
-    // TODO: Uncomment when PmlComparer is available
-    
     // Test: Identical presentations should produce 0 changes
-    // let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
-    // let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Identical.pptx")).unwrap();
-    // let settings = PmlComparerSettings::default();
-    //
-    // let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-    //
-    // assert_eq!(result.total_changes, 0, "Identical presentations should have 0 changes");
+    let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
+    let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Identical.pptx")).unwrap();
+    let settings = PmlComparerSettings::default();
+
+    let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    assert_eq!(result.total_changes, 0, "Identical presentations should have 0 changes");
 }
 
 #[test]
-#[ignore]
 fn pc002_different_presentations_detects_changes() {
     // Test: Different presentations should detect changes
     // Uses PB001-Input1.pptx and PB001-Input2.pptx
-    //
-    // let doc1 = PmlDocument::from_file(test_files_dir().join("PB001-Input1.pptx")).unwrap();
-    // let doc2 = PmlDocument::from_file(test_files_dir().join("PB001-Input2.pptx")).unwrap();
-    // let settings = PmlComparerSettings::default();
-    //
-    // let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-    //
-    // assert!(result.total_changes > 0, "Different presentations should have changes");
+    let doc1 = PmlDocument::from_file(test_files_dir().join("PB001-Input1.pptx")).unwrap();
+    let doc2 = PmlDocument::from_file(test_files_dir().join("PB001-Input2.pptx")).unwrap();
+    let settings = PmlComparerSettings::default();
+
+    let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    assert!(result.total_changes > 0, "Different presentations should have changes");
 }
 
 // ============================================================================
@@ -65,35 +56,31 @@ fn pc002_different_presentations_detects_changes() {
 // ============================================================================
 
 #[test]
-#[ignore]
 fn pc003_slide_added_detects_insertion() {
     // Test: Slide insertion detection
     // Base presentation (2 slides) vs presentation with 3 slides
-    //
-    // let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
-    // let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-SlideAdded.pptx")).unwrap();
-    // let settings = PmlComparerSettings::default();
-    //
-    // let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-    //
-    // assert_eq!(result.slides_inserted, 1, "Should detect 1 slide insertion");
-    // assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideInserted));
+    let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
+    let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-SlideAdded.pptx")).unwrap();
+    let settings = PmlComparerSettings::default();
+
+    let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    assert_eq!(result.slides_inserted, 1, "Should detect 1 slide insertion");
+    assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideInserted));
 }
 
 #[test]
-#[ignore]
 fn pc004_slide_deleted_detects_deletion() {
     // Test: Slide deletion detection
     // Base presentation (2 slides) vs presentation with 1 slide
-    //
-    // let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
-    // let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-SlideDeleted.pptx")).unwrap();
-    // let settings = PmlComparerSettings::default();
-    //
-    // let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-    //
-    // assert_eq!(result.slides_deleted, 1, "Should detect 1 slide deletion");
-    // assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideDeleted));
+    let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
+    let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-SlideDeleted.pptx")).unwrap();
+    let settings = PmlComparerSettings::default();
+
+    let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    assert_eq!(result.slides_deleted, 1, "Should detect 1 slide deletion");
+    assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::SlideDeleted));
 }
 
 // ============================================================================
@@ -101,19 +88,17 @@ fn pc004_slide_deleted_detects_deletion() {
 // ============================================================================
 
 #[test]
-#[ignore]
 fn pc005_shape_added_detects_insertion() {
     // Test: Shape insertion detection
     // Base presentation vs presentation with extra shape on slide 1
-    //
-    // let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
-    // let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-ShapeAdded.pptx")).unwrap();
-    // let settings = PmlComparerSettings::default();
-    //
-    // let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-    //
-    // assert!(result.shapes_inserted >= 1, "Expected at least 1 shape inserted, got {}", result.shapes_inserted);
-    // assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::ShapeInserted));
+    let doc1 = PmlDocument::from_file(test_files_dir().join("PmlComparer-Base.pptx")).unwrap();
+    let doc2 = PmlDocument::from_file(test_files_dir().join("PmlComparer-ShapeAdded.pptx")).unwrap();
+    let settings = PmlComparerSettings::default();
+
+    let result = PmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    assert!(result.shapes_inserted >= 1, "Expected at least 1 shape inserted, got {}", result.shapes_inserted);
+    assert!(result.changes.iter().any(|c| c.change_type == PmlChangeType::ShapeInserted));
 }
 
 #[test]

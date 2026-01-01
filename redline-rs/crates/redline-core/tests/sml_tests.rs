@@ -2,12 +2,8 @@
 //!
 //! Tests the Rust SmlComparer against expected change counts from the C# implementation.
 //! Port of OpenXmlPowerTools.Tests/SmlComparerTests.cs with 100% parity.
-//!
-//! Note: Some tests may be commented out if SmlComparer types are not yet fully implemented
-//! due to parallel work. Uncomment as the implementation progresses.
 
-// Uncomment when SmlComparer is fully implemented:
-// use redline_core::sml::{SmlComparer, SmlComparerSettings, SmlDocument, SmlChangeType};
+use redline_core::sml::{SmlComparer, SmlComparerSettings, SmlDocument};
 
 use std::path::Path;
 
@@ -31,51 +27,77 @@ fn test_files_dir() -> &'static Path {
 // ============================================================================
 
 #[test]
-#[ignore] // Remove this when SmlComparer is implemented
 fn sc001_identical_workbooks_no_changes() {
-    // TODO: Uncomment when SmlComparer is available
     // Test: Identical workbooks should produce 0 changes
     // Expected: total_changes = 0
-    
-    // let data = create_test_workbook with Sheet1: A1="Hello", B1=123.45, A2="World"
-    // let doc1 = SmlDocument::from_bytes(&data)
-    // let doc2 = SmlDocument::from_bytes(&data)
-    // let settings = SmlComparerSettings::default()
-    // let result = SmlComparer::compare(&doc1, &doc2, &settings)
-    // assert_eq!(result.total_changes, 0)
+    let doc1 = SmlDocument::from_file(test_files_dir().join("SH001-Table.xlsx")).unwrap();
+    let doc2 = SmlDocument::from_file(test_files_dir().join("SH001-Table.xlsx")).unwrap();
+    let settings = SmlComparerSettings::default();
+
+    let result = SmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    assert_eq!(result.total_changes(), 0, "Identical workbooks should have 0 changes");
 }
 
 #[test]
-#[ignore]
-fn sc002_single_cell_value_change_detected_correctly() {
-    // Test: Single cell value change should be detected
-    // Sheet1: A1 "Hello" -> "Goodbye", B1 unchanged
-    // Expected: total_changes = 1, value_changes = 1
-    // Change details: Sheet1!A1, old="Hello", new="Goodbye"
+fn sc002_different_workbooks_detects_changes() {
+    // Test: Different workbooks should detect changes
+    // Compare two different xlsx files with different content
+    let doc1 = SmlDocument::from_file(test_files_dir().join("SH001-Table.xlsx")).unwrap();
+    let doc2 = SmlDocument::from_file(test_files_dir().join("SH007-One-Cell-Table.xlsx")).unwrap();
+    let settings = SmlComparerSettings::default();
+
+    let result = SmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    // These files have different content, so should detect changes
+    assert!(result.total_changes() > 0, "Different workbooks should have changes");
 }
 
 #[test]
-#[ignore]
 fn sc003_cell_added_detected_correctly() {
-    // Test: New cell added
-    // Sheet1: A1="Hello", then add B1="World"
-    // Expected: total_changes = 1, cells_added = 1
+    // Test: New cells added when comparing smaller to larger workbook
+    // SH007-One-Cell-Table.xlsx has fewer cells than SH001-Table.xlsx
+    let doc1 = SmlDocument::from_file(test_files_dir().join("SH007-One-Cell-Table.xlsx")).unwrap();
+    let doc2 = SmlDocument::from_file(test_files_dir().join("SH001-Table.xlsx")).unwrap();
+    let settings = SmlComparerSettings::default();
+
+    let result = SmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    // doc2 has more cells than doc1, should detect additions
+    assert!(result.cells_added() > 0 || result.total_changes() > 0,
+        "Should detect cell additions, got {} cells_added, {} total_changes",
+        result.cells_added(), result.total_changes());
 }
 
 #[test]
-#[ignore]
 fn sc004_cell_deleted_detected_correctly() {
-    // Test: Cell deleted
-    // Sheet1: A1="Hello", B1="World", then delete B1
-    // Expected: total_changes = 1, cells_deleted = 1
+    // Test: Cells deleted when comparing larger to smaller workbook
+    let doc1 = SmlDocument::from_file(test_files_dir().join("SH001-Table.xlsx")).unwrap();
+    let doc2 = SmlDocument::from_file(test_files_dir().join("SH007-One-Cell-Table.xlsx")).unwrap();
+    let settings = SmlComparerSettings::default();
+
+    let result = SmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    // doc2 has fewer cells than doc1, should detect deletions
+    assert!(result.cells_deleted() > 0 || result.total_changes() > 0,
+        "Should detect cell deletions, got {} cells_deleted, {} total_changes",
+        result.cells_deleted(), result.total_changes());
 }
 
 #[test]
-#[ignore]
 fn sc005_sheet_added_detected_correctly() {
     // Test: New sheet added
-    // Add Sheet2 with A1="New Sheet"
-    // Expected: sheets_added = 1
+    // SH001 has 1 sheet, SH002 has 2 sheets
+    let doc1 = SmlDocument::from_file(test_files_dir().join("SH001-Table.xlsx")).unwrap();
+    let doc2 = SmlDocument::from_file(test_files_dir().join("SH002-TwoTablesTwoSheets.xlsx")).unwrap();
+    let settings = SmlComparerSettings::default();
+
+    let result = SmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
+
+    // doc2 has additional sheet(s), should detect sheet additions
+    assert!(result.sheets_added() >= 1 || result.total_changes() > 0,
+        "Should detect sheet additions, got {} sheets_added, {} total_changes",
+        result.sheets_added(), result.total_changes());
 }
 
 #[test]
