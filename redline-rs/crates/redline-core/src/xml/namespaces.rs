@@ -2,6 +2,11 @@
 
 use super::xname::XName;
 
+/// XML Namespace namespace (for xmlns declarations)
+pub mod XMLNS {
+    pub const NS: &str = "http://www.w3.org/2000/xmlns/";
+}
+
 pub mod W {
     use super::XName;
     pub const NS: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -199,6 +204,18 @@ pub mod S {
     pub fn mergeCell() -> XName { XName::new(NS, "mergeCell") }
     pub fn hyperlinks() -> XName { XName::new(NS, "hyperlinks") }
     pub fn hyperlink() -> XName { XName::new(NS, "hyperlink") }
+    // Style elements for markup
+    pub fn styleSheet() -> XName { XName::new(NS, "styleSheet") }
+    pub fn patternFill() -> XName { XName::new(NS, "patternFill") }
+    pub fn fgColor() -> XName { XName::new(NS, "fgColor") }
+    pub fn bgColor() -> XName { XName::new(NS, "bgColor") }
+    pub fn cellStyleXfs() -> XName { XName::new(NS, "cellStyleXfs") }
+    // Comments elements
+    pub fn comments() -> XName { XName::new(NS, "comments") }
+    pub fn r() -> XName { XName::new(NS, "r") }
+    pub fn legacyDrawing() -> XName { XName::new(NS, "legacyDrawing") }
+    // Workbook elements
+    pub fn workbook() -> XName { XName::new(NS, "workbook") }
 }
 
 pub mod P {
@@ -233,6 +250,10 @@ pub mod P {
     pub fn tx_body() -> XName { XName::new(NS, "txBody") }
     pub fn txBody() -> XName { XName::new(NS, "txBody") }
     pub fn blip_fill() -> XName { XName::new(NS, "blipFill") }
+    // Non-visual properties for markup
+    pub fn c_nv_sp_pr() -> XName { XName::new(NS, "cNvSpPr") }
+    pub fn notes() -> XName { XName::new(NS, "notes") }
+    pub fn sp_locks() -> XName { XName::new(NS, "spLocks") }
 }
 
 pub mod A {
@@ -262,6 +283,12 @@ pub mod A {
     pub fn tr() -> XName { XName::new(NS, "tr") }
     pub fn tc() -> XName { XName::new(NS, "tc") }
     pub fn tx_body() -> XName { XName::new(NS, "txBody") }
+    // Line/outline elements for markup
+    pub fn ln() -> XName { XName::new(NS, "ln") }
+    pub fn no_fill() -> XName { XName::new(NS, "noFill") }
+    pub fn body_pr() -> XName { XName::new(NS, "bodyPr") }
+    pub fn lst_style() -> XName { XName::new(NS, "lstStyle") }
+    pub fn avLst() -> XName { XName::new(NS, "avLst") }
 }
 
 pub mod R {

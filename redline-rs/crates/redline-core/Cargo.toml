@@ -62,3 +62,19 @@ trace = []
 [[bench]]
 name = "wml_benchmark"
 harness = false
+
+[[bench]]
+name = "comparison_bench"
+harness = false
+
+[[bench]]
+name = "profile_wml"
+harness = false
+
+[[bench]]
+name = "profile_pml"
+harness = false
+
+[[bench]]
+name = "profile_sml"
+harness = false
