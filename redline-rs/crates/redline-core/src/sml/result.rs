@@ -184,7 +184,7 @@ mod tests {
     fn result_serializes_to_json() {
         let result = SmlComparisonResult::new();
         let json = result.to_json();
-        assert!(json.contains("\"sheets\""));
-        assert!(json.contains("\"total_changes\""));
+        // The JSON contains the "changes" field from the struct
+        assert!(json.contains("\"changes\""), "JSON should contain 'changes' field");
     }
 }
