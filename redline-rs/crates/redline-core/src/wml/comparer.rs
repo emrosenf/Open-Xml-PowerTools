@@ -911,6 +911,158 @@ fn reconcile_formatting_changes(atoms: &mut [ComparisonUnitAtom], settings: &Wml
     detect_format_changes(atoms, settings);
 }
 
+/// Suppress deletions that represent content that "moved" to another location.
+///
+/// When text moves from one paragraph to another (e.g., a standalone paragraph is merged
+/// into another paragraph), the comparison shows:
+/// 1. The text as EQUAL in its new location (matched during LCS)
+/// 2. The text as DELETED from its old location (the standalone paragraph)
+///
+/// This creates confusing output where the same text appears twice - once unchanged and
+/// once as deleted. MS Word handles this by suppressing the deletion when the text
+/// appears elsewhere as unchanged.
+///
+/// Algorithm:
+/// 1. Extract all text sequences that appear as EQUAL
+/// 2. Extract all text sequences that appear as DELETED
+/// 3. For significant DELETED sequences (>= 50 chars) that appear in EQUAL text,
+///    filter them out of the atom list
+fn suppress_moved_deletions(
+    mut atoms: Vec<ComparisonUnitAtom>,
+    settings: &WmlComparerSettings,
+) -> Vec<ComparisonUnitAtom> {
+    use crate::util::group_adjacent;
+
+    const MIN_TEXT_LENGTH: usize = 50; // Minimum length for move detection
+
+    // Group atoms by correlation status to find runs of INSERTED and DELETED atoms
+    let groups = group_adjacent(atoms.iter().enumerate(), |item| {
+        item.1.correlation_status
+    });
+
+    // Collect INSERTED and DELETED runs with their normalized text and indices
+    let mut inserted_runs: Vec<(Vec<usize>, String)> = Vec::new();
+    let mut deleted_runs: Vec<(Vec<usize>, String)> = Vec::new();
+
+    for group in &groups {
+        if group.is_empty() {
+            continue;
+        }
+
+        let (_, first_atom) = group[0];
+        let status = first_atom.correlation_status;
+
+        if status != ComparisonCorrelationStatus::Inserted && status != ComparisonCorrelationStatus::Deleted {
+            continue;
+        }
+
+        // Extract text from this run
+        let mut text = String::new();
+        let mut indices = Vec::new();
+
+        for &(idx, atom) in group {
+            if let ContentElement::Text(c) = atom.content_element {
+                text.push(c);
+            }
+            indices.push(idx);
+        }
+
+        if text.is_empty() {
+            continue;
+        }
+
+        // Normalize text for comparison
+        let normalized = normalize_text_for_move_detection(&text, settings);
+
+        if normalized.len() >= MIN_TEXT_LENGTH {
+            match status {
+                ComparisonCorrelationStatus::Inserted => inserted_runs.push((indices, normalized)),
+                ComparisonCorrelationStatus::Deleted => deleted_runs.push((indices, normalized)),
+                _ => {}
+            }
+        }
+    }
+
+    // Build set of indices where text "moved" (appears as BOTH inserted and deleted)
+    // For these, we change INSERTED to EQUAL and filter out DELETED entirely
+    let mut deleted_indices_to_filter: std::collections::HashSet<usize> = std::collections::HashSet::new();
+    let mut inserted_indices_to_equalize: std::collections::HashSet<usize> = std::collections::HashSet::new();
+
+    for (del_indices, del_text) in &deleted_runs {
+        // Check if this deleted text appears in any INSERTED run
+        for (ins_indices, ins_text) in &inserted_runs {
+            // Check if the deleted text is a substring of the inserted text (or vice versa)
+            let is_move = ins_text.contains(del_text) || del_text.contains(ins_text);
+
+            if is_move {
+                // Mark deleted indices for removal
+                deleted_indices_to_filter.extend(del_indices.iter().copied());
+
+                // Mark inserted indices to be changed to EQUAL
+                // If the deleted text is contained in the inserted text,
+                // we change those inserted atoms to EQUAL (they represent moved content)
+                inserted_indices_to_equalize.extend(ins_indices.iter().copied());
+
+                break;
+            }
+        }
+    }
+
+    // If nothing to change, return original atoms
+    if deleted_indices_to_filter.is_empty() && inserted_indices_to_equalize.is_empty() {
+        return atoms;
+    }
+
+    // Change INSERTED atoms to EQUAL where they contain moved text
+    for &idx in &inserted_indices_to_equalize {
+        if idx < atoms.len() {
+            atoms[idx].correlation_status = ComparisonCorrelationStatus::Equal;
+        }
+    }
+
+    // Filter out DELETED atoms that represent moved text
+    atoms
+        .into_iter()
+        .enumerate()
+        .filter(|(idx, _)| !deleted_indices_to_filter.contains(idx))
+        .map(|(_, atom)| atom)
+        .collect()
+}
+
+/// Normalize text for move detection comparison
+fn normalize_text_for_move_detection(text: &str, settings: &WmlComparerSettings) -> String {
+    let mut result = String::with_capacity(text.len());
+
+    for c in text.chars() {
+        // Normalize case if case-insensitive
+        let c = if settings.case_insensitive {
+            c.to_lowercase().next().unwrap_or(c)
+        } else {
+            c
+        };
+
+        // Normalize whitespace: collapse multiple spaces, treat NBSP as space
+        let c = if settings.conflate_breaking_and_nonbreaking_spaces && c == '\u{00A0}' {
+            ' '
+        } else {
+            c
+        };
+
+        // Skip word separators for more robust matching
+        // (punctuation differences shouldn't prevent move detection)
+        if c.is_whitespace() {
+            // Collapse whitespace
+            if !result.ends_with(' ') && !result.is_empty() {
+                result.push(' ');
+            }
+        } else if !settings.is_word_separator(c) || c.is_alphabetic() || c.is_numeric() {
+            result.push(c);
+        }
+    }
+
+    result.trim().to_string()
+}
+
 /// Port of C# GetRevisions grouping logic (WmlComparer.cs:3909-3926)
 ///
 /// Uses GroupAdjacent to group atoms by a key that combines:
@@ -1387,6 +1539,10 @@ fn compare_atoms_internal(
     if settings.track_formatting_changes {
         reconcile_formatting_changes(&mut flattened_atoms, settings);
     }
+
+    // Suppress deletions that represent "moved" content (appears elsewhere as EQUAL)
+    // This handles the case where text moved from one paragraph to another
+    flattened_atoms = suppress_moved_deletions(flattened_atoms, settings);
 
     // DEBUG: Count atoms with Deleted/Inserted status
     // let deleted_atoms = flattened_atoms.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
