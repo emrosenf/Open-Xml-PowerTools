@@ -170,7 +170,7 @@ pub struct WmlChangeDetails {
 }
 
 /// Options for building a change list from comparison results.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WmlChangeListOptions {
     /// Whether to group adjacent changes of the same type.
     /// Default: true

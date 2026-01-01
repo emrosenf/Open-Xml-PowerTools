@@ -3,51 +3,135 @@ use crate::xml::namespaces::{M, W};
 use crate::xml::node::XmlNodeData;
 use crate::xml::xname::XAttribute;
 use indextree::NodeId;
-use once_cell::sync::Lazy;
 use std::collections::HashSet;
 
-static ELEMENTS_TO_REMOVE: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    let mut s = HashSet::new();
-    s.insert("del");
-    s.insert("delText");
-    s.insert("delInstrText");
-    s.insert("moveFrom");
-    s.insert("pPrChange");
-    s.insert("rPrChange");
-    s.insert("tblPrChange");
-    s.insert("tblGridChange");
-    s.insert("tcPrChange");
-    s.insert("trPrChange");
-    s.insert("tblPrExChange");
-    s.insert("sectPrChange");
-    s.insert("numberingChange");
-    s.insert("cellIns");
-    s.insert("customXmlDelRangeStart");
-    s.insert("customXmlDelRangeEnd");
-    s.insert("customXmlInsRangeStart");
-    s.insert("customXmlInsRangeEnd");
-    s.insert("customXmlMoveFromRangeStart");
-    s.insert("customXmlMoveFromRangeEnd");
-    s.insert("customXmlMoveToRangeStart");
-    s.insert("customXmlMoveToRangeEnd");
-    s.insert("moveFromRangeStart");
-    s.insert("moveFromRangeEnd");
-    s.insert("moveToRangeStart");
-    s.insert("moveToRangeEnd");
-    s
-});
-
-static ELEMENTS_TO_UNWRAP: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    let mut s = HashSet::new();
-    s.insert("ins");
-    s.insert("moveTo");
-    s
-});
-
 pub fn accept_revisions(source: &XmlDocument, source_root: NodeId) -> XmlDocument {
+    process_revisions(source, source_root, &AcceptAllStrategy)
+}
+
+pub fn accept_revisions_by_id(
+    source: &XmlDocument,
+    source_root: NodeId,
+    revision_ids: &[i32],
+) -> XmlDocument {
+    let ids: HashSet<i32> = revision_ids.iter().cloned().collect();
+    process_revisions(source, source_root, &AcceptByIdStrategy { ids })
+}
+
+pub fn reject_revisions_by_id(
+    source: &XmlDocument,
+    source_root: NodeId,
+    revision_ids: &[i32],
+) -> XmlDocument {
+    let ids: HashSet<i32> = revision_ids.iter().cloned().collect();
+    process_revisions(source, source_root, &RejectByIdStrategy { ids })
+}
+
+trait RevisionStrategy {
+    fn decide(&self, name: &str, id: Option<i32>) -> RevisionAction;
+    fn should_remove_deleted_containers(&self) -> bool {
+        false
+    }
+}
+
+// Removed duplicate definitions
+
+enum RevisionAction {
+    Keep,   // Keep element as is
+    Remove, // Remove element and its content
+    Unwrap, // Remove element wrapper, keep content
+}
+
+struct AcceptAllStrategy;
+
+impl RevisionStrategy for AcceptAllStrategy {
+    fn decide(&self, name: &str, _id: Option<i32>) -> RevisionAction {
+        match name {
+            "ins" | "moveTo" => RevisionAction::Unwrap,
+            "del"
+            | "delText"
+            | "delInstrText"
+            | "moveFrom"
+            | "pPrChange"
+            | "rPrChange"
+            | "tblPrChange"
+            | "tblGridChange"
+            | "tcPrChange"
+            | "trPrChange"
+            | "tblPrExChange"
+            | "sectPrChange"
+            | "numberingChange"
+            | "cellIns"
+            | "customXmlDelRangeStart"
+            | "customXmlDelRangeEnd"
+            | "customXmlInsRangeStart"
+            | "customXmlInsRangeEnd"
+            | "customXmlMoveFromRangeStart"
+            | "customXmlMoveFromRangeEnd"
+            | "customXmlMoveToRangeStart"
+            | "customXmlMoveToRangeEnd"
+            | "moveFromRangeStart"
+            | "moveFromRangeEnd"
+            | "moveToRangeStart"
+            | "moveToRangeEnd" => RevisionAction::Remove,
+            _ => RevisionAction::Keep,
+        }
+    }
+}
+
+struct AcceptByIdStrategy {
+    ids: HashSet<i32>,
+}
+
+impl RevisionStrategy for AcceptByIdStrategy {
+    fn decide(&self, name: &str, id: Option<i32>) -> RevisionAction {
+        let is_target = id.map_or(false, |i| self.ids.contains(&i));
+        if !is_target {
+            return RevisionAction::Keep;
+        }
+
+        match name {
+            "ins" => RevisionAction::Unwrap,
+            "del" => RevisionAction::Remove,
+            "rPrChange" | "pPrChange" | "sectPrChange" => RevisionAction::Remove, // Accepting format change = keeping current format (removing history)
+            // Handle other change types as needed
+            _ => RevisionAction::Keep,
+        }
+    }
+}
+
+struct RejectByIdStrategy {
+    ids: HashSet<i32>,
+}
+
+impl RevisionStrategy for RejectByIdStrategy {
+    fn decide(&self, name: &str, id: Option<i32>) -> RevisionAction {
+        let is_target = id.map_or(false, |i| self.ids.contains(&i));
+        if !is_target {
+            return RevisionAction::Keep;
+        }
+
+        match name {
+            "ins" => RevisionAction::Remove, // Reject insertion = remove content
+            "del" => RevisionAction::Unwrap, // Reject deletion = restore content
+            "rPrChange" | "pPrChange" => RevisionAction::Remove, // Reject format change = TODO: revert format? For now just remove marker?
+            // NOTE: Reverting format is complex (need to merge old properties).
+            // For MVP, removing the change marker keeps current format (Accept behavior).
+            // To truly reject, we would need to apply the properties inside rPrChange to the parent.
+            // This implementation currently treats Reject Format as Accept Format (limitation).
+            _ => RevisionAction::Keep,
+        }
+    }
+}
+
+fn process_revisions<S: RevisionStrategy>(
+    source: &XmlDocument,
+    source_root: NodeId,
+    strategy: &S,
+) -> XmlDocument {
     let mut result = XmlDocument::new();
 
-    if let Some(children) = transform_node(source, source_root, &mut result, None) {
+    if let Some(children) = transform_node(source, source_root, &mut result, None, strategy) {
         if children.len() == 1 {
             result.set_root(Some(children[0]));
         }
@@ -56,11 +140,22 @@ pub fn accept_revisions(source: &XmlDocument, source_root: NodeId) -> XmlDocumen
     result
 }
 
-fn transform_node(
+fn get_id_attr(data: &XmlNodeData) -> Option<i32> {
+    data.attributes()?.iter().find_map(|attr| {
+        if attr.name.local_name == "id" && attr.name.namespace.as_deref() == Some(W::NS) {
+            attr.value.parse().ok()
+        } else {
+            None
+        }
+    })
+}
+
+fn transform_node<S: RevisionStrategy>(
     source: &XmlDocument,
     node_id: NodeId,
     result: &mut XmlDocument,
     parent: Option<NodeId>,
+    strategy: &S,
 ) -> Option<Vec<NodeId>> {
     let data = source.get(node_id)?;
 
@@ -113,30 +208,47 @@ fn transform_node(
             let local = &name.local_name;
             let ns = name.namespace.as_deref();
 
-            if ns == Some(W::NS) && ELEMENTS_TO_REMOVE.contains(local.as_str()) {
-                return None;
-            }
+            let id = get_id_attr(data);
 
-            if ns == Some(W::NS) && ELEMENTS_TO_UNWRAP.contains(local.as_str()) {
-                let mut unwrapped = Vec::new();
-                for child in source.children(node_id) {
-                    if let Some(children) = transform_node(source, child, result, parent) {
-                        unwrapped.extend(children);
+            // Check strategy for this element
+            let action = if ns == Some(W::NS) {
+                strategy.decide(local, id)
+            } else {
+                RevisionAction::Keep
+            };
+
+            match action {
+                RevisionAction::Remove => return None,
+                RevisionAction::Unwrap => {
+                    let mut unwrapped = Vec::new();
+                    for child in source.children(node_id) {
+                        if let Some(children) =
+                            transform_node(source, child, result, parent, strategy)
+                        {
+                            unwrapped.extend(children);
+                        }
                     }
+                    return if unwrapped.is_empty() {
+                        None
+                    } else {
+                        Some(unwrapped)
+                    };
                 }
-                return if unwrapped.is_empty() {
-                    None
-                } else {
-                    Some(unwrapped)
-                };
+                RevisionAction::Keep => {
+                    // Continue with normal processing
+                }
             }
 
             if ns == Some(W::NS) && local == "tr" && is_deleted_table_row(source, node_id) {
-                return None;
+                if strategy.should_remove_deleted_containers() {
+                    return None;
+                }
             }
 
             if ns == Some(M::NS) && local == "f" && has_deleted_math_control(source, node_id) {
-                return None;
+                if strategy.should_remove_deleted_containers() {
+                    return None;
+                }
             }
 
             let filtered_attrs = filter_rsid_attributes(attributes);
@@ -154,7 +266,7 @@ fn transform_node(
             };
 
             for child in source.children(node_id) {
-                transform_node(source, child, result, Some(new_id));
+                transform_node(source, child, result, Some(new_id), strategy);
             }
 
             Some(vec![new_id])

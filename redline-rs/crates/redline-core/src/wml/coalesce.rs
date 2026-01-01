@@ -4,7 +4,7 @@
 
 use super::comparison_unit::{ComparisonCorrelationStatus, ComparisonUnitAtom, ContentElement};
 use super::settings::WmlComparerSettings;
-use crate::wml::revision::{create_run_property_change, RevisionSettings};
+use crate::wml::revision::{create_run_property_change, get_next_revision_id, RevisionSettings};
 use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::{W, W16DU};
 use crate::xml::node::XmlNodeData;
@@ -213,19 +213,8 @@ pub fn mark_content_as_deleted_or_inserted(
     mark_content_transform(doc, root, &revision_settings);
 }
 
-/// Static counter for revision IDs (matching C# s_MaxId)
-/// NOTE: Starts at 0 to match gold standard (w:id="0", "1", "2"...)
-static REVISION_ID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-
-fn next_revision_id() -> u32 {
-    REVISION_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-}
-
-/// Reset revision ID counter (for testing)
-#[allow(dead_code)]
-pub fn reset_revision_id() {
-    REVISION_ID.store(0, std::sync::atomic::Ordering::SeqCst);
-}
+// Removed static REVISION_ID and next_revision_id/reset_revision_id
+// Use crate::wml::revision::get_next_revision_id instead
 
 /// Recursive transform matching C# MarkContentAsDeletedOrInsertedTransform (line 2652-2740)
 fn mark_content_transform(doc: &mut XmlDocument, node: NodeId, settings: &RevisionSettings) {
@@ -293,7 +282,7 @@ fn handle_run_element(doc: &mut XmlDocument, run: NodeId, settings: &RevisionSet
 
     // Wrap the run in w:del or w:ins (C# lines 2672-2691)
     if status == "Deleted" {
-        let id_str = next_revision_id().to_string();
+        let id_str = get_next_revision_id().to_string();
         let del_attrs = vec![
             XAttribute::new(W::id(), &id_str), // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
@@ -307,7 +296,7 @@ fn handle_run_element(doc: &mut XmlDocument, run: NodeId, settings: &RevisionSet
         doc.detach(run);
         doc.reparent(del_elem, run);
     } else if status == "Inserted" {
-        let id_str = next_revision_id().to_string();
+        let id_str = get_next_revision_id().to_string();
         let ins_attrs = vec![
             XAttribute::new(W::id(), &id_str), // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
@@ -414,7 +403,7 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
 
     // Add w:del or w:ins inside rPr (C# lines 2707-2710, 2721-2724)
     if status == "Deleted" {
-        let id_str = next_revision_id().to_string();
+        let id_str = get_next_revision_id().to_string();
         let del_attrs = vec![
             XAttribute::new(W::id(), &id_str), // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
@@ -424,7 +413,7 @@ fn handle_ppr_element(doc: &mut XmlDocument, ppr: NodeId, settings: &RevisionSet
         ];
         doc.add_child(rpr, XmlNodeData::element_with_attrs(W::del(), del_attrs));
     } else if status == "Inserted" {
-        let id_str = next_revision_id().to_string();
+        let id_str = get_next_revision_id().to_string();
         let ins_attrs = vec![
             XAttribute::new(W::id(), &id_str), // w:id MUST come first per ECMA-376
             XAttribute::new(W::author(), &settings.author),
@@ -458,7 +447,7 @@ fn handle_omath_element(doc: &mut XmlDocument, node: NodeId, settings: &Revision
 
     // Wrap in w:del or w:ins
     if status == "Deleted" {
-        let id_str = next_revision_id().to_string();
+        let id_str = get_next_revision_id().to_string();
         let del_attrs = vec![
             XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::author(), &settings.author),
@@ -471,7 +460,7 @@ fn handle_omath_element(doc: &mut XmlDocument, node: NodeId, settings: &Revision
         doc.detach(node);
         doc.reparent(del_elem, node);
     } else if status == "Inserted" {
-        let id_str = next_revision_id().to_string();
+        let id_str = get_next_revision_id().to_string();
         let ins_attrs = vec![
             XAttribute::new(W::id(), &id_str),
             XAttribute::new(W::author(), &settings.author),
@@ -1675,7 +1664,7 @@ fn create_revision_wrapper(
         _ => return None,
     };
 
-    let id_str = next_revision_id().to_string();
+    let id_str = get_next_revision_id().to_string();
     let author = settings
         .author_for_revisions
         .as_deref()
