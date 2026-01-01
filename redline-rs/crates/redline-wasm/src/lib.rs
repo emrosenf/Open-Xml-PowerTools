@@ -199,23 +199,90 @@ pub fn reject_revisions_by_id(document: &[u8], revision_ids: &[i32]) -> Result<V
     mut_doc.to_bytes().map_err(|e| JsError::new(&e.to_string()))
 }
 
+#[derive(Serialize)]
+pub struct SmlCompareResultWithChanges {
+    #[serde(with = "serde_bytes")]
+    pub document: Vec<u8>,
+    pub changes: Vec<redline_core::sml::SmlChange>,
+    pub insertions: usize,
+    pub deletions: usize,
+    pub revision_count: usize,
+}
+
 #[wasm_bindgen]
 pub fn compare_spreadsheets(
     older: &[u8],
     newer: &[u8],
     settings_json: Option<String>,
 ) -> Result<JsValue, JsError> {
-    let _settings: Option<redline_core::SmlComparerSettings> = settings_json
+    let settings: Option<redline_core::SmlComparerSettings> = settings_json
         .map(|s| serde_json::from_str(&s))
         .transpose()
         .map_err(|e: serde_json::Error| JsError::new(&e.to_string()))?;
 
-    let _older_doc =
+    let older_doc =
         redline_core::SmlDocument::from_bytes(older).map_err(|e| JsError::new(&e.to_string()))?;
-    let _newer_doc =
+    let newer_doc =
         redline_core::SmlDocument::from_bytes(newer).map_err(|e| JsError::new(&e.to_string()))?;
 
-    todo!("WASM bindings not yet implemented - Phase 6")
+    let (marked_doc, result) =
+        redline_core::SmlComparer::compare_and_render(&older_doc, &newer_doc, settings.as_ref())
+            .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let document_bytes = marked_doc
+        .to_bytes()
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let insertions = result.cells_added();
+    let deletions = result.cells_deleted();
+    let revision_count = result.total_changes();
+
+    let result_struct = SmlCompareResultWithChanges {
+        document: document_bytes,
+        changes: result.changes,
+        insertions,
+        deletions,
+        revision_count,
+    };
+
+    serde_wasm_bindgen::to_value(&result_struct).map_err(|e| JsError::new(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn build_sml_change_list(
+    changes_json: JsValue,
+    options_json: Option<String>,
+) -> Result<JsValue, JsError> {
+    let changes: Vec<redline_core::sml::SmlChange> =
+        serde_wasm_bindgen::from_value(changes_json).map_err(|e| JsError::new(&e.to_string()))?;
+
+    let options: redline_core::sml::SmlChangeListOptions = options_json
+        .map(|s| serde_json::from_str(&s))
+        .transpose()
+        .map_err(|e: serde_json::Error| JsError::new(&e.to_string()))?
+        .unwrap_or_default();
+
+    let items = redline_core::sml::build_change_list(&changes, &options);
+
+    serde_wasm_bindgen::to_value(&items).map_err(|e| JsError::new(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn apply_sml_changes(document: &[u8], changes_json: JsValue) -> Result<Vec<u8>, JsError> {
+    let changes: Vec<redline_core::sml::SmlChange> =
+        serde_wasm_bindgen::from_value(changes_json).map_err(|e| JsError::new(&e.to_string()))?;
+
+    redline_core::sml::apply_sml_changes(document, &changes)
+        .map_err(|e| JsError::new(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn revert_sml_changes(document: &[u8], changes_json: JsValue) -> Result<Vec<u8>, JsError> {
+    let changes: Vec<redline_core::sml::SmlChange> =
+        serde_wasm_bindgen::from_value(changes_json).map_err(|e| JsError::new(&e.to_string()))?;
+
+    redline_core::sml::revert_sml_changes(document, &changes)
+        .map_err(|e| JsError::new(&e.to_string()))
 }
 
 #[wasm_bindgen]

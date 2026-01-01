@@ -62,13 +62,13 @@ impl SmlComparer {
         settings: Option<&SmlComparerSettings>,
     ) -> Result<SmlComparisonResult> {
         let settings = settings.cloned().unwrap_or_default();
-        
+
         settings.log("SmlComparer.Compare: Starting comparison");
-        
+
         // Canonicalize both workbooks
         let sig1 = SmlCanonicalizer::canonicalize(older, &settings)?;
         let sig2 = SmlCanonicalizer::canonicalize(newer, &settings)?;
-        
+
         settings.log(&format!(
             "SmlComparer.Compare: Canonicalized older workbook: {} sheets",
             sig1.sheets.len()
@@ -77,15 +77,15 @@ impl SmlComparer {
             "SmlComparer.Compare: Canonicalized newer workbook: {} sheets",
             sig2.sheets.len()
         ));
-        
+
         // Compute diff
         let result = compute_diff(&sig1, &sig2, &settings);
-        
+
         settings.log(&format!(
             "SmlComparer.Compare: Found {} changes",
             result.total_changes()
         ));
-        
+
         Ok(result)
     }
 
@@ -129,17 +129,37 @@ impl SmlComparer {
         settings: Option<&SmlComparerSettings>,
     ) -> Result<SmlDocument> {
         let settings = settings.cloned().unwrap_or_default();
-        
+
         settings.log("SmlComparer.ProduceMarkedWorkbook: Starting");
-        
+
         // First compute the diff
         let result = Self::compare(older, newer, Some(&settings))?;
-        
+
         // Then render the marked workbook
         let marked_workbook = render_marked_workbook(newer, &result, &settings)?;
-        
+
         settings.log("SmlComparer.ProduceMarkedWorkbook: Complete");
-        
+
         Ok(marked_workbook)
+    }
+
+    /// Compare two Excel workbooks and return both the marked workbook and the change list.
+    ///
+    /// This combines `compare` and `render_marked_workbook` into a single operation,
+    /// returning both artifacts needed for a full UI experience.
+    pub fn compare_and_render(
+        older: &SmlDocument,
+        newer: &SmlDocument,
+        settings: Option<&SmlComparerSettings>,
+    ) -> Result<(SmlDocument, SmlComparisonResult)> {
+        let settings = settings.cloned().unwrap_or_default();
+
+        // First compute the diff
+        let result = Self::compare(older, newer, Some(&settings))?;
+
+        // Then render the marked workbook
+        let marked_workbook = render_marked_workbook(newer, &result, &settings)?;
+
+        Ok((marked_workbook, result))
     }
 }

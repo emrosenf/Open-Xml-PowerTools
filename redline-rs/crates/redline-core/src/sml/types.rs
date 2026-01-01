@@ -6,8 +6,8 @@
 //! This module defines SmlChange and SmlChangeType which are used to represent
 //! individual changes detected during spreadsheet comparison.
 
-use serde::{Deserialize, Serialize};
 use crate::sml::CellFormatSignature;
+use serde::{Deserialize, Serialize};
 
 /// Types of changes detected during spreadsheet comparison.
 /// 100% parity with C# SmlChangeType enum.
@@ -118,10 +118,16 @@ impl SmlChange {
     pub fn get_description(&self) -> String {
         match self.change_type {
             SmlChangeType::SheetAdded => {
-                format!("Sheet '{}' was added", self.sheet_name.as_deref().unwrap_or(""))
+                format!(
+                    "Sheet '{}' was added",
+                    self.sheet_name.as_deref().unwrap_or("")
+                )
             }
             SmlChangeType::SheetDeleted => {
-                format!("Sheet '{}' was deleted", self.sheet_name.as_deref().unwrap_or(""))
+                format!(
+                    "Sheet '{}' was deleted",
+                    self.sheet_name.as_deref().unwrap_or("")
+                )
             }
             SmlChangeType::SheetRenamed => {
                 format!(
@@ -374,20 +380,18 @@ impl Default for SmlChange {
     }
 }
 
-
-
 // Helper functions
 
 fn get_column_letter(column_number: i32) -> String {
     let mut result = String::new();
     let mut num = column_number;
-    
+
     while num > 0 {
         num -= 1;
         result.insert(0, (b'A' + (num % 26) as u8) as char);
         num /= 26;
     }
-    
+
     result
 }
 
@@ -399,6 +403,61 @@ fn truncate_for_display(text: &str, max_length: usize) -> String {
         return text.to_string();
     }
     format!("{}...", &text[..max_length - 3])
+}
+
+/// UI-friendly representation of a change for display in a change list.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmlChangeListItem {
+    pub id: String,
+    pub change_type: SmlChangeType,
+    pub sheet_name: Option<String>,
+    pub cell_address: Option<String>,
+    pub cell_range: Option<String>,
+    pub row_index: Option<i32>,
+    pub column_index: Option<i32>,
+    pub count: Option<i32>,
+    pub summary: String,
+    pub details: Option<SmlChangeDetails>,
+    pub anchor: Option<String>,
+}
+
+/// Additional details about a change for display.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmlChangeDetails {
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub old_formula: Option<String>,
+    pub new_formula: Option<String>,
+    pub old_format: Option<CellFormatSignature>,
+    pub new_format: Option<CellFormatSignature>,
+    pub old_comment: Option<String>,
+    pub new_comment: Option<String>,
+    pub comment_author: Option<String>,
+    pub data_validation_type: Option<String>,
+    pub old_data_validation: Option<String>,
+    pub new_data_validation: Option<String>,
+    pub merged_cell_range: Option<String>,
+    pub old_hyperlink: Option<String>,
+    pub new_hyperlink: Option<String>,
+    pub old_sheet_name: Option<String>,
+    pub new_sheet_name: Option<String>,
+}
+
+/// Options for building a change list from comparison results.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmlChangeListOptions {
+    pub group_adjacent_cells: bool,
+}
+
+impl Default for SmlChangeListOptions {
+    fn default() -> Self {
+        Self {
+            group_adjacent_cells: true,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -422,10 +481,6 @@ mod tests {
         assert_eq!(desc, "Sheet 'Sheet1' was added");
     }
 
-
-
-
-
     #[test]
     fn get_column_letter_works() {
         assert_eq!(get_column_letter(1), "A");
@@ -443,6 +498,4 @@ mod tests {
             "This is..."
         );
     }
-
-
 }
