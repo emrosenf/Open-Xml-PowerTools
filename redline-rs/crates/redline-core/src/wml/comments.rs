@@ -387,22 +387,10 @@ pub fn build_comments_xml(data: &CommentsData) -> XmlDocument {
     let mut doc = XmlDocument::new();
 
     let root_attrs = vec![
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "w"),
-            W::NS,
-        ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "w14"),
-            W14::NS,
-        ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "w15"),
-            W15::NS,
-        ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "mc"),
-            MC::NS,
-        ),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "w"), W::NS),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "w14"), W14::NS),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "w15"), W15::NS),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "mc"), MC::NS),
         XAttribute::new(MC::ignorable(), "w14 w15"),
     ];
 
@@ -419,8 +407,10 @@ pub fn build_comments_xml(data: &CommentsData) -> XmlDocument {
             XAttribute::new(W::date(), &comment.date),
         ];
 
-        let comment_node =
-            doc.add_child(root, XmlNodeData::element_with_attrs(XName::new(W::NS, "comment"), comment_attrs));
+        let comment_node = doc.add_child(
+            root,
+            XmlNodeData::element_with_attrs(XName::new(W::NS, "comment"), comment_attrs),
+        );
 
         // Add paragraph with paraId
         let para_attrs = vec![
@@ -445,7 +435,7 @@ pub fn build_comments_xml(data: &CommentsData) -> XmlDocument {
 
         // Add first run with annotationRef (required for comment reference marker)
         let ref_run = doc.add_child(para, XmlNodeData::element(W::r()));
-        
+
         // Add run properties with CommentReference style
         let ref_r_pr = doc.add_child(ref_run, XmlNodeData::element(W::r_pr()));
         doc.add_child(
@@ -455,7 +445,7 @@ pub fn build_comments_xml(data: &CommentsData) -> XmlDocument {
                 vec![XAttribute::new(W::val(), "CommentReference")],
             ),
         );
-        
+
         // Add annotationRef element (the actual reference marker)
         doc.add_child(ref_run, XmlNodeData::element(W::annotation_ref()));
 
@@ -473,18 +463,15 @@ pub fn build_comments_extended_xml(data: &CommentsData) -> XmlDocument {
     let mut doc = XmlDocument::new();
 
     let root_attrs = vec![
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "w15"),
-            W15::NS,
-        ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "mc"),
-            MC::NS,
-        ),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "w15"), W15::NS),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "mc"), MC::NS),
         XAttribute::new(MC::ignorable(), "w15"),
     ];
 
-    let root = doc.add_root(XmlNodeData::element_with_attrs(W15::commentsEx(), root_attrs));
+    let root = doc.add_root(XmlNodeData::element_with_attrs(
+        W15::commentsEx(),
+        root_attrs,
+    ));
 
     for comment in &data.comments {
         let mut attrs = vec![
@@ -496,7 +483,10 @@ pub fn build_comments_extended_xml(data: &CommentsData) -> XmlDocument {
             attrs.push(XAttribute::new(W15::paraIdParent(), parent));
         }
 
-        doc.add_child(root, XmlNodeData::element_with_attrs(W15::commentEx(), attrs));
+        doc.add_child(
+            root,
+            XmlNodeData::element_with_attrs(W15::commentEx(), attrs),
+        );
     }
 
     doc
@@ -511,14 +501,14 @@ pub fn build_comments_ids_xml(data: &CommentsData) -> XmlDocument {
             XName::new("http://www.w3.org/2000/xmlns/", "w16cid"),
             W16CID::NS,
         ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "mc"),
-            MC::NS,
-        ),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "mc"), MC::NS),
         XAttribute::new(MC::ignorable(), "w16cid"),
     ];
 
-    let root = doc.add_root(XmlNodeData::element_with_attrs(W16CID::commentsIds(), root_attrs));
+    let root = doc.add_root(XmlNodeData::element_with_attrs(
+        W16CID::commentsIds(),
+        root_attrs,
+    ));
 
     for comment in &data.comments {
         let attrs = vec![
@@ -526,7 +516,10 @@ pub fn build_comments_ids_xml(data: &CommentsData) -> XmlDocument {
             XAttribute::new(W16CID::durableId(), &comment.durable_id),
         ];
 
-        doc.add_child(root, XmlNodeData::element_with_attrs(W16CID::commentId(), attrs));
+        doc.add_child(
+            root,
+            XmlNodeData::element_with_attrs(W16CID::commentId(), attrs),
+        );
     }
 
     doc
@@ -541,10 +534,7 @@ pub fn build_comments_extensible_xml(data: &CommentsData) -> XmlDocument {
             XName::new("http://www.w3.org/2000/xmlns/", "w16cex"),
             W16CEX::NS,
         ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "mc"),
-            MC::NS,
-        ),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "mc"), MC::NS),
         XAttribute::new(MC::ignorable(), "w16cex"),
     ];
 
@@ -579,14 +569,8 @@ pub fn build_people_xml(data: &CommentsData) -> XmlDocument {
     let mut doc = XmlDocument::new();
 
     let root_attrs = vec![
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "w15"),
-            W15::NS,
-        ),
-        XAttribute::new(
-            XName::new("http://www.w3.org/2000/xmlns/", "mc"),
-            MC::NS,
-        ),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "w15"), W15::NS),
+        XAttribute::new(XName::new("http://www.w3.org/2000/xmlns/", "mc"), MC::NS),
         XAttribute::new(MC::ignorable(), "w15"),
     ];
 
@@ -619,8 +603,10 @@ pub fn build_people_xml(data: &CommentsData) -> XmlDocument {
     for person in people_to_add {
         let person_attrs = vec![XAttribute::new(W15::author(), &person.author)];
 
-        let person_node =
-            doc.add_child(root, XmlNodeData::element_with_attrs(W15::person(), person_attrs));
+        let person_node = doc.add_child(
+            root,
+            XmlNodeData::element_with_attrs(W15::person(), person_attrs),
+        );
 
         // Only add presenceInfo if we have provider data
         if !person.provider_id.is_empty() || !person.user_id.is_empty() {
@@ -798,7 +784,10 @@ fn update_document_relationships(package: &mut OoxmlPackage) -> Result<()> {
     // Add new relationships for comment parts (only if not already present)
     let new_rels = [
         ("comments.xml", relationship_types::COMMENTS),
-        ("commentsExtended.xml", relationship_types::COMMENTS_EXTENDED),
+        (
+            "commentsExtended.xml",
+            relationship_types::COMMENTS_EXTENDED,
+        ),
         ("commentsIds.xml", relationship_types::COMMENTS_IDS),
         (
             "commentsExtensible.xml",
@@ -876,11 +865,8 @@ pub fn merge_comments(source1: &CommentsData, source2: &CommentsData) -> Comment
     merged.comments.extend(source1.comments.clone());
 
     // Track existing paraIds to avoid duplicates (owned strings to avoid borrow issues)
-    let existing_para_ids: HashSet<String> = merged
-        .comments
-        .iter()
-        .map(|c| c.para_id.clone())
-        .collect();
+    let existing_para_ids: HashSet<String> =
+        merged.comments.iter().map(|c| c.para_id.clone()).collect();
 
     // Add comments from source2 that don't duplicate paraIds
     for comment in &source2.comments {

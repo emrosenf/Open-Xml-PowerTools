@@ -6,7 +6,7 @@ pub fn get_revisions(
     _settings: &WmlComparerSettings,
 ) -> Result<Vec<WmlComparerRevision>> {
     Err(crate::error::RedlineError::UnsupportedFeature {
-        feature: "GetRevisions implementation requires full OpenXML document handling".to_string()
+        feature: "GetRevisions implementation requires full OpenXML document handling".to_string(),
     })
 }
 

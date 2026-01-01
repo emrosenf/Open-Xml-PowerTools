@@ -37,7 +37,7 @@ pub enum ChangeEvent {
         /// Paragraph index where change occurred
         paragraph_index: Option<usize>,
     },
-    
+
     /// Content deleted from source1 (not present in source2)
     Delete {
         /// Atoms that were deleted
@@ -49,7 +49,7 @@ pub enum ChangeEvent {
         /// Paragraph index where change occurred
         paragraph_index: Option<usize>,
     },
-    
+
     /// Content replaced (delete + insert at same logical location)
     Replace {
         /// Atoms from source1 (deleted)
@@ -63,7 +63,7 @@ pub enum ChangeEvent {
         /// Paragraph index where change occurred
         paragraph_index: Option<usize>,
     },
-    
+
     /// Formatting changed without content change (w:rPrChange)
     FormatChange {
         /// The atom with changed formatting
@@ -89,7 +89,7 @@ impl ChangeEvent {
             ChangeEvent::FormatChange { author, .. } => author,
         }
     }
-    
+
     /// Get the date of this change event
     pub fn date(&self) -> &str {
         match self {
@@ -99,7 +99,7 @@ impl ChangeEvent {
             ChangeEvent::FormatChange { date, .. } => date,
         }
     }
-    
+
     /// Get the event type as a string for grouping
     pub fn event_type(&self) -> &'static str {
         match self {
@@ -109,7 +109,7 @@ impl ChangeEvent {
             ChangeEvent::FormatChange { .. } => "FormatChange",
         }
     }
-    
+
     /// Get a grouping key for adjacent event consolidation
     /// Events with the same key should be consolidated into one revision
     pub fn grouping_key(&self) -> String {
@@ -137,10 +137,14 @@ impl ChangeEventResult {
         let grouped = group_adjacent_events(&self.events);
         grouped.len()
     }
-    
+
     /// Get counts broken down by type
     pub fn counts(&self) -> (usize, usize, usize) {
-        (self.insert_count, self.delete_count, self.format_change_count)
+        (
+            self.insert_count,
+            self.delete_count,
+            self.format_change_count,
+        )
     }
 }
 
@@ -160,27 +164,33 @@ pub fn emit_change_events(
     atoms: &[ComparisonUnitAtom],
     settings: &WmlComparerSettings,
 ) -> ChangeEventResult {
-    let author = settings.author_for_revisions.clone()
+    let author = settings
+        .author_for_revisions
+        .clone()
         .unwrap_or_else(|| "Unknown".to_string());
-    let date = settings.date_time_for_revisions.clone()
+    let date = settings
+        .date_time_for_revisions
+        .clone()
         .unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string());
-    
+
     let mut result = ChangeEventResult::default();
     let mut i = 0;
-    
+
     while i < atoms.len() {
         let atom = &atoms[i];
-        
+
         match atom.correlation_status {
             ComparisonCorrelationStatus::Inserted => {
                 // Collect all consecutive inserted atoms
                 let start = i;
-                while i < atoms.len() && atoms[i].correlation_status == ComparisonCorrelationStatus::Inserted {
+                while i < atoms.len()
+                    && atoms[i].correlation_status == ComparisonCorrelationStatus::Inserted
+                {
                     i += 1;
                 }
                 let inserted_atoms: Vec<_> = atoms[start..i].to_vec();
                 let para_idx = get_paragraph_index(&inserted_atoms[0]);
-                
+
                 result.events.push(ChangeEvent::Insert {
                     atoms: inserted_atoms,
                     author: author.clone(),
@@ -189,16 +199,18 @@ pub fn emit_change_events(
                 });
                 result.insert_count += 1;
             }
-            
+
             ComparisonCorrelationStatus::Deleted => {
                 // Collect all consecutive deleted atoms
                 let start = i;
-                while i < atoms.len() && atoms[i].correlation_status == ComparisonCorrelationStatus::Deleted {
+                while i < atoms.len()
+                    && atoms[i].correlation_status == ComparisonCorrelationStatus::Deleted
+                {
                     i += 1;
                 }
                 let deleted_atoms: Vec<_> = atoms[start..i].to_vec();
                 let para_idx = get_paragraph_index(&deleted_atoms[0]);
-                
+
                 result.events.push(ChangeEvent::Delete {
                     atoms: deleted_atoms,
                     author: author.clone(),
@@ -207,12 +219,12 @@ pub fn emit_change_events(
                 });
                 result.delete_count += 1;
             }
-            
+
             ComparisonCorrelationStatus::FormatChanged => {
                 // Format changes are emitted individually (each atom is one change)
                 let before_rpr = atom.formatting_change_rpr_before.clone();
                 let after_rpr = atom.formatting_signature.clone();
-                
+
                 result.events.push(ChangeEvent::FormatChange {
                     atom: atom.clone(),
                     before_rpr,
@@ -223,25 +235,26 @@ pub fn emit_change_events(
                 result.format_change_count += 1;
                 i += 1;
             }
-            
-            ComparisonCorrelationStatus::Equal |
-            ComparisonCorrelationStatus::Nil |
-            ComparisonCorrelationStatus::Normal |
-            ComparisonCorrelationStatus::Unknown |
-            ComparisonCorrelationStatus::Group => {
+
+            ComparisonCorrelationStatus::Equal
+            | ComparisonCorrelationStatus::Nil
+            | ComparisonCorrelationStatus::Normal
+            | ComparisonCorrelationStatus::Unknown
+            | ComparisonCorrelationStatus::Group => {
                 // No change event for equal/unchanged content
                 i += 1;
             }
         }
     }
-    
+
     result
 }
 
 /// Get paragraph index from atom's ancestors
 fn get_paragraph_index(atom: &ComparisonUnitAtom) -> Option<usize> {
     // Find the paragraph ancestor and extract its index if available
-    atom.ancestor_elements.iter()
+    atom.ancestor_elements
+        .iter()
         .find(|a| a.local_name == "p")
         .map(|_| 0) // TODO: Track actual paragraph indices
 }
@@ -255,11 +268,11 @@ pub fn group_adjacent_events(events: &[ChangeEvent]) -> Vec<Vec<&ChangeEvent>> {
     if events.is_empty() {
         return Vec::new();
     }
-    
+
     let mut groups: Vec<Vec<&ChangeEvent>> = Vec::new();
     let mut current_group: Vec<&ChangeEvent> = vec![&events[0]];
     let mut current_key = events[0].grouping_key();
-    
+
     for event in events.iter().skip(1) {
         let key = event.grouping_key();
         if key == current_key {
@@ -270,7 +283,7 @@ pub fn group_adjacent_events(events: &[ChangeEvent]) -> Vec<Vec<&ChangeEvent>> {
             current_key = key;
         }
     }
-    
+
     groups.push(current_group);
     groups
 }
@@ -281,16 +294,16 @@ pub fn group_adjacent_events(events: &[ChangeEvent]) -> Vec<Vec<&ChangeEvent>> {
 /// represents the number of GROUPS, not individual atoms.
 pub fn count_revisions_from_events(events: &[ChangeEvent]) -> (usize, usize, usize) {
     let groups = group_adjacent_events(events);
-    
+
     let mut insertions = 0;
     let mut deletions = 0;
     let mut format_changes = 0;
-    
+
     for group in groups {
         if group.is_empty() {
             continue;
         }
-        
+
         // Use the first event's type to classify the group
         match group[0] {
             ChangeEvent::Insert { .. } => insertions += 1,
@@ -303,7 +316,7 @@ pub fn count_revisions_from_events(events: &[ChangeEvent]) -> (usize, usize, usi
             ChangeEvent::FormatChange { .. } => format_changes += 1,
         }
     }
-    
+
     (insertions, deletions, format_changes)
 }
 
@@ -314,20 +327,17 @@ pub fn count_revisions_from_events(events: &[ChangeEvent]) -> (usize, usize, usi
 ///
 /// ## C# Reference
 /// WmlComparer.cs ReconcileFormattingChanges (lines 2826-2880)
-pub fn detect_format_changes(
-    atoms: &mut [ComparisonUnitAtom],
-    settings: &WmlComparerSettings,
-) {
+pub fn detect_format_changes(atoms: &mut [ComparisonUnitAtom], settings: &WmlComparerSettings) {
     if !settings.track_formatting_changes {
         return;
     }
-    
+
     for atom in atoms.iter_mut() {
         // Only check Equal atoms that have a "before" counterpart
         if atom.correlation_status != ComparisonCorrelationStatus::Equal {
             continue;
         }
-        
+
         if atom.content_element_before.is_none() {
             continue;
         }
@@ -335,13 +345,13 @@ pub fn detect_format_changes(
         // Compare formatting signatures
         let before_sig = atom.formatting_signature_before.as_deref();
         let after_sig = atom.formatting_signature.as_deref();
-        
+
         let formatting_differs = match (before_sig, after_sig) {
             (None, None) => false,
             (Some(_), None) | (None, Some(_)) => true,
             (Some(b), Some(a)) => b != a,
         };
-        
+
         if formatting_differs {
             atom.correlation_status = ComparisonCorrelationStatus::FormatChanged;
             atom.formatting_change_rpr_before = atom.formatting_signature_before.clone();
@@ -354,37 +364,35 @@ pub fn detect_format_changes(
 mod tests {
     use super::*;
     use crate::wml::comparison_unit::ContentElement;
-    
+
     fn make_atom(status: ComparisonCorrelationStatus, text: char) -> ComparisonUnitAtom {
         let settings = WmlComparerSettings::default();
-        ComparisonUnitAtom::new(
-            ContentElement::Text(text),
-            vec![],
-            "main",
-            &settings,
-        )
+        ComparisonUnitAtom::new(ContentElement::Text(text), vec![], "main", &settings)
     }
-    
-    fn make_atom_with_status(status: ComparisonCorrelationStatus, text: char) -> ComparisonUnitAtom {
+
+    fn make_atom_with_status(
+        status: ComparisonCorrelationStatus,
+        text: char,
+    ) -> ComparisonUnitAtom {
         let mut atom = make_atom(status, text);
         atom.correlation_status = status;
         atom
     }
-    
+
     #[test]
     fn test_emit_change_events_inserted() {
         let atoms = vec![
             make_atom_with_status(ComparisonCorrelationStatus::Inserted, 'H'),
             make_atom_with_status(ComparisonCorrelationStatus::Inserted, 'i'),
         ];
-        
+
         let settings = WmlComparerSettings::default();
         let result = emit_change_events(&atoms, &settings);
-        
+
         assert_eq!(result.insert_count, 1); // Both atoms grouped into one insert
         assert_eq!(result.delete_count, 0);
         assert_eq!(result.events.len(), 1);
-        
+
         match &result.events[0] {
             ChangeEvent::Insert { atoms, .. } => {
                 assert_eq!(atoms.len(), 2);
@@ -392,7 +400,7 @@ mod tests {
             _ => panic!("Expected Insert event"),
         }
     }
-    
+
     #[test]
     fn test_emit_change_events_deleted() {
         let atoms = vec![
@@ -400,14 +408,14 @@ mod tests {
             make_atom_with_status(ComparisonCorrelationStatus::Deleted, 'l'),
             make_atom_with_status(ComparisonCorrelationStatus::Deleted, 'd'),
         ];
-        
+
         let settings = WmlComparerSettings::default();
         let result = emit_change_events(&atoms, &settings);
-        
+
         assert_eq!(result.delete_count, 1); // All atoms grouped into one delete
         assert_eq!(result.insert_count, 0);
     }
-    
+
     #[test]
     fn test_emit_change_events_mixed() {
         let atoms = vec![
@@ -418,37 +426,41 @@ mod tests {
             make_atom_with_status(ComparisonCorrelationStatus::Inserted, 'E'),
             make_atom_with_status(ComparisonCorrelationStatus::Equal, 'F'),
         ];
-        
+
         let settings = WmlComparerSettings::default();
         let result = emit_change_events(&atoms, &settings);
-        
+
         assert_eq!(result.delete_count, 1); // BC grouped
         assert_eq!(result.insert_count, 1); // E alone
         assert_eq!(result.events.len(), 2);
     }
-    
+
     #[test]
     fn test_emit_change_events_format_changed() {
         let mut atom = make_atom_with_status(ComparisonCorrelationStatus::FormatChanged, 'X');
         atom.formatting_change_rpr_before = Some("<w:rPr><w:b/></w:rPr>".to_string());
         atom.formatting_signature = Some("<w:rPr><w:i/></w:rPr>".to_string());
-        
+
         let atoms = vec![atom];
         let settings = WmlComparerSettings::default();
         let result = emit_change_events(&atoms, &settings);
-        
+
         assert_eq!(result.format_change_count, 1);
         assert_eq!(result.events.len(), 1);
-        
+
         match &result.events[0] {
-            ChangeEvent::FormatChange { before_rpr, after_rpr, .. } => {
+            ChangeEvent::FormatChange {
+                before_rpr,
+                after_rpr,
+                ..
+            } => {
                 assert!(before_rpr.is_some());
                 assert!(after_rpr.is_some());
             }
             _ => panic!("Expected FormatChange event"),
         }
     }
-    
+
     #[test]
     fn test_group_adjacent_events() {
         let settings = WmlComparerSettings::default();
@@ -458,14 +470,14 @@ mod tests {
             make_atom_with_status(ComparisonCorrelationStatus::Deleted, 'C'),
             make_atom_with_status(ComparisonCorrelationStatus::Inserted, 'D'),
         ];
-        
+
         let result = emit_change_events(&atoms, &settings);
         let groups = group_adjacent_events(&result.events);
-        
+
         // AB (insert), C (delete), D (insert) = 3 groups
         assert_eq!(groups.len(), 3);
     }
-    
+
     #[test]
     fn test_count_revisions_from_events() {
         let settings = WmlComparerSettings::default();
@@ -475,15 +487,15 @@ mod tests {
             make_atom_with_status(ComparisonCorrelationStatus::Deleted, 'C'),
             make_atom_with_status(ComparisonCorrelationStatus::Deleted, 'D'),
         ];
-        
+
         let result = emit_change_events(&atoms, &settings);
         let (ins, del, fmt) = count_revisions_from_events(&result.events);
-        
+
         assert_eq!(ins, 1); // AB grouped
         assert_eq!(del, 1); // CD grouped
         assert_eq!(fmt, 0);
     }
-    
+
     #[test]
     fn test_revision_count_uses_grouping() {
         let settings = WmlComparerSettings::default();
@@ -496,14 +508,14 @@ mod tests {
             make_atom_with_status(ComparisonCorrelationStatus::Equal, 'B'),
             make_atom_with_status(ComparisonCorrelationStatus::Inserted, 'C'),
         ];
-        
+
         let result = emit_change_events(&atoms, &settings);
-        
+
         // emit_change_events creates 2 Insert events: one for 'A' and one for 'C'
         // (B is Equal, so not emitted)
         assert_eq!(result.insert_count, 2);
         assert_eq!(result.events.len(), 2);
-        
+
         // However, group_adjacent_events groups by key (type|author|date)
         // Since both are Insert with same author/date, they group together
         // This matches C# behavior where GroupAdjacent operates on atoms directly

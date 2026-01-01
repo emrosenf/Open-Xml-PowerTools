@@ -1,24 +1,25 @@
-
 #[cfg(test)]
 mod tests {
-    use crate::wml::document::WmlDocument;
-    use crate::wml::comparer::WmlComparer;
-    use crate::wml::settings::WmlComparerSettings;
     use crate::wml::atom_list::create_comparison_unit_atom_list;
+    use crate::wml::comparer::WmlComparer;
+    use crate::wml::comparison_unit::{
+        get_comparison_unit_list, ComparisonCorrelationStatus, WordSeparatorSettings,
+    };
     use crate::wml::document::find_document_body;
-    use crate::wml::comparison_unit::{get_comparison_unit_list, WordSeparatorSettings, ComparisonCorrelationStatus};
-    use crate::wml::lcs_algorithm::{lcs, flatten_to_atoms};
+    use crate::wml::document::WmlDocument;
+    use crate::wml::lcs_algorithm::{flatten_to_atoms, lcs};
     use crate::wml::preprocess::{preprocess_markup, PreProcessSettings};
+    use crate::wml::settings::WmlComparerSettings;
 
     /// Deep trace test for WC-1010 (Digits test)
-    /// 
+    ///
     /// Expected: 4 revisions (digit modifications)
     /// Doc1: 12.34, 12,34, Ab,cd, Test., .Test.123
     /// Doc2: 12.34, 12,4, Ab,cd, st., .Test.123
-    /// 
+    ///
     /// Changes:
     /// - Para 2: "12,34" -> "12,4" (delete "3")
-    /// - Para 3: "Ab,cd" (same text but split across runs) 
+    /// - Para 3: "Ab,cd" (same text but split across runs)
     /// - Para 4: "Test." -> "st." (delete "Te")
     #[test]
     fn trace_wc1010_data_flow() {
@@ -76,7 +77,12 @@ mod tests {
             let display = atom.content_element.display_value();
             doc1_text.push_str(&display);
             if i < 50 {
-                println!("  [{}] {:?} hash={}", i, atom.content_element, &atom.sha1_hash[..8]);
+                println!(
+                    "  [{}] {:?} hash={}",
+                    i,
+                    atom.content_element,
+                    &atom.sha1_hash[..8]
+                );
             }
         }
         println!("Doc1 text: {:?}", doc1_text);
@@ -87,7 +93,12 @@ mod tests {
             let display = atom.content_element.display_value();
             doc2_text.push_str(&display);
             if i < 50 {
-                println!("  [{}] {:?} hash={}", i, atom.content_element, &atom.sha1_hash[..8]);
+                println!(
+                    "  [{}] {:?} hash={}",
+                    i,
+                    atom.content_element,
+                    &atom.sha1_hash[..8]
+                );
             }
         }
         println!("Doc2 text: {:?}", doc2_text);
@@ -113,8 +124,13 @@ mod tests {
         println!("\n=== LCS RESULT ===");
         println!("Correlated sequences: {}", correlated.len());
         for (i, seq) in correlated.iter().enumerate() {
-            println!("  [{}] status={:?} len1={} len2={}", 
-                i, seq.status, seq.len1(), seq.len2());
+            println!(
+                "  [{}] status={:?} len1={} len2={}",
+                i,
+                seq.status,
+                seq.len1(),
+                seq.len2()
+            );
         }
 
         // Flatten
@@ -123,44 +139,57 @@ mod tests {
         println!("\n=== FLATTENED ATOMS ===");
         println!("Total flattened atoms: {}", flattened.len());
 
-        let equal_count = flattened.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Equal).count();
-        let deleted_count = flattened.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted).count();
-        let inserted_count = flattened.iter().filter(|a| a.correlation_status == ComparisonCorrelationStatus::Inserted).count();
+        let equal_count = flattened
+            .iter()
+            .filter(|a| a.correlation_status == ComparisonCorrelationStatus::Equal)
+            .count();
+        let deleted_count = flattened
+            .iter()
+            .filter(|a| a.correlation_status == ComparisonCorrelationStatus::Deleted)
+            .count();
+        let inserted_count = flattened
+            .iter()
+            .filter(|a| a.correlation_status == ComparisonCorrelationStatus::Inserted)
+            .count();
 
-        println!("Equal: {}, Deleted: {}, Inserted: {}", equal_count, deleted_count, inserted_count);
+        println!(
+            "Equal: {}, Deleted: {}, Inserted: {}",
+            equal_count, deleted_count, inserted_count
+        );
 
         // Print non-equal atoms
         println!("\n--- Non-Equal Atoms ---");
         for (i, atom) in flattened.iter().enumerate() {
             if atom.correlation_status != ComparisonCorrelationStatus::Equal {
-                println!("  [{}] {} {:?}", i, atom.correlation_status, atom.content_element);
+                println!(
+                    "  [{}] {} {:?}",
+                    i, atom.correlation_status, atom.content_element
+                );
             }
         }
 
         let result = WmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-        
+
         println!("\n=== FINAL RESULT ===");
-        println!("Insertions: {}, Deletions: {}, Format: {}, Total: {}", 
-            result.insertions, result.deletions, result.format_changes, result.revision_count);
+        println!(
+            "Insertions: {}, Deletions: {}, Format: {}, Total: {}",
+            result.insertions, result.deletions, result.format_changes, result.revision_count
+        );
 
         match WmlDocument::from_bytes(&result.document) {
-            Ok(res_doc) => {
-                match res_doc.main_document() {
-                    Ok(xml) => {
-                        match crate::xml::builder::serialize(&xml) {
-                            Ok(xml_str) => {
-                                println!("\n=== RESULT XML ===");
-                                println!("{}", xml_str);
-                            }
-                            Err(e) => println!("Serialize error: {:?}", e),
-                        }
+            Ok(res_doc) => match res_doc.main_document() {
+                Ok(xml) => match crate::xml::builder::serialize(&xml) {
+                    Ok(xml_str) => {
+                        println!("\n=== RESULT XML ===");
+                        println!("{}", xml_str);
                     }
-                    Err(e) => println!("Main document error: {:?}", e),
-                }
-            }
+                    Err(e) => println!("Serialize error: {:?}", e),
+                },
+                Err(e) => println!("Main document error: {:?}", e),
+            },
             Err(e) => println!("From bytes error: {:?}", e),
         }
-        
+
         assert!(result.revision_count > 0, "Should detect changes");
     }
 
@@ -190,12 +219,15 @@ mod tests {
 
         let doc1 = WmlDocument::from_main_xml(xml1.as_bytes()).unwrap();
         let doc2 = WmlDocument::from_main_xml(xml2.as_bytes()).unwrap();
-        
+
         let settings = WmlComparerSettings::default();
         let result = WmlComparer::compare(&doc1, &doc2, Some(&settings)).unwrap();
-        
-        println!("Insertions: {}, Deletions: {}, FormatChanges: {}", result.insertions, result.deletions, result.format_changes);
-        
+
+        println!(
+            "Insertions: {}, Deletions: {}, FormatChanges: {}",
+            result.insertions, result.deletions, result.format_changes
+        );
+
         if result.insertions == 0 || result.deletions == 0 {
             if let Ok(res_doc) = WmlDocument::from_bytes(&result.document) {
                 if let Ok(xml) = res_doc.main_document() {
@@ -215,7 +247,7 @@ mod tests {
     #[test]
     fn trace_footnote_reference_flow() {
         use crate::wml::comparison_unit::ContentElement;
-        
+
         // Simplified test case with footnoteReference
         let xml1 = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -259,16 +291,32 @@ mod tests {
 
         println!("Doc1 atoms: {}", atoms1.len());
         for (i, atom) in atoms1.iter().enumerate() {
-            let is_footnote = matches!(atom.content_element, ContentElement::FootnoteReference { .. });
-            println!("  [{}] {} {:?} hash={}", i, if is_footnote { "**FOOTNOTE**" } else { "" }, 
-                atom.content_element, &atom.sha1_hash[..8]);
+            let is_footnote = matches!(
+                atom.content_element,
+                ContentElement::FootnoteReference { .. }
+            );
+            println!(
+                "  [{}] {} {:?} hash={}",
+                i,
+                if is_footnote { "**FOOTNOTE**" } else { "" },
+                atom.content_element,
+                &atom.sha1_hash[..8]
+            );
         }
 
         println!("\nDoc2 atoms: {}", atoms2.len());
         for (i, atom) in atoms2.iter().enumerate() {
-            let is_footnote = matches!(atom.content_element, ContentElement::FootnoteReference { .. });
-            println!("  [{}] {} {:?} hash={}", i, if is_footnote { "**FOOTNOTE**" } else { "" }, 
-                atom.content_element, &atom.sha1_hash[..8]);
+            let is_footnote = matches!(
+                atom.content_element,
+                ContentElement::FootnoteReference { .. }
+            );
+            println!(
+                "  [{}] {} {:?} hash={}",
+                i,
+                if is_footnote { "**FOOTNOTE**" } else { "" },
+                atom.content_element,
+                &atom.sha1_hash[..8]
+            );
         }
 
         println!("\n=== STEP 2: GROUP INTO WORDS ===");
@@ -279,25 +327,47 @@ mod tests {
         println!("Doc1 units (words/groups): {}", units1.len());
         for (i, unit) in units1.iter().enumerate() {
             if let Some(word) = unit.as_word() {
-                let has_footnote = word.atoms.iter().any(|a| matches!(a.content_element, ContentElement::FootnoteReference { .. }));
-                println!("  [{}] Word ({}atoms) {} hash={:.8}", i, word.atoms.len(), 
-                    if has_footnote { "**HAS FOOTNOTE**" } else { "" }, word.sha1_hash);
+                let has_footnote = word
+                    .atoms
+                    .iter()
+                    .any(|a| matches!(a.content_element, ContentElement::FootnoteReference { .. }));
+                println!(
+                    "  [{}] Word ({}atoms) {} hash={:.8}",
+                    i,
+                    word.atoms.len(),
+                    if has_footnote { "**HAS FOOTNOTE**" } else { "" },
+                    word.sha1_hash
+                );
                 for atom in word.atoms.iter() {
                     println!("       - {:?}", atom.content_element);
                 }
             } else if let Some(group) = unit.as_group() {
-                println!("  [{}] Group {:?} hash={:.8}", i, group.group_type, group.sha1_hash);
+                println!(
+                    "  [{}] Group {:?} hash={:.8}",
+                    i, group.group_type, group.sha1_hash
+                );
             }
         }
 
         println!("\nDoc2 units (words/groups): {}", units2.len());
         for (i, unit) in units2.iter().enumerate() {
             if let Some(word) = unit.as_word() {
-                let has_footnote = word.atoms.iter().any(|a| matches!(a.content_element, ContentElement::FootnoteReference { .. }));
-                println!("  [{}] Word ({}atoms) {} hash={:.8}", i, word.atoms.len(), 
-                    if has_footnote { "**HAS FOOTNOTE**" } else { "" }, word.sha1_hash);
+                let has_footnote = word
+                    .atoms
+                    .iter()
+                    .any(|a| matches!(a.content_element, ContentElement::FootnoteReference { .. }));
+                println!(
+                    "  [{}] Word ({}atoms) {} hash={:.8}",
+                    i,
+                    word.atoms.len(),
+                    if has_footnote { "**HAS FOOTNOTE**" } else { "" },
+                    word.sha1_hash
+                );
             } else if let Some(group) = unit.as_group() {
-                println!("  [{}] Group {:?} hash={:.8}", i, group.group_type, group.sha1_hash);
+                println!(
+                    "  [{}] Group {:?} hash={:.8}",
+                    i, group.group_type, group.sha1_hash
+                );
             }
         }
 
@@ -306,36 +376,50 @@ mod tests {
 
         println!("Correlated sequences: {}", correlated.len());
         for (i, seq) in correlated.iter().enumerate() {
-            println!("  [{}] status={:?} len1={} len2={}", 
-                i, seq.status, seq.len1(), seq.len2());
+            println!(
+                "  [{}] status={:?} len1={} len2={}",
+                i,
+                seq.status,
+                seq.len1(),
+                seq.len2()
+            );
         }
 
         println!("\n=== STEP 4: FLATTEN TO ATOMS ===");
         let flattened = flatten_to_atoms(&correlated);
 
         println!("Total flattened atoms: {}", flattened.len());
-        
+
         // Find and report on footnote atoms specifically
         println!("\n--- Footnote Reference Status ---");
         for (i, atom) in flattened.iter().enumerate() {
-            if matches!(atom.content_element, ContentElement::FootnoteReference { .. }) {
-                println!("  [{}] FOOTNOTE status={:?} element={:?}", 
-                    i, atom.correlation_status, atom.content_element);
+            if matches!(
+                atom.content_element,
+                ContentElement::FootnoteReference { .. }
+            ) {
+                println!(
+                    "  [{}] FOOTNOTE status={:?} element={:?}",
+                    i, atom.correlation_status, atom.content_element
+                );
             }
         }
 
         println!("\n--- All Non-Equal Atoms ---");
         for (i, atom) in flattened.iter().enumerate() {
             if atom.correlation_status != ComparisonCorrelationStatus::Equal {
-                println!("  [{}] {} {:?}", i, atom.correlation_status, atom.content_element);
+                println!(
+                    "  [{}] {} {:?}",
+                    i, atom.correlation_status, atom.content_element
+                );
             }
         }
 
         // The footnote should be Equal, not Deleted or Inserted
-        let footnote_atoms: Vec<_> = flattened.iter()
+        let footnote_atoms: Vec<_> = flattened
+            .iter()
             .filter(|a| matches!(a.content_element, ContentElement::FootnoteReference { .. }))
             .collect();
-        
+
         println!("\n=== ASSERTION ===");
         println!("Found {} footnote atom(s)", footnote_atoms.len());
         for atom in &footnote_atoms {
@@ -344,7 +428,9 @@ mod tests {
 
         assert!(!footnote_atoms.is_empty(), "Should have footnote atoms");
         assert!(
-            footnote_atoms.iter().all(|a| a.correlation_status == ComparisonCorrelationStatus::Equal),
+            footnote_atoms
+                .iter()
+                .all(|a| a.correlation_status == ComparisonCorrelationStatus::Equal),
             "Footnote should be Equal, not Deleted/Inserted"
         );
     }

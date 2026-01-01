@@ -163,7 +163,11 @@ pub enum ContentElement {
     /// Tab (w:tab)
     Tab,
     /// Positional Tab (w:ptab)
-    PositionalTab { alignment: String, relative_to: String, leader: String },
+    PositionalTab {
+        alignment: String,
+        relative_to: String,
+        leader: String,
+    },
     /// Drawing/image with hash and serialized element content
     Drawing { hash: String, element_xml: String },
     /// Picture (VML) with hash and serialized element content
@@ -214,10 +218,14 @@ impl ContentElement {
             ContentElement::Math { .. } => ContentType::Math,
             ContentElement::FootnoteReference { .. } => ContentType::FootnoteReference,
             ContentElement::EndnoteReference { .. } => ContentType::EndnoteReference,
-            ContentElement::CommentRangeStart { .. } | ContentElement::CommentRangeEnd { .. } => ContentType::Unknown,
+            ContentElement::CommentRangeStart { .. } | ContentElement::CommentRangeEnd { .. } => {
+                ContentType::Unknown
+            }
             ContentElement::TextboxStart | ContentElement::TextboxEnd => ContentType::Textbox,
-            ContentElement::FieldBegin | ContentElement::FieldSeparator | 
-            ContentElement::FieldEnd | ContentElement::SimpleField { .. } => ContentType::Field,
+            ContentElement::FieldBegin
+            | ContentElement::FieldSeparator
+            | ContentElement::FieldEnd
+            | ContentElement::SimpleField { .. } => ContentType::Field,
             ContentElement::Symbol { .. } => ContentType::Symbol,
             ContentElement::Object { .. } => ContentType::Object,
             ContentElement::Unknown { .. } => ContentType::Unknown,
@@ -267,9 +275,13 @@ impl ContentElement {
             ContentElement::Break => String::new(),
             ContentElement::CarriageReturn => String::new(),
             ContentElement::Tab => String::new(),
-            ContentElement::PositionalTab { alignment, relative_to, leader } => {
+            ContentElement::PositionalTab {
+                alignment,
+                relative_to,
+                leader,
+            } => {
                 format!("{}{}{}", alignment, relative_to, leader)
-            },
+            }
             ContentElement::Drawing { hash, .. } => hash.clone(),
             ContentElement::Picture { hash, .. } => hash.clone(),
             ContentElement::Math { hash, .. } => hash.clone(),
@@ -290,10 +302,10 @@ impl ContentElement {
     }
 
     /// Get hash string for this content element (used for SHA1 computation)
-    /// 
+    ///
     /// This is a faithful port of C# GetSha1HashStringForElement (WmlComparer.cs:8468-8477)
     /// The hash string is: localName + textValue
-    /// 
+    ///
     /// For text: "t" + character
     /// For drawings: "drawing" + contentHash
     /// For pPr: "pPr" (empty text value)
@@ -302,25 +314,25 @@ impl ContentElement {
     }
 
     /// Get hash string with settings-based normalization
-    /// 
+    ///
     /// This is the full C# GetSha1HashStringForElement implementation:
     /// - Applies case transformation if CaseInsensitive
     /// - Applies space normalization if ConflateBreakingAndNonbreakingSpaces
     pub fn hash_string_with_settings(&self, settings: &WmlComparerSettings) -> String {
         let mut text = self.text_value();
-        
+
         if settings.case_insensitive {
             // C#: text = text.ToUpper(settings.CultureInfo)
             // We use simple to_uppercase since we don't have full CultureInfo support
             text = text.to_uppercase();
         }
-        
+
         if settings.conflate_breaking_and_nonbreaking_spaces {
             // C#: text = text.Replace(' ', '\x00a0')
             // Replace regular space with non-breaking space
             text = text.replace(' ', "\u{00a0}");
         }
-        
+
         format!("{}{}", self.local_name(), text)
     }
 
@@ -369,7 +381,7 @@ pub struct ComparisonUnitAtom {
     pub normalized_rpr: Option<String>,
     /// Part name this atom belongs to (main, footnotes, endnotes)
     pub part_name: String,
-    
+
     // Fields for "before" document tracking (Equal/FormatChanged atoms)
     /// Content element from "before" document
     pub content_element_before: Option<ContentElement>,
@@ -385,7 +397,7 @@ pub struct ComparisonUnitAtom {
     pub rev_track_element: Option<String>,
     /// Formatting change rPr from "before" document
     pub formatting_change_rpr_before: Option<String>,
-    
+
     // Fields populated by AssembleAncestorUnidsInOrderToRebuildXmlTreeProperly
     /// Ancestor Unids array (from C# AncestorUnids property)
     /// This is populated after correlation and is used for tree reconstruction
@@ -406,9 +418,9 @@ impl Eq for ComparisonUnitAtom {}
 
 impl ComparisonUnitAtom {
     /// Create a new atom with the given content element and ancestors
-    /// 
+    ///
     /// This is a faithful port of C# ComparisonUnitAtom constructor (WmlComparer.cs:8347-8378)
-    /// 
+    ///
     /// The identity hash is computed from:
     /// - Element local name + text value (with settings normalization)
     /// - Uses pre-computed SHA1Hash attribute if present (from preprocessing)
@@ -426,7 +438,7 @@ impl ComparisonUnitAtom {
         // Search from leaf to body (reverse order)
         let mut correlation_status = ComparisonCorrelationStatus::Equal;
         let mut rev_track_element = None;
-        
+
         // C#: revTrackElement = ancestors.FirstOrDefault(a => a.Name == W.del || a.Name == W.ins);
         for ancestor in ancestor_elements.iter().rev() {
             if ancestor.local_name == "ins" {
@@ -459,9 +471,9 @@ impl ComparisonUnitAtom {
             formatting_change_rpr_before_signature: None,
         }
     }
-    
+
     /// Create a new atom with a pre-computed SHA1 hash
-    /// 
+    ///
     /// This is used when the hash has been pre-computed during preprocessing
     /// (C# lines 8364-8368: checks for PtOpenXml.SHA1Hash attribute)
     pub fn new_with_hash(
@@ -473,7 +485,7 @@ impl ComparisonUnitAtom {
         // Find revision tracking element from ancestors
         let mut correlation_status = ComparisonCorrelationStatus::Equal;
         let mut rev_track_element = None;
-        
+
         for ancestor in ancestor_elements.iter().rev() {
             if ancestor.local_name == "ins" {
                 correlation_status = ComparisonCorrelationStatus::Inserted;
@@ -505,35 +517,35 @@ impl ComparisonUnitAtom {
             formatting_change_rpr_before_signature: None,
         }
     }
-    
+
     /// Get the canonical identity hash for this atom
     /// This is the primary identifier used for LCS comparison
     pub fn identity_hash(&self) -> &str {
         &self.sha1_hash
     }
-    
+
     /// Get the content type classification
     pub fn content_type(&self) -> ContentType {
         self.content_element.content_type()
     }
-    
+
     /// Get the formatting signature (hash of normalized rPr)
     /// Returns None if formatting tracking is disabled or no rPr exists
     pub fn formatting_signature(&self) -> Option<&str> {
         self.formatting_signature.as_deref()
     }
-    
+
     /// Set the formatting signature for this atom
     pub fn set_formatting_signature(&mut self, signature: Option<String>) {
         self.formatting_signature = signature;
     }
-    
+
     /// Get ancestor Unids for tree reconstruction
     /// These are populated by AssembleAncestorUnidsInOrderToRebuildXmlTreeProperly
     pub fn ancestor_unids(&self) -> &[String] {
         &self.ancestor_unids
     }
-    
+
     /// Set ancestor Unids for tree reconstruction
     pub fn set_ancestor_unids(&mut self, unids: Vec<String>) {
         self.ancestor_unids = unids;
@@ -546,7 +558,9 @@ impl ComparisonUnitAtom {
 
     /// Get the local name of the nth ancestor
     pub fn ancestor_name(&self, index: usize) -> Option<&str> {
-        self.ancestor_elements.get(index).map(|a| a.local_name.as_str())
+        self.ancestor_elements
+            .get(index)
+            .map(|a| a.local_name.as_str())
     }
 
     /// Check if this atom is inside a table
@@ -605,8 +619,9 @@ impl ComparisonUnitAtom {
         } else {
             &self.sha1_hash
         };
-        
-        let correlation_status_str = if self.correlation_status != ComparisonCorrelationStatus::Nil {
+
+        let correlation_status_str = if self.correlation_status != ComparisonCorrelationStatus::Nil
+        {
             format!("[{:8}] ", format!("{}", self.correlation_status))
         } else {
             String::new()
@@ -638,7 +653,8 @@ impl ComparisonUnitAtom {
             ContentElement::Unknown { name } => name.as_str(),
         };
 
-        let padded_name = format!("{} ", element_name).chars()
+        let padded_name = format!("{} ", element_name)
+            .chars()
             .chain(std::iter::repeat('-'))
             .take(XNAME_PAD)
             .collect::<String>();
@@ -650,7 +666,8 @@ impl ComparisonUnitAtom {
             ":   ".to_string()
         };
 
-        let ancestors_str = self.ancestor_elements
+        let ancestors_str = self
+            .ancestor_elements
             .iter()
             .map(|a| {
                 let unid_short = if a.unid.len() >= 8 {
@@ -680,11 +697,19 @@ impl Hashable for ComparisonUnitAtom {
 impl ComparisonUnitAtom {
     /// Format a list of comparison unit atoms as a string
     /// Corresponds to C# ComparisonUnitAtomListToString (WmlComparer.cs:8582)
-    pub fn comparison_unit_atom_list_to_string(atoms: &[ComparisonUnitAtom], indent: usize) -> String {
+    pub fn comparison_unit_atom_list_to_string(
+        atoms: &[ComparisonUnitAtom],
+        indent: usize,
+    ) -> String {
         let mut result = String::new();
         for (i, atom) in atoms.iter().enumerate() {
             let indent_str = " ".repeat(indent);
-            result.push_str(&format!("{}[{:06}] {}\n", indent_str, i + 1, atom.to_string_with_indent(0)));
+            result.push_str(&format!(
+                "{}[{:06}] {}\n",
+                indent_str,
+                i + 1,
+                atom.to_string_with_indent(0)
+            ));
         }
         result
     }
@@ -706,47 +731,47 @@ pub struct ComparisonUnitWord {
 // In Rust, we use lazy_static or const arrays. For O(1) lookup, we'd use HashSet at runtime.
 // For now, keeping as const arrays since the C# uses FrozenSet for immutable lookup.
 const ELEMENTS_WITH_RELATIONSHIP_IDS: &[&str] = &[
-    "blip",          // A.blip
-    "hlinkClick",    // A.hlinkClick
-    "relIds",        // A.relIds, DGM.relIds
-    "chart",         // C.chart
-    "externalData",  // C.externalData
-    "userShapes",    // C.userShapes
-    "OLEObject",     // O.OLEObject
-    "fill",          // VML.fill
-    "imagedata",     // VML.imagedata
-    "stroke",        // VML.stroke
-    "altChunk",      // W.altChunk
+    "blip",             // A.blip
+    "hlinkClick",       // A.hlinkClick
+    "relIds",           // A.relIds, DGM.relIds
+    "chart",            // C.chart
+    "externalData",     // C.externalData
+    "userShapes",       // C.userShapes
+    "OLEObject",        // O.OLEObject
+    "fill",             // VML.fill
+    "imagedata",        // VML.imagedata
+    "stroke",           // VML.stroke
+    "altChunk",         // W.altChunk
     "attachedTemplate", // W.attachedTemplate
-    "control",       // W.control
-    "dataSource",    // W.dataSource
-    "embedBold",     // W.embedBold
-    "embedBoldItalic", // W.embedBoldItalic
-    "embedItalic",   // W.embedItalic
-    "embedRegular",  // W.embedRegular
-    "footerReference", // W.footerReference
-    "headerReference", // W.headerReference
-    "headerSource",  // W.headerSource
-    "hyperlink",     // W.hyperlink
-    "printerSettings", // W.printerSettings
-    "recipientData", // W.recipientData
-    "saveThroughXslt", // W.saveThroughXslt
-    "sourceFileName", // W.sourceFileName
-    "src",           // W.src
-    "subDoc",        // W.subDoc
-    "toolbarData",   // WNE.toolbarData
+    "control",          // W.control
+    "dataSource",       // W.dataSource
+    "embedBold",        // W.embedBold
+    "embedBoldItalic",  // W.embedBoldItalic
+    "embedItalic",      // W.embedItalic
+    "embedRegular",     // W.embedRegular
+    "footerReference",  // W.footerReference
+    "headerReference",  // W.headerReference
+    "headerSource",     // W.headerSource
+    "hyperlink",        // W.hyperlink
+    "printerSettings",  // W.printerSettings
+    "recipientData",    // W.recipientData
+    "saveThroughXslt",  // W.saveThroughXslt
+    "sourceFileName",   // W.sourceFileName
+    "src",              // W.src
+    "subDoc",           // W.subDoc
+    "toolbarData",      // WNE.toolbarData
 ];
 
 const RELATIONSHIP_ATTRIBUTE_NAMES: &[&str] = &[
-    "embed",  // R.embed
-    "link",   // R.link
-    "id",     // R.id
-    "cs",     // R.cs
-    "dm",     // R.dm
-    "lo",     // R.lo
-    "qs",     // R.qs
-    "href",   // R.href
-    "pict",   // R.pict
+    "embed", // R.embed
+    "link",  // R.link
+    "id",    // R.id
+    "cs",    // R.cs
+    "dm",    // R.dm
+    "lo",    // R.lo
+    "qs",    // R.qs
+    "href",  // R.href
+    "pict",  // R.pict
 ];
 
 impl ComparisonUnitWord {
@@ -792,7 +817,7 @@ impl ComparisonUnitWord {
         } else {
             &self.sha1_hash
         };
-        
+
         let mut result = format!("{}Word SHA1:{}\n", indent_str, hash_short);
         for atom in self.atoms.iter() {
             result.push_str(&atom.to_string_with_indent(indent + 2));
@@ -845,11 +870,12 @@ impl ComparisonUnitGroup {
         level: usize,
     ) -> Self {
         let sha1_hash = compute_sha1_concat(words.iter().map(|w| w.sha1_hash.as_str()));
-        
+
         let atom_count: usize = words.iter().map(|w| w.atoms.len()).sum();
 
         // Get correlated SHA1 hash from the first atom's ancestors
-        let correlated_sha1_hash = words.first()
+        let correlated_sha1_hash = words
+            .first()
             .and_then(|w| w.atoms.first())
             .and_then(|atom| {
                 let ancestor_name = match group_type {
@@ -860,10 +886,12 @@ impl ComparisonUnitGroup {
                     ComparisonUnitGroupType::Textbox => "txbxContent",
                 };
 
-                atom.ancestor_elements.iter()
+                atom.ancestor_elements
+                    .iter()
                     .find(|a| a.local_name == ancestor_name)
                     .and_then(|a| {
-                        a.attributes.iter()
+                        a.attributes
+                            .iter()
                             .find(|attr| attr.name.local_name == "CorrelatedSHA1Hash")
                             .map(|attr| attr.value.clone())
                     })
@@ -888,11 +916,12 @@ impl ComparisonUnitGroup {
         level: usize,
     ) -> Self {
         let sha1_hash = compute_sha1_concat(groups.iter().map(|g| g.sha1_hash.as_str()));
-        
+
         let atom_count: usize = groups.iter().map(|g| g.atom_count).sum();
 
         // Get correlated SHA1 hash from the first group's first atom's ancestors
-        let correlated_sha1_hash = groups.first()
+        let correlated_sha1_hash = groups
+            .first()
             .and_then(|g| g.first_atom())
             .and_then(|atom| {
                 let ancestor_name = match group_type {
@@ -903,10 +932,12 @@ impl ComparisonUnitGroup {
                     ComparisonUnitGroupType::Textbox => "txbxContent",
                 };
 
-                atom.ancestor_elements.iter()
+                atom.ancestor_elements
+                    .iter()
                     .find(|a| a.local_name == ancestor_name)
                     .and_then(|a| {
-                        a.attributes.iter()
+                        a.attributes
+                            .iter()
                             .find(|attr| attr.name.local_name == "CorrelatedSHA1Hash")
                             .map(|attr| attr.value.clone())
                     })
@@ -957,21 +988,21 @@ impl ComparisonUnitGroup {
     /// Used for cell content flattening in P0-3b
     pub fn contents_as_units(&self) -> Vec<ComparisonUnit> {
         match &self.contents {
-            ComparisonUnitGroupContents::Words(words) => {
-                words.iter().map(|w| ComparisonUnit::Word(w.clone())).collect()
-            }
-            ComparisonUnitGroupContents::Groups(groups) => {
-                groups.iter().map(|g| ComparisonUnit::Group(g.clone())).collect()
-            }
+            ComparisonUnitGroupContents::Words(words) => words
+                .iter()
+                .map(|w| ComparisonUnit::Word(w.clone()))
+                .collect(),
+            ComparisonUnitGroupContents::Groups(groups) => groups
+                .iter()
+                .map(|g| ComparisonUnit::Group(g.clone()))
+                .collect(),
         }
     }
 
     /// Get the first atom in this group
     pub fn first_atom(&self) -> Option<&ComparisonUnitAtom> {
         match &self.contents {
-            ComparisonUnitGroupContents::Words(words) => {
-                words.first().and_then(|w| w.first_atom())
-            }
+            ComparisonUnitGroupContents::Words(words) => words.first().and_then(|w| w.first_atom()),
             ComparisonUnitGroupContents::Groups(groups) => {
                 groups.first().and_then(|g| g.first_atom())
             }
@@ -980,21 +1011,19 @@ impl ComparisonUnitGroup {
 
     /// Get the first comparison unit atom from a comparison unit (group or word)
     /// Corresponds to C# GetFirstComparisonUnitAtomOfGroup (WmlComparer.cs:8642)
-    pub fn get_first_comparison_unit_atom_of_group(unit: &ComparisonUnit) -> Option<ComparisonUnitAtom> {
+    pub fn get_first_comparison_unit_atom_of_group(
+        unit: &ComparisonUnit,
+    ) -> Option<ComparisonUnitAtom> {
         match unit {
             ComparisonUnit::Word(w) => w.atoms.first().cloned(),
-            ComparisonUnit::Group(g) => {
-                match &g.contents {
-                    ComparisonUnitGroupContents::Words(words) => {
-                        words.first().and_then(|w| w.atoms.first().cloned())
-                    }
-                    ComparisonUnitGroupContents::Groups(groups) => {
-                        groups.first().and_then(|g| {
-                            Self::get_first_comparison_unit_atom_of_group(&ComparisonUnit::Group(g.clone()))
-                        })
-                    }
+            ComparisonUnit::Group(g) => match &g.contents {
+                ComparisonUnitGroupContents::Words(words) => {
+                    words.first().and_then(|w| w.atoms.first().cloned())
                 }
-            }
+                ComparisonUnitGroupContents::Groups(groups) => groups.first().and_then(|g| {
+                    Self::get_first_comparison_unit_atom_of_group(&ComparisonUnit::Group(g.clone()))
+                }),
+            },
         }
     }
 
@@ -1006,7 +1035,7 @@ impl ComparisonUnitGroup {
             "{}Group Type: {} SHA1:{}\n",
             indent_str, self.group_type, self.sha1_hash
         );
-        
+
         match &self.contents {
             ComparisonUnitGroupContents::Words(words) => {
                 for word in words {
@@ -1019,7 +1048,7 @@ impl ComparisonUnitGroup {
                 }
             }
         }
-        
+
         result
     }
 }
@@ -1027,7 +1056,9 @@ impl ComparisonUnitGroup {
 impl Hashable for ComparisonUnitGroup {
     fn hash(&self) -> &str {
         // Use correlated hash if available (for block-level matching)
-        self.correlated_sha1_hash.as_deref().unwrap_or(&self.sha1_hash)
+        self.correlated_sha1_hash
+            .as_deref()
+            .unwrap_or(&self.sha1_hash)
     }
 }
 
@@ -1062,8 +1093,8 @@ impl Default for WordSeparatorSettings {
             word_separators: vec![
                 ' ', '-', ')', '(', ';', ',',
                 // Currency symbols - treat as word separators to match MS Word behavior
-                '$', '€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '฿',
-                '（', '）', '，', '、', '；', '。', '：', '的',
+                '$', '€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '฿', '（', '）', '，', '、', '；',
+                '。', '：', '的',
             ],
         }
     }
@@ -1079,10 +1110,30 @@ impl WordSeparatorSettings {
 
 /// Word break element names (elements that cause word breaks)
 const WORD_BREAK_ELEMENTS: &[&str] = &[
-    "pPr", "tab", "br", "continuationSeparator", "cr", "dayLong", "dayShort",
-    "drawing", "pict", "endnoteRef", "footnoteRef", "monthLong", "monthShort",
-    "noBreakHyphen", "object", "ptab", "separator", "sym", "yearLong", "yearShort",
-    "oMathPara", "oMath", "footnoteReference", "endnoteReference",
+    "pPr",
+    "tab",
+    "br",
+    "continuationSeparator",
+    "cr",
+    "dayLong",
+    "dayShort",
+    "drawing",
+    "pict",
+    "endnoteRef",
+    "footnoteRef",
+    "monthLong",
+    "monthShort",
+    "noBreakHyphen",
+    "object",
+    "ptab",
+    "separator",
+    "sym",
+    "yearLong",
+    "yearShort",
+    "oMathPara",
+    "oMath",
+    "footnoteReference",
+    "endnoteReference",
 ];
 
 /// Comparison grouping element names
@@ -1111,9 +1162,9 @@ struct WordWithHierarchy {
 }
 
 /// Get the comparison unit list from atoms
-/// 
+///
 /// This is a faithful port of C# GetComparisonUnitList (WmlComparer.cs:7292)
-/// 
+///
 /// Steps:
 /// 1. Assign grouping keys to atoms based on word separators
 /// 2. Group adjacent atoms with same key into words
@@ -1298,7 +1349,8 @@ fn get_hierarchical_comparison_units(
             Some(key) => {
                 let group_type = parse_group_type(&key);
                 let child_units = get_hierarchical_comparison_units(group, level + 1);
-                let group_unit = ComparisonUnitGroup::from_comparison_units(child_units, group_type, level);
+                let group_unit =
+                    ComparisonUnitGroup::from_comparison_units(child_units, group_type, level);
                 result.push(ComparisonUnit::Group(group_unit));
             }
         }
@@ -1367,23 +1419,20 @@ impl ComparisonUnit {
 
     fn descendants_internal(&self, result: &mut Vec<ComparisonUnit>) {
         match self {
-            ComparisonUnit::Word(_) => {
-            }
-            ComparisonUnit::Group(g) => {
-                match &g.contents {
-                    ComparisonUnitGroupContents::Words(words) => {
-                        for word in words {
-                            result.push(ComparisonUnit::Word(word.clone()));
-                        }
-                    }
-                    ComparisonUnitGroupContents::Groups(groups) => {
-                        for group in groups {
-                            result.push(ComparisonUnit::Group(group.clone()));
-                            ComparisonUnit::Group(group.clone()).descendants_internal(result);
-                        }
+            ComparisonUnit::Word(_) => {}
+            ComparisonUnit::Group(g) => match &g.contents {
+                ComparisonUnitGroupContents::Words(words) => {
+                    for word in words {
+                        result.push(ComparisonUnit::Word(word.clone()));
                     }
                 }
-            }
+                ComparisonUnitGroupContents::Groups(groups) => {
+                    for group in groups {
+                        result.push(ComparisonUnit::Group(group.clone()));
+                        ComparisonUnit::Group(group.clone()).descendants_internal(result);
+                    }
+                }
+            },
         }
     }
 
@@ -1511,7 +1560,9 @@ mod tests {
         let text = ContentElement::Text('a');
         assert_eq!(text.hash_string(), "ta");
 
-        let ppr = ContentElement::ParagraphProperties { element_xml: String::new() };
+        let ppr = ContentElement::ParagraphProperties {
+            element_xml: String::new(),
+        };
         assert_eq!(ppr.hash_string(), "pPr");
 
         let drawing = ContentElement::Drawing {
@@ -1523,13 +1574,13 @@ mod tests {
 
     #[test]
     fn test_atom_creation() {
+        use crate::wml::settings::WmlComparerSettings;
         use crate::xml::arena::XmlDocument;
         use crate::xml::node::XmlNodeData;
-        use crate::wml::settings::WmlComparerSettings;
-        
+
         let mut doc = XmlDocument::new();
         let node = doc.add_root(XmlNodeData::Text("test".to_string()));
-        
+
         let settings = WmlComparerSettings::default();
         let atom = ComparisonUnitAtom::new(
             ContentElement::Text('H'),
@@ -1568,15 +1619,15 @@ mod tests {
     fn test_group_creation() {
         use crate::wml::settings::WmlComparerSettings;
         let settings = WmlComparerSettings::default();
-        let atoms = vec![
-            ComparisonUnitAtom::new(ContentElement::Text('A'), vec![], "main", &settings),
-        ];
+        let atoms = vec![ComparisonUnitAtom::new(
+            ContentElement::Text('A'),
+            vec![],
+            "main",
+            &settings,
+        )];
         let word = ComparisonUnitWord::new(atoms);
-        let group = ComparisonUnitGroup::from_words(
-            vec![word],
-            ComparisonUnitGroupType::Paragraph,
-            0,
-        );
+        let group =
+            ComparisonUnitGroup::from_words(vec![word], ComparisonUnitGroupType::Paragraph, 0);
 
         assert_eq!(group.group_type, ComparisonUnitGroupType::Paragraph);
         assert_eq!(group.descendant_atom_count(), 1);
@@ -1586,7 +1637,7 @@ mod tests {
     fn test_generate_unid() {
         let unid1 = generate_unid();
         let unid2 = generate_unid();
-        
+
         assert_eq!(unid1.len(), 32);
         assert_eq!(unid2.len(), 32);
         assert_ne!(unid1, unid2);
@@ -1599,21 +1650,29 @@ mod tests {
         // Text
         let text = ContentElement::Text('a');
         assert_eq!(text.content_type(), ContentType::Text);
-        
+
         // Paragraph mark
-        let ppr = ContentElement::ParagraphProperties { element_xml: String::new() };
+        let ppr = ContentElement::ParagraphProperties {
+            element_xml: String::new(),
+        };
         assert_eq!(ppr.content_type(), ContentType::ParagraphMark);
-        
+
         // Drawing
-        let drawing = ContentElement::Drawing { hash: "abc".to_string(), element_xml: String::new() };
+        let drawing = ContentElement::Drawing {
+            hash: "abc".to_string(),
+            element_xml: String::new(),
+        };
         assert_eq!(drawing.content_type(), ContentType::Drawing);
-        
+
         // Field
         let field = ContentElement::FieldBegin;
         assert_eq!(field.content_type(), ContentType::Field);
-        
+
         // Picture
-        let pict = ContentElement::Picture { hash: "xyz".to_string(), element_xml: String::new() };
+        let pict = ContentElement::Picture {
+            hash: "xyz".to_string(),
+            element_xml: String::new(),
+        };
         assert_eq!(pict.content_type(), ContentType::Picture);
 
         // Carriage Return
@@ -1621,10 +1680,10 @@ mod tests {
         assert_eq!(cr.content_type(), ContentType::Break);
 
         // Positional Tab
-        let ptab = ContentElement::PositionalTab { 
-            alignment: "right".to_string(), 
-            relative_to: "margin".to_string(), 
-            leader: "dot".to_string() 
+        let ptab = ContentElement::PositionalTab {
+            alignment: "right".to_string(),
+            relative_to: "margin".to_string(),
+            leader: "dot".to_string(),
         };
         assert_eq!(ptab.content_type(), ContentType::Tab);
     }
@@ -1632,19 +1691,50 @@ mod tests {
     #[test]
     fn test_content_element_local_name() {
         assert_eq!(ContentElement::Text('a').local_name(), "t");
-        assert_eq!(ContentElement::ParagraphProperties { element_xml: String::new() }.local_name(), "pPr");
-        assert_eq!(ContentElement::Drawing { hash: "x".to_string(), element_xml: String::new() }.local_name(), "drawing");
-        assert_eq!(ContentElement::Picture { hash: "x".to_string(), element_xml: String::new() }.local_name(), "pict");
+        assert_eq!(
+            ContentElement::ParagraphProperties {
+                element_xml: String::new()
+            }
+            .local_name(),
+            "pPr"
+        );
+        assert_eq!(
+            ContentElement::Drawing {
+                hash: "x".to_string(),
+                element_xml: String::new()
+            }
+            .local_name(),
+            "drawing"
+        );
+        assert_eq!(
+            ContentElement::Picture {
+                hash: "x".to_string(),
+                element_xml: String::new()
+            }
+            .local_name(),
+            "pict"
+        );
         assert_eq!(ContentElement::Break.local_name(), "br");
         assert_eq!(ContentElement::CarriageReturn.local_name(), "cr");
         assert_eq!(ContentElement::Tab.local_name(), "tab");
-        assert_eq!(ContentElement::PositionalTab { 
-            alignment: String::new(), 
-            relative_to: String::new(), 
-            leader: String::new() 
-        }.local_name(), "ptab");
+        assert_eq!(
+            ContentElement::PositionalTab {
+                alignment: String::new(),
+                relative_to: String::new(),
+                leader: String::new()
+            }
+            .local_name(),
+            "ptab"
+        );
         assert_eq!(ContentElement::FieldBegin.local_name(), "fldChar");
-        assert_eq!(ContentElement::Symbol { font: "f".to_string(), char_code: "c".to_string() }.local_name(), "sym");
+        assert_eq!(
+            ContentElement::Symbol {
+                font: "f".to_string(),
+                char_code: "c".to_string()
+            }
+            .local_name(),
+            "sym"
+        );
     }
 
     #[test]
@@ -1652,13 +1742,26 @@ mod tests {
         // Text element has single character value
         assert_eq!(ContentElement::Text('H').text_value(), "H");
         assert_eq!(ContentElement::Text(' ').text_value(), " ");
-        
+
         // ParagraphProperties has empty text value
-        assert_eq!(ContentElement::ParagraphProperties { element_xml: String::new() }.text_value(), "");
-        
+        assert_eq!(
+            ContentElement::ParagraphProperties {
+                element_xml: String::new()
+            }
+            .text_value(),
+            ""
+        );
+
         // Drawing has hash as text value
-        assert_eq!(ContentElement::Drawing { hash: "abc123".to_string(), element_xml: String::new() }.text_value(), "abc123");
-        
+        assert_eq!(
+            ContentElement::Drawing {
+                hash: "abc123".to_string(),
+                element_xml: String::new()
+            }
+            .text_value(),
+            "abc123"
+        );
+
         // Field characters have type as value
         assert_eq!(ContentElement::FieldBegin.text_value(), "begin");
         assert_eq!(ContentElement::FieldEnd.text_value(), "end");
@@ -1667,21 +1770,29 @@ mod tests {
     #[test]
     fn test_hash_string_matches_c_sharp_format() {
         // C# format: localName + textValue
-        
+
         // Text: "t" + char
         let text = ContentElement::Text('H');
         assert_eq!(text.hash_string(), "tH");
-        
+
         // ParagraphProperties: "pPr" + "" = "pPr"
-        let ppr = ContentElement::ParagraphProperties { element_xml: String::new() };
+        let ppr = ContentElement::ParagraphProperties {
+            element_xml: String::new(),
+        };
         assert_eq!(ppr.hash_string(), "pPr");
-        
+
         // Drawing: "drawing" + hash
-        let drawing = ContentElement::Drawing { hash: "abc123".to_string(), element_xml: String::new() };
+        let drawing = ContentElement::Drawing {
+            hash: "abc123".to_string(),
+            element_xml: String::new(),
+        };
         assert_eq!(drawing.hash_string(), "drawingabc123");
-        
+
         // Symbol: "sym" + font:char
-        let sym = ContentElement::Symbol { font: "Symbol".to_string(), char_code: "F020".to_string() };
+        let sym = ContentElement::Symbol {
+            font: "Symbol".to_string(),
+            char_code: "F020".to_string(),
+        };
         assert_eq!(sym.hash_string(), "symSymbol:F020");
     }
 
@@ -1689,14 +1800,14 @@ mod tests {
     fn test_hash_string_with_case_insensitive() {
         let text_lower = ContentElement::Text('a');
         let text_upper = ContentElement::Text('A');
-        
+
         // Without case insensitivity, different hashes
         let settings_default = WmlComparerSettings::default().with_case_insensitive(false);
         assert_ne!(
             text_lower.hash_string_with_settings(&settings_default),
             text_upper.hash_string_with_settings(&settings_default)
         );
-        
+
         // With case insensitivity, same hashes (both uppercase)
         let settings_ci = WmlComparerSettings::default().with_case_insensitive(true);
         assert_eq!(
@@ -1710,14 +1821,14 @@ mod tests {
     fn test_hash_string_with_space_conflation() {
         let text_space = ContentElement::Text(' ');
         let text_nbsp = ContentElement::Text('\u{00a0}'); // Non-breaking space
-        
+
         // Default settings have conflation enabled
         let settings = WmlComparerSettings::default();
-        
+
         // Regular space gets converted to NBSP
         let space_hash = text_space.hash_string_with_settings(&settings);
         let nbsp_hash = text_nbsp.hash_string_with_settings(&settings);
-        
+
         // After conflation, both should have NBSP character
         assert_eq!(space_hash, "t\u{00a0}");
         assert_eq!(space_hash, nbsp_hash);
@@ -1726,14 +1837,9 @@ mod tests {
     #[test]
     fn test_atom_identity_hash() {
         let settings = WmlComparerSettings::default();
-        
-        let atom = ComparisonUnitAtom::new(
-            ContentElement::Text('H'),
-            vec![],
-            "main",
-            &settings,
-        );
-        
+
+        let atom = ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings);
+
         // identity_hash() returns the sha1_hash
         assert_eq!(atom.identity_hash(), atom.sha1_hash.as_str());
         assert!(!atom.identity_hash().is_empty());
@@ -1742,31 +1848,16 @@ mod tests {
     #[test]
     fn test_atom_equality_based_on_identity_hash() {
         let settings = WmlComparerSettings::default();
-        
+
         // Same content element → same identity hash → equal
-        let atom1 = ComparisonUnitAtom::new(
-            ContentElement::Text('H'),
-            vec![],
-            "main",
-            &settings,
-        );
-        let atom2 = ComparisonUnitAtom::new(
-            ContentElement::Text('H'),
-            vec![],
-            "main",
-            &settings,
-        );
-        
+        let atom1 = ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings);
+        let atom2 = ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings);
+
         assert_eq!(atom1, atom2); // PartialEq based on sha1_hash
-        
+
         // Different content element → different identity hash → not equal
-        let atom3 = ComparisonUnitAtom::new(
-            ContentElement::Text('X'),
-            vec![],
-            "main",
-            &settings,
-        );
-        
+        let atom3 = ComparisonUnitAtom::new(ContentElement::Text('X'), vec![], "main", &settings);
+
         assert_ne!(atom1, atom3);
     }
 
@@ -1778,63 +1869,61 @@ mod tests {
             "main",
             "precomputed_hash_abc123".to_string(),
         );
-        
+
         assert_eq!(atom.identity_hash(), "precomputed_hash_abc123");
     }
 
     #[test]
     fn test_drawings_in_same_scheme_as_text() {
         let settings = WmlComparerSettings::default();
-        
+
         // Both text and drawings use the same hash computation scheme:
         // SHA1(localName + textValue)
-        
-        let text_atom = ComparisonUnitAtom::new(
-            ContentElement::Text('H'),
-            vec![],
-            "main",
-            &settings,
-        );
-        
+
+        let text_atom =
+            ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings);
+
         let drawing_atom = ComparisonUnitAtom::new(
-            ContentElement::Drawing { hash: "image_hash_123".to_string(), element_xml: String::new() },
+            ContentElement::Drawing {
+                hash: "image_hash_123".to_string(),
+                element_xml: String::new(),
+            },
             vec![],
             "main",
             &settings,
         );
-        
+
         // Both have non-empty identity hashes
         assert!(!text_atom.identity_hash().is_empty());
         assert!(!drawing_atom.identity_hash().is_empty());
-        
+
         // Different content → different hashes
         assert_ne!(text_atom.identity_hash(), drawing_atom.identity_hash());
-        
+
         // Same drawing hash → same identity hash
         let drawing_atom2 = ComparisonUnitAtom::new(
-            ContentElement::Drawing { hash: "image_hash_123".to_string(), element_xml: String::new() },
+            ContentElement::Drawing {
+                hash: "image_hash_123".to_string(),
+                element_xml: String::new(),
+            },
             vec![],
             "main",
             &settings,
         );
-        
+
         assert_eq!(drawing_atom, drawing_atom2);
     }
 
     #[test]
     fn test_formatting_signature_methods() {
         let settings = WmlComparerSettings::default();
-        
-        let mut atom = ComparisonUnitAtom::new(
-            ContentElement::Text('H'),
-            vec![],
-            "main",
-            &settings,
-        );
-        
+
+        let mut atom =
+            ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings);
+
         // Initially None
         assert!(atom.formatting_signature().is_none());
-        
+
         // Set formatting signature
         atom.set_formatting_signature(Some("<w:rPr><w:b/></w:rPr>".to_string()));
         assert_eq!(atom.formatting_signature(), Some("<w:rPr><w:b/></w:rPr>"));
@@ -1843,19 +1932,18 @@ mod tests {
     #[test]
     fn test_ancestor_unids_methods() {
         let settings = WmlComparerSettings::default();
-        
-        let mut atom = ComparisonUnitAtom::new(
-            ContentElement::Text('H'),
-            vec![],
-            "main",
-            &settings,
-        );
-        
+
+        let mut atom =
+            ComparisonUnitAtom::new(ContentElement::Text('H'), vec![], "main", &settings);
+
         // Initially empty
         assert!(atom.ancestor_unids().is_empty());
-        
+
         // Set ancestor unids
         atom.set_ancestor_unids(vec!["unid1".to_string(), "unid2".to_string()]);
-        assert_eq!(atom.ancestor_unids(), &["unid1".to_string(), "unid2".to_string()]);
+        assert_eq!(
+            atom.ancestor_unids(),
+            &["unid1".to_string(), "unid2".to_string()]
+        );
     }
 }

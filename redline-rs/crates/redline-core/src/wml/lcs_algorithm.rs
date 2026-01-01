@@ -10,16 +10,52 @@
 //! Key insight: This processes `Unknown` CorrelatedSequences iteratively until
 //! all are resolved to Equal, Deleted, or Inserted.
 
-#[cfg(feature = "trace")]
-use super::settings::{LcsTraceOperation, LcsTraceOutput};
 use super::comparison_unit::{
-    ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom, ComparisonUnitGroup,
-    ComparisonUnitGroupContents, ComparisonUnitGroupType, ComparisonUnitWord, ContentElement,
-    generate_unid,
+    generate_unid, ComparisonCorrelationStatus, ComparisonUnit, ComparisonUnitAtom,
+    ComparisonUnitGroup, ComparisonUnitGroupContents, ComparisonUnitGroupType, ComparisonUnitWord,
+    ContentElement,
 };
 use super::settings::WmlComparerSettings;
 #[cfg(feature = "trace")]
+use super::settings::{LcsTraceOperation, LcsTraceOutput};
+#[cfg(feature = "trace")]
 use std::collections::HashMap;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Global profiling counters
+static LCS_CALLS: AtomicUsize = AtomicUsize::new(0);
+static LCS_ITERATIONS: AtomicUsize = AtomicUsize::new(0);
+static IDENTICAL_HITS: AtomicUsize = AtomicUsize::new(0);
+static UNRELATED_HITS: AtomicUsize = AtomicUsize::new(0);
+static CORR_HASH_HITS: AtomicUsize = AtomicUsize::new(0);
+static BEGIN_END_HITS: AtomicUsize = AtomicUsize::new(0);
+static LCS_ALGO_HITS: AtomicUsize = AtomicUsize::new(0);
+
+/// Reset all profiling counters
+pub fn reset_lcs_counters() {
+    LCS_CALLS.store(0, Ordering::Relaxed);
+    LCS_ITERATIONS.store(0, Ordering::Relaxed);
+    IDENTICAL_HITS.store(0, Ordering::Relaxed);
+    UNRELATED_HITS.store(0, Ordering::Relaxed);
+    CORR_HASH_HITS.store(0, Ordering::Relaxed);
+    BEGIN_END_HITS.store(0, Ordering::Relaxed);
+    LCS_ALGO_HITS.store(0, Ordering::Relaxed);
+}
+
+/// Get profiling counters as a formatted string
+pub fn get_lcs_counters() -> String {
+    format!(
+        "LCS calls: {}, iterations: {}, identical: {}, unrelated: {}, corr_hash: {}, begin_end: {}, lcs_algo: {}",
+        LCS_CALLS.load(Ordering::Relaxed),
+        LCS_ITERATIONS.load(Ordering::Relaxed),
+        IDENTICAL_HITS.load(Ordering::Relaxed),
+        UNRELATED_HITS.load(Ordering::Relaxed),
+        CORR_HASH_HITS.load(Ordering::Relaxed),
+        BEGIN_END_HITS.load(Ordering::Relaxed),
+        LCS_ALGO_HITS.load(Ordering::Relaxed),
+    )
+}
 
 /// Correlation status for sequences
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -102,8 +138,17 @@ pub fn lcs(
     units2: Vec<ComparisonUnit>,
     settings: &WmlComparerSettings,
 ) -> Vec<CorrelatedSequence> {
-    // Check for completely unrelated sources first (optimization)
+    LCS_CALLS.fetch_add(1, Ordering::Relaxed);
+
+    // Check for completely identical sources first (optimization)
+    if let Some(result) = detect_identical_sources(&units1, &units2) {
+        IDENTICAL_HITS.fetch_add(1, Ordering::Relaxed);
+        return result;
+    }
+
+    // Check for completely unrelated sources (optimization)
     if let Some(result) = detect_unrelated_sources(&units1, &units2) {
+        UNRELATED_HITS.fetch_add(1, Ordering::Relaxed);
         return result;
     }
 
@@ -112,6 +157,8 @@ pub fn lcs(
     let mut cs_list = vec![initial];
 
     loop {
+        LCS_ITERATIONS.fetch_add(1, Ordering::Relaxed);
+
         // Find first Unknown sequence
         let unknown_idx = cs_list
             .iter()
@@ -129,11 +176,16 @@ pub fn lcs(
         let unknown = set_after_unids(unknown);
 
         // Try ProcessCorrelatedHashes first (fastest)
-        let new_sequences = process_correlated_hashes(&unknown, settings)
-            // Then try FindCommonAtBeginningAndEnd
-            .or_else(|| find_common_at_beginning_and_end(&unknown, settings))
-            // Finally fall back to DoLcsAlgorithm
-            .unwrap_or_else(|| do_lcs_algorithm(&unknown, settings));
+        let new_sequences = if let Some(seqs) = process_correlated_hashes(&unknown, settings) {
+            CORR_HASH_HITS.fetch_add(1, Ordering::Relaxed);
+            seqs
+        } else if let Some(seqs) = find_common_at_beginning_and_end(&unknown, settings) {
+            BEGIN_END_HITS.fetch_add(1, Ordering::Relaxed);
+            seqs
+        } else {
+            LCS_ALGO_HITS.fetch_add(1, Ordering::Relaxed);
+            do_lcs_algorithm(&unknown, settings)
+        };
 
         // Insert new sequences at the position of the old unknown
         // (Reverse to maintain order when inserting at same position)
@@ -151,15 +203,13 @@ pub fn lcs(
 #[cfg(feature = "trace")]
 fn extract_unit_text(unit: &ComparisonUnit) -> String {
     match unit {
-        ComparisonUnit::Word(word) => {
-            word.atoms.iter()
-                .map(|atom| atom.content_element.text_value())
-                .collect::<Vec<_>>()
-                .join("")
-        }
-        ComparisonUnit::Group(group) => {
-            extract_group_text(group)
-        }
+        ComparisonUnit::Word(word) => word
+            .atoms
+            .iter()
+            .map(|atom| atom.content_element.text_value())
+            .collect::<Vec<_>>()
+            .join(""),
+        ComparisonUnit::Group(group) => extract_group_text(group),
     }
 }
 
@@ -167,26 +217,28 @@ fn extract_unit_text(unit: &ComparisonUnit) -> String {
 #[cfg(feature = "trace")]
 fn extract_group_text(group: &ComparisonUnitGroup) -> String {
     match &group.contents {
-        ComparisonUnitGroupContents::Words(words) => {
-            words.iter()
-                .flat_map(|word| word.atoms.iter())
-                .map(|atom| atom.content_element.text_value())
-                .collect::<Vec<_>>()
-                .join("")
-        }
-        ComparisonUnitGroupContents::Groups(groups) => {
-            groups.iter()
-                .map(extract_group_text)
-                .collect::<Vec<_>>()
-                .join("")
-        }
+        ComparisonUnitGroupContents::Words(words) => words
+            .iter()
+            .flat_map(|word| word.atoms.iter())
+            .map(|atom| atom.content_element.text_value())
+            .collect::<Vec<_>>()
+            .join(""),
+        ComparisonUnitGroupContents::Groups(groups) => groups
+            .iter()
+            .map(extract_group_text)
+            .collect::<Vec<_>>()
+            .join(""),
     }
 }
 
 /// Extract text from a list of units
 #[cfg(feature = "trace")]
 fn extract_units_text(units: &[ComparisonUnit]) -> String {
-    units.iter().map(extract_unit_text).collect::<Vec<_>>().join("")
+    units
+        .iter()
+        .map(extract_unit_text)
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 /// Convert a ComparisonUnit to a token string for tracing
@@ -266,9 +318,7 @@ pub fn generate_lcs_trace(
     let coalesced_operations = coalesce_trace_operations(&raw_operations);
 
     // Calculate LCS length (count of equal operations)
-    let lcs_length = raw_operations.iter()
-        .filter(|op| op.op == "equal")
-        .count();
+    let lcs_length = raw_operations.iter().filter(|op| op.op == "equal").count();
 
     LcsTraceOutput {
         matched_text,
@@ -328,7 +378,10 @@ pub struct MatchedParagraphInfo {
 /// Check if any unit in the list contains text matching the filter
 /// Returns the matched paragraph info if found
 #[cfg(feature = "trace")]
-pub fn units_match_filter(units: &[ComparisonUnit], settings: &WmlComparerSettings) -> Option<MatchedParagraphInfo> {
+pub fn units_match_filter(
+    units: &[ComparisonUnit],
+    settings: &WmlComparerSettings,
+) -> Option<MatchedParagraphInfo> {
     if !settings.is_tracing_enabled() {
         return None;
     }
@@ -398,14 +451,14 @@ fn extract_words_from_unit(unit: &ComparisonUnit) -> Vec<ComparisonUnit> {
     match unit {
         ComparisonUnit::Group(group) => {
             match &group.contents {
-                ComparisonUnitGroupContents::Words(words) => {
-                    words.iter()
-                        .map(|w| ComparisonUnit::Word(w.clone()))
-                        .collect()
-                }
+                ComparisonUnitGroupContents::Words(words) => words
+                    .iter()
+                    .map(|w| ComparisonUnit::Word(w.clone()))
+                    .collect(),
                 ComparisonUnitGroupContents::Groups(groups) => {
                     // Recursively extract from nested groups
-                    groups.iter()
+                    groups
+                        .iter()
                         .flat_map(|g| extract_words_from_unit(&ComparisonUnit::Group(g.clone())))
                         .collect()
                 }
@@ -499,11 +552,13 @@ pub fn generate_focused_trace(
     let lcs_length = raw_operations.iter().filter(|op| op.op == "equal").count();
 
     LcsTraceOutput {
-        matched_text: format!("Para {}: {} | Para {}: {}",
+        matched_text: format!(
+            "Para {}: {} | Para {}: {}",
             matched1.index,
             truncate_text(&matched1.text, 50),
             matched2.map(|m| m.index).unwrap_or(0),
-            truncate_text(&matched_text2, 50)),
+            truncate_text(&matched_text2, 50)
+        ),
         tokens1,
         tokens2,
         raw_operations,
@@ -659,7 +714,9 @@ fn process_correlated_hashes(
             _ => continue,
         };
 
-        let Some(hash1) = &group1.correlated_sha1_hash else { continue };
+        let Some(hash1) = &group1.correlated_sha1_hash else {
+            continue;
+        };
 
         // Only check indices that have matching hash
         if let Some(candidates) = units2_index.get(hash1.as_str()) {
@@ -742,13 +799,9 @@ fn process_correlated_hashes(
 
     // Handle prefix (before match)
     if best_i1 > 0 && best_i2 == 0 {
-        result.push(CorrelatedSequence::deleted(
-            units1[..best_i1].to_vec(),
-        ));
+        result.push(CorrelatedSequence::deleted(units1[..best_i1].to_vec()));
     } else if best_i1 == 0 && best_i2 > 0 {
-        result.push(CorrelatedSequence::inserted(
-            units2[..best_i2].to_vec(),
-        ));
+        result.push(CorrelatedSequence::inserted(units2[..best_i2].to_vec()));
     } else if best_i1 > 0 && best_i2 > 0 {
         result.push(CorrelatedSequence::unknown(
             units1[..best_i1].to_vec(),
@@ -756,12 +809,29 @@ fn process_correlated_hashes(
         ));
     }
 
-    // Add matched groups as individual Unknown sequences (for further processing)
+    // Add matched groups - if sha1_hash matches (content identical), use Equal
+    // Otherwise use Unknown for further processing of internal differences
     for i in 0..best_length {
-        result.push(CorrelatedSequence::unknown(
-            vec![units1[best_i1 + i].clone()],
-            vec![units2[best_i2 + i].clone()],
-        ));
+        let u1 = &units1[best_i1 + i];
+        let u2 = &units2[best_i2 + i];
+
+        // If both content hashes match, the content is identical - no need to recurse
+        let content_identical = match (u1, u2) {
+            (ComparisonUnit::Group(g1), ComparisonUnit::Group(g2)) => g1.sha1_hash == g2.sha1_hash,
+            _ => false,
+        };
+
+        if content_identical {
+            result.push(CorrelatedSequence::equal(
+                vec![u1.clone()],
+                vec![u2.clone()],
+            ));
+        } else {
+            result.push(CorrelatedSequence::unknown(
+                vec![u1.clone()],
+                vec![u2.clone()],
+            ));
+        }
     }
 
     // Handle suffix (after match)
@@ -769,13 +839,9 @@ fn process_correlated_hashes(
     let end_i2 = best_i2 + best_length;
 
     if end_i1 < units1.len() && end_i2 == units2.len() {
-        result.push(CorrelatedSequence::deleted(
-            units1[end_i1..].to_vec(),
-        ));
+        result.push(CorrelatedSequence::deleted(units1[end_i1..].to_vec()));
     } else if end_i1 == units1.len() && end_i2 < units2.len() {
-        result.push(CorrelatedSequence::inserted(
-            units2[end_i2..].to_vec(),
-        ));
+        result.push(CorrelatedSequence::inserted(units2[end_i2..].to_vec()));
     } else if end_i1 < units1.len() && end_i2 < units2.len() {
         result.push(CorrelatedSequence::unknown(
             units1[end_i1..].to_vec(),
@@ -811,17 +877,17 @@ fn split_at_paragraph_mark(units: &[ComparisonUnit]) -> Vec<Vec<ComparisonUnit>>
         // Get the first descendant atom from this comparison unit
         let first_atom = units[i].descendant_atoms().first().cloned();
         if let Some(atom) = first_atom {
-            if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
+            if matches!(
+                atom.content_element,
+                ContentElement::ParagraphProperties { .. }
+            ) {
                 // C# WmlComparer.cs:4990-4994: Split at this position
                 // Note: C# uses Take(i) then Skip(i), so first part is [0..i), second is [i..end]
-                return vec![
-                    units[..i].to_vec(),
-                    units[i..].to_vec(),
-                ];
+                return vec![units[..i].to_vec(), units[i..].to_vec()];
             }
         }
     }
-    
+
     // C# WmlComparer.cs:4983-4988: No paragraph mark found, return single element
     vec![units.to_vec()]
 }
@@ -891,7 +957,7 @@ fn find_common_at_beginning_and_end(
             // Check if we're operating at word level and can do paragraph-aware splitting
             let first1 = units1[0].as_word();
             let first2 = units2[0].as_word();
-            
+
             if first1.is_some() && first2.is_some() {
                 // C# WmlComparer.cs:4551-4561: Comment from C# explains the logic:
                 // if operating at the word level and
@@ -903,11 +969,11 @@ fn find_common_at_beginning_and_end(
                 //     then create inserted for the right, and create an unknown for the rest of the unknown
                 //   if the last word on the left == pPr and last word on right == pPr
                 //     then create an unknown for the rest of the unknown
-                
+
                 // C# WmlComparer.cs:4563-4571: Get remaining content after common prefix
                 let remaining_in_left = units1[count_common_at_beginning..].to_vec();
                 let remaining_in_right = units2[count_common_at_beginning..].to_vec();
-                
+
                 // C# WmlComparer.cs:4573-4574: Get last content atom from the last common element
                 // Note: C# uses countCommonAtBeginning - 1 to get the last element of the common prefix
                 let last_content_atom_left = units1[count_common_at_beginning - 1]
@@ -918,22 +984,32 @@ fn find_common_at_beginning_and_end(
                     .descendant_atoms()
                     .first()
                     .cloned();
-                
+
                 // C# WmlComparer.cs:4576: Check if both last atoms are NOT paragraph properties
                 let left_not_ppr = last_content_atom_left
                     .as_ref()
-                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties { .. }))
+                    .map(|a| {
+                        !matches!(
+                            a.content_element,
+                            ContentElement::ParagraphProperties { .. }
+                        )
+                    })
                     .unwrap_or(false);
                 let right_not_ppr = last_content_atom_right
                     .as_ref()
-                    .map(|a| !matches!(a.content_element, ContentElement::ParagraphProperties { .. }))
+                    .map(|a| {
+                        !matches!(
+                            a.content_element,
+                            ContentElement::ParagraphProperties { .. }
+                        )
+                    })
                     .unwrap_or(false);
-                
+
                 if left_not_ppr && right_not_ppr {
                     // C# WmlComparer.cs:4578-4579: Split remaining content at paragraph marks
                     let split1 = split_at_paragraph_mark(&remaining_in_left);
                     let split2 = split_at_paragraph_mark(&remaining_in_right);
-                    
+
                     // C# WmlComparer.cs:4580-4588: Both have no split (no paragraph mark in either)
                     if split1.len() == 1 && split2.len() == 1 {
                         result.push(CorrelatedSequence::unknown(
@@ -947,24 +1023,24 @@ fn find_common_at_beginning_and_end(
                         // First unknown: content before paragraph mark
                         let mut split1_iter = split1.into_iter();
                         let mut split2_iter = split2.into_iter();
-                        
+
                         result.push(CorrelatedSequence::unknown(
                             split1_iter.next().unwrap(),
                             split2_iter.next().unwrap(),
                         ));
-                        
+
                         // Second unknown: content from paragraph mark onwards
                         result.push(CorrelatedSequence::unknown(
                             split1_iter.next().unwrap(),
                             split2_iter.next().unwrap(),
                         ));
-                        
+
                         return Some(result);
                     }
                     // C# WmlComparer.cs:4605: Fall through to default case if split counts don't match
                 }
             }
-            
+
             // C# WmlComparer.cs:4608-4612: Default case - single unknown for all remaining
             result.push(CorrelatedSequence::unknown(
                 units1[count_common_at_beginning..].to_vec(),
@@ -998,36 +1074,41 @@ fn find_common_at_beginning_and_end(
 
     // Check if only paragraph mark (C# lines 4672-4726)
     let mut is_only_paragraph_mark = false;
-    
+
     // C# lines 4673-4694: countCommonAtEnd == 1 case
     if count_common_at_end == 1 {
         let first_common_idx1 = units1.len() - count_common_at_end;
         if let Some(word) = units1[first_common_idx1].as_word() {
             if word.atoms.len() == 1 {
                 if let Some(atom) = word.atoms.first() {
-                    if matches!(atom.content_element, ContentElement::ParagraphProperties { .. }) {
+                    if matches!(
+                        atom.content_element,
+                        ContentElement::ParagraphProperties { .. }
+                    ) {
                         is_only_paragraph_mark = true;
                     }
                 }
             }
         }
     }
-    
+
     // C# lines 4696-4726: countCommonAtEnd == 2 case
     if count_common_at_end == 2 {
         let first_common_idx1 = units1.len() - count_common_at_end;
         let second_common_idx1 = units1.len() - 1;
-        
+
         if let (Some(first_word), Some(second_word)) = (
             units1[first_common_idx1].as_word(),
             units1[second_common_idx1].as_word(),
         ) {
             if first_word.atoms.len() == 1 && second_word.atoms.len() == 1 {
-                if let (Some(_first_atom), Some(second_atom)) = (
-                    first_word.atoms.first(),
-                    second_word.atoms.first(),
-                ) {
-                    if matches!(second_atom.content_element, ContentElement::ParagraphProperties { .. }) {
+                if let (Some(_first_atom), Some(second_atom)) =
+                    (first_word.atoms.first(), second_word.atoms.first())
+                {
+                    if matches!(
+                        second_atom.content_element,
+                        ContentElement::ParagraphProperties { .. }
+                    ) {
                         is_only_paragraph_mark = true;
                     }
                 }
@@ -1073,7 +1154,10 @@ fn find_common_at_beginning_and_end(
             let has_paragraph_mark = common_end_seq.iter().any(|cu| {
                 if let Some(word) = cu.as_word() {
                     if let Some(first_atom) = word.atoms.first() {
-                        return matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
+                        return matches!(
+                            first_atom.content_element,
+                            ContentElement::ParagraphProperties { .. }
+                        );
                     }
                 }
                 false
@@ -1089,7 +1173,10 @@ fn find_common_at_beginning_and_end(
                         if let Some(word) = cu.as_word() {
                             if let Some(first_atom) = word.atoms.first() {
                                 // Continue while NOT a paragraph mark
-                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
+                                return !matches!(
+                                    first_atom.content_element,
+                                    ContentElement::ParagraphProperties { .. }
+                                );
                             }
                             // No atoms means continue
                             return true;
@@ -1107,7 +1194,10 @@ fn find_common_at_beginning_and_end(
                     .take_while(|cu| {
                         if let Some(word) = cu.as_word() {
                             if let Some(first_atom) = word.atoms.first() {
-                                return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
+                                return !matches!(
+                                    first_atom.content_element,
+                                    ContentElement::ParagraphProperties { .. }
+                                );
                             }
                             return true;
                         }
@@ -1122,8 +1212,10 @@ fn find_common_at_beginning_and_end(
     let mut new_sequence = Vec::new();
 
     // C# lines 4800-4801: Calculate boundaries
-    let before_common_paragraph_left = units1.len() - remaining_in_left_paragraph - count_common_at_end;
-    let before_common_paragraph_right = units2.len() - remaining_in_right_paragraph - count_common_at_end;
+    let before_common_paragraph_left =
+        units1.len() - remaining_in_left_paragraph - count_common_at_end;
+    let before_common_paragraph_right =
+        units2.len() - remaining_in_right_paragraph - count_common_at_end;
 
     // C# lines 4803-4830: Handle "before common paragraph" segment
     if before_common_paragraph_left != 0 && before_common_paragraph_right == 0 {
@@ -1145,16 +1237,24 @@ fn find_common_at_beginning_and_end(
     // C# lines 4832-4859: Handle "remaining in paragraph" segment
     if remaining_in_left_paragraph != 0 && remaining_in_right_paragraph == 0 {
         new_sequence.push(CorrelatedSequence::deleted(
-            units1[before_common_paragraph_left..before_common_paragraph_left + remaining_in_left_paragraph].to_vec(),
+            units1[before_common_paragraph_left
+                ..before_common_paragraph_left + remaining_in_left_paragraph]
+                .to_vec(),
         ));
     } else if remaining_in_left_paragraph == 0 && remaining_in_right_paragraph != 0 {
         new_sequence.push(CorrelatedSequence::inserted(
-            units2[before_common_paragraph_right..before_common_paragraph_right + remaining_in_right_paragraph].to_vec(),
+            units2[before_common_paragraph_right
+                ..before_common_paragraph_right + remaining_in_right_paragraph]
+                .to_vec(),
         ));
     } else if remaining_in_left_paragraph != 0 && remaining_in_right_paragraph != 0 {
         new_sequence.push(CorrelatedSequence::unknown(
-            units1[before_common_paragraph_left..before_common_paragraph_left + remaining_in_left_paragraph].to_vec(),
-            units2[before_common_paragraph_right..before_common_paragraph_right + remaining_in_right_paragraph].to_vec(),
+            units1[before_common_paragraph_left
+                ..before_common_paragraph_left + remaining_in_left_paragraph]
+                .to_vec(),
+            units2[before_common_paragraph_right
+                ..before_common_paragraph_right + remaining_in_right_paragraph]
+                .to_vec(),
         ));
     }
     // else both == 0: nothing to do
@@ -1226,14 +1326,14 @@ fn do_lcs_algorithm(
 
     for i1 in 0..units1.len().saturating_sub(best_length) {
         let hash1 = units1[i1].hash();
-        
+
         if let Some(candidates) = units2_index.get(hash1) {
             for &i2 in candidates {
                 // Optimization: Skip if we can't beat best_length
                 if units2.len() - i2 <= best_length {
                     continue;
                 }
-                
+
                 let mut seq_length = 0usize;
                 let mut cur_i1 = i1;
                 let mut cur_i2 = i2;
@@ -1336,9 +1436,10 @@ fn do_lcs_algorithm(
             let has_content_other_than_split = common_seq.iter().any(|cs| {
                 if let Some(word) = cs.as_word() {
                     // Check if any atom is not text
-                    let has_non_text = word.atoms.iter().any(|atom| {
-                        !matches!(atom.content_element, ContentElement::Text(_))
-                    });
+                    let has_non_text = word
+                        .atoms
+                        .iter()
+                        .any(|atom| !matches!(atom.content_element, ContentElement::Text(_)));
                     if has_non_text {
                         return true;
                     }
@@ -1378,11 +1479,13 @@ fn do_lcs_algorithm(
         if all_are_words {
             // Extract the actual text content (lowercased) from the sequence
             // Each Word contains multiple atoms (characters), so we concatenate them per word
-            let text_tokens: Vec<String> = common_seq.iter()
+            let text_tokens: Vec<String> = common_seq
+                .iter()
                 .filter_map(|cs| cs.as_word())
                 .map(|word| {
                     // Concatenate all text characters in this word
-                    word.atoms.iter()
+                    word.atoms
+                        .iter()
                         .filter_map(|atom| {
                             if let ContentElement::Text(c) = atom.content_element {
                                 Some(c.to_lowercase().to_string())
@@ -1397,20 +1500,18 @@ fn do_lcs_algorithm(
 
             // Common stopwords that shouldn't anchor comparisons on their own
             const STOPWORDS: &[&str] = &[
-                "a", "an", "the", "and", "or", "but", "nor", "for", "yet", "so",
-                "is", "are", "was", "were", "be", "been", "being", "am",
-                "has", "have", "had", "do", "does", "did",
-                "shall", "will", "would", "could", "should", "may", "might", "must", "can",
-                "to", "of", "in", "on", "at", "by", "with", "from", "into", "upon",
-                "as", "if", "that", "this", "these", "those", "which", "who", "whom",
-                "it", "its", "he", "she", "they", "we", "you", "i",
-                "not", "no", "any", "all", "each", "every", "both", "either", "neither",
-                "such", "other", "another", "same", "own",
+                "a", "an", "the", "and", "or", "but", "nor", "for", "yet", "so", "is", "are",
+                "was", "were", "be", "been", "being", "am", "has", "have", "had", "do", "does",
+                "did", "shall", "will", "would", "could", "should", "may", "might", "must", "can",
+                "to", "of", "in", "on", "at", "by", "with", "from", "into", "upon", "as", "if",
+                "that", "this", "these", "those", "which", "who", "whom", "it", "its", "he", "she",
+                "they", "we", "you", "i", "not", "no", "any", "all", "each", "every", "both",
+                "either", "neither", "such", "other", "another", "same", "own",
             ];
 
-            let all_stopwords = text_tokens.iter().all(|token| {
-                STOPWORDS.contains(&token.as_str())
-            });
+            let all_stopwords = text_tokens
+                .iter()
+                .all(|token| STOPWORDS.contains(&token.as_str()));
 
             if all_stopwords && !text_tokens.is_empty() {
                 best_i1 = -1;
@@ -1432,9 +1533,9 @@ fn do_lcs_algorithm(
             let matched_seq = &units1[best_i1 as usize..best_i1 as usize + best_length];
             let contains_structural = matched_seq.iter().any(|u| {
                 if let Some(word) = u.as_word() {
-                    word.atoms.iter().any(|atom| {
-                        !matches!(atom.content_element, ContentElement::Text(_))
-                    })
+                    word.atoms
+                        .iter()
+                        .any(|atom| !matches!(atom.content_element, ContentElement::Text(_)))
                 } else {
                     false
                 }
@@ -1476,9 +1577,9 @@ fn do_lcs_algorithm(
     // But it may start in the middle of a paragraph.
     // Therefore need to dispose of the content from the beginning of the longest common subsequence to the beginning of the paragraph.
     // This should be in a separate unknown region.
-    // If currentLongestCommonSequenceLength != 0, and if it contains a paragraph mark, then if there are comparison units 
-    // in the same paragraph before the common (in either version) then we want to put all of those comparison units into 
-    // a single unknown, where they must be resolved against each other. We don't want those comparison units to go into 
+    // If currentLongestCommonSequenceLength != 0, and if it contains a paragraph mark, then if there are comparison units
+    // in the same paragraph before the common (in either version) then we want to put all of those comparison units into
+    // a single unknown, where they must be resolved against each other. We don't want those comparison units to go into
     // the middle unknown comparison unit.
 
     let mut remaining_in_left_paragraph = 0usize;
@@ -1486,8 +1587,9 @@ fn do_lcs_algorithm(
 
     if current_longest_common_sequence_length != 0 {
         // C# lines 6940-6944: Get the common sequence
-        let common_seq: Vec<_> = units1[current_i1..current_i1 + current_longest_common_sequence_length].to_vec();
-        
+        let common_seq: Vec<_> =
+            units1[current_i1..current_i1 + current_longest_common_sequence_length].to_vec();
+
         // C# lines 6946-6955: Check if first of common seq is a Word and contains paragraph marks
         if let Some(first_of_common) = common_seq.first() {
             if first_of_common.as_word().is_some() {
@@ -1495,7 +1597,10 @@ fn do_lcs_algorithm(
                 let has_paragraph_mark = common_seq.iter().any(|cu| {
                     if let Some(word) = cu.as_word() {
                         if let Some(first_atom) = word.atoms.first() {
-                            return matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
+                            return matches!(
+                                first_atom.content_element,
+                                ContentElement::ParagraphProperties { .. }
+                            );
                         }
                     }
                     false
@@ -1511,7 +1616,10 @@ fn do_lcs_algorithm(
                             if let Some(word) = cu.as_word() {
                                 if let Some(first_atom) = word.atoms.first() {
                                     // Continue while NOT a paragraph mark
-                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
+                                    return !matches!(
+                                        first_atom.content_element,
+                                        ContentElement::ParagraphProperties { .. }
+                                    );
                                 }
                                 // No atoms means continue
                                 return true;
@@ -1528,7 +1636,10 @@ fn do_lcs_algorithm(
                         .take_while(|cu| {
                             if let Some(word) = cu.as_word() {
                                 if let Some(first_atom) = word.atoms.first() {
-                                    return !matches!(first_atom.content_element, ContentElement::ParagraphProperties { .. });
+                                    return !matches!(
+                                        first_atom.content_element,
+                                        ContentElement::ParagraphProperties { .. }
+                                    );
                                 }
                                 return true;
                             }
@@ -1565,16 +1676,24 @@ fn do_lcs_algorithm(
     // C# lines 7030-7069: Handle content WITHIN the current paragraph but before the LCS match
     if remaining_in_left_paragraph > 0 && remaining_in_right_paragraph == 0 {
         new_sequence.push(CorrelatedSequence::deleted(
-            units1[count_before_current_paragraph_left..count_before_current_paragraph_left + remaining_in_left_paragraph].to_vec(),
+            units1[count_before_current_paragraph_left
+                ..count_before_current_paragraph_left + remaining_in_left_paragraph]
+                .to_vec(),
         ));
     } else if remaining_in_left_paragraph == 0 && remaining_in_right_paragraph > 0 {
         new_sequence.push(CorrelatedSequence::inserted(
-            units2[count_before_current_paragraph_right..count_before_current_paragraph_right + remaining_in_right_paragraph].to_vec(),
+            units2[count_before_current_paragraph_right
+                ..count_before_current_paragraph_right + remaining_in_right_paragraph]
+                .to_vec(),
         ));
     } else if remaining_in_left_paragraph > 0 && remaining_in_right_paragraph > 0 {
         new_sequence.push(CorrelatedSequence::unknown(
-            units1[count_before_current_paragraph_left..count_before_current_paragraph_left + remaining_in_left_paragraph].to_vec(),
-            units2[count_before_current_paragraph_right..count_before_current_paragraph_right + remaining_in_right_paragraph].to_vec(),
+            units1[count_before_current_paragraph_left
+                ..count_before_current_paragraph_left + remaining_in_left_paragraph]
+                .to_vec(),
+            units2[count_before_current_paragraph_right
+                ..count_before_current_paragraph_right + remaining_in_right_paragraph]
+                .to_vec(),
         ));
     }
     // else both == 0: nothing to do (C# 7066-7069)
@@ -1601,12 +1720,17 @@ fn do_lcs_algorithm(
         if let Some(left_cuw) = last_unit.as_word() {
             // Get the last content atom from the word
             let last_atom = left_cuw.atoms.last();
-            
+
             // If the middleEqual did not end with a paragraph mark (C# 7103)
             let ends_with_para = last_atom
-                .map(|a| matches!(a.content_element, ContentElement::ParagraphProperties { .. }))
+                .map(|a| {
+                    matches!(
+                        a.content_element,
+                        ContentElement::ParagraphProperties { .. }
+                    )
+                })
                 .unwrap_or(false);
-            
+
             if !ends_with_para {
                 // C# lines 7105-7106: Find next paragraph marks in remaining content
                 let idx1 = find_index_of_next_para_mark(&remaining1);
@@ -1657,7 +1781,10 @@ fn find_index_of_next_para_mark(units: &[ComparisonUnit]) -> usize {
         if let Some(word) = unit.as_word() {
             // Get the last atom from the word (C# uses DescendantContentAtoms().LastOrDefault())
             if let Some(last_atom) = word.atoms.last() {
-                if matches!(last_atom.content_element, ContentElement::ParagraphProperties { .. }) {
+                if matches!(
+                    last_atom.content_element,
+                    ContentElement::ParagraphProperties { .. }
+                ) {
                     return i;
                 }
             }
@@ -1796,8 +1923,14 @@ fn handle_no_match_cases(
             .last();
 
         if let (Some(left), Some(right)) = (last_atom_left, last_atom_right) {
-            let left_is_ppr = matches!(left.content_element, ContentElement::ParagraphProperties { .. });
-            let right_is_ppr = matches!(right.content_element, ContentElement::ParagraphProperties { .. });
+            let left_is_ppr = matches!(
+                left.content_element,
+                ContentElement::ParagraphProperties { .. }
+            );
+            let right_is_ppr = matches!(
+                right.content_element,
+                ContentElement::ParagraphProperties { .. }
+            );
 
             if left_is_ppr && !right_is_ppr {
                 // Left ends with pPr, right doesn't → Insert first, then Delete
@@ -1861,11 +1994,11 @@ fn group_units_by_type(units: &[ComparisonUnit]) -> Vec<(&'static str, Vec<Compa
     if units.is_empty() {
         return Vec::new();
     }
-    
+
     let mut result = Vec::new();
     let mut current_key = get_unit_type_key(&units[0]);
     let mut current_group = vec![units[0].clone()];
-    
+
     for unit in units.iter().skip(1) {
         let key = get_unit_type_key(unit);
         if key == current_key {
@@ -1876,7 +2009,7 @@ fn group_units_by_type(units: &[ComparisonUnit]) -> Vec<(&'static str, Vec<Compa
             current_group = vec![unit.clone()];
         }
     }
-    
+
     result.push((current_key, current_group));
     result
 }
@@ -1897,10 +2030,7 @@ fn handle_mixed_words_rows_textboxes(
         let (key2, items2) = &grouped2[i2];
 
         if key1 == key2 {
-            result.push(CorrelatedSequence::unknown(
-                items1.clone(),
-                items2.clone(),
-            ));
+            result.push(CorrelatedSequence::unknown(items1.clone(), items2.clone()));
             i1 += 1;
             i2 += 1;
         } else if *key1 == "Word" {
@@ -1941,11 +2071,11 @@ fn group_units_table_para(units: &[ComparisonUnit]) -> Vec<(&'static str, Vec<Co
     if units.is_empty() {
         return Vec::new();
     }
-    
+
     let mut result = Vec::new();
     let mut current_key = get_table_para_key(&units[0]);
     let mut current_group = vec![units[0].clone()];
-    
+
     for unit in units.iter().skip(1) {
         let key = get_table_para_key(unit);
         if key == current_key {
@@ -1956,7 +2086,7 @@ fn group_units_table_para(units: &[ComparisonUnit]) -> Vec<(&'static str, Vec<Co
             current_group = vec![unit.clone()];
         }
     }
-    
+
     result.push((current_key, current_group));
     result
 }
@@ -2047,11 +2177,7 @@ fn flatten_group_children_for_unknown(
             super::comparison_unit::ComparisonUnitGroupContents::Words(words)
                 if group.group_type == parent.group_type =>
             {
-                flattened.extend(
-                    words
-                        .iter()
-                        .map(|w| ComparisonUnit::Word(w.clone()))
-                );
+                flattened.extend(words.iter().map(|w| ComparisonUnit::Word(w.clone())));
             }
             _ => {
                 flattened.push(ComparisonUnit::Group(group.clone()));
@@ -2079,15 +2205,17 @@ fn handle_matching_rows(
 
     // Extract cells
     let cells1: Vec<_> = match &row1.contents {
-        super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => {
-            groups.iter().map(|g| ComparisonUnit::Group(g.clone())).collect()
-        }
+        super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => groups
+            .iter()
+            .map(|g| ComparisonUnit::Group(g.clone()))
+            .collect(),
         _ => return vec![],
     };
     let cells2: Vec<_> = match &row2.contents {
-        super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => {
-            groups.iter().map(|g| ComparisonUnit::Group(g.clone())).collect()
-        }
+        super::comparison_unit::ComparisonUnitGroupContents::Groups(groups) => groups
+            .iter()
+            .map(|g| ComparisonUnit::Group(g.clone()))
+            .collect(),
         _ => return vec![],
     };
 
@@ -2141,7 +2269,9 @@ struct DescendantAtomsIter<'a> {
 
 impl<'a> DescendantAtomsIter<'a> {
     fn new(unit: &'a ComparisonUnit) -> Self {
-        let mut iter = Self { stack: Vec::with_capacity(8) };
+        let mut iter = Self {
+            stack: Vec::with_capacity(8),
+        };
         iter.push_unit(unit);
         iter
     }
@@ -2149,7 +2279,8 @@ impl<'a> DescendantAtomsIter<'a> {
     fn push_unit(&mut self, unit: &'a ComparisonUnit) {
         match unit {
             ComparisonUnit::Word(word) => {
-                self.stack.push(DescendantAtomsFrame::Atoms(word.atoms.iter()));
+                self.stack
+                    .push(DescendantAtomsFrame::Atoms(word.atoms.iter()));
             }
             ComparisonUnit::Group(group) => self.push_group(group),
         }
@@ -2182,7 +2313,8 @@ impl<'a> Iterator for DescendantAtomsIter<'a> {
                 }
                 DescendantAtomsFrame::Words(iter) => {
                     if let Some(word) = iter.next() {
-                        self.stack.push(DescendantAtomsFrame::Atoms(word.atoms.iter()));
+                        self.stack
+                            .push(DescendantAtomsFrame::Atoms(word.atoms.iter()));
                     } else {
                         self.stack.pop();
                     }
@@ -2217,11 +2349,23 @@ impl<'a> Iterator for DescendantAtomsIter<'a> {
 pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnitAtom> {
     fn needs_before_ancestor_elements(atom: &ComparisonUnitAtom) -> bool {
         const VML_RELATED_ELEMENTS: &[&str] = &[
-            "pict", "shape", "rect", "group", "shapetype", "oval", "line", "arc", "curve",
-            "polyline", "roundrect",
+            "pict",
+            "shape",
+            "rect",
+            "group",
+            "shapetype",
+            "oval",
+            "line",
+            "arc",
+            "curve",
+            "polyline",
+            "roundrect",
         ];
 
-        let is_ppr = matches!(atom.content_element, ContentElement::ParagraphProperties { .. });
+        let is_ppr = matches!(
+            atom.content_element,
+            ContentElement::ParagraphProperties { .. }
+        );
         let mut is_in_textbox = false;
         let mut is_vml = false;
 
@@ -2241,7 +2385,10 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
     }
 
     fn count_units(units: &[ComparisonUnit]) -> usize {
-        units.iter().map(|u| u.descendant_content_atoms_count()).sum()
+        units
+            .iter()
+            .map(|u| u.descendant_content_atoms_count())
+            .sum()
     }
 
     let mut total_atoms = 0usize;
@@ -2291,7 +2438,8 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
                             cloned.content_element_before = Some(a1.content_element.clone());
                             cloned.formatting_signature_before = a1.formatting_signature.clone();
                             if needs_before_ancestor_elements(&cloned) {
-                                cloned.ancestor_elements_before = Some(a1.ancestor_elements.clone());
+                                cloned.ancestor_elements_before =
+                                    Some(a1.ancestor_elements.clone());
                             }
                             cloned.part_before = Some(a1.part_name.clone());
                             result.push(cloned);
@@ -2353,6 +2501,48 @@ pub fn flatten_to_atoms(correlated: &[CorrelatedSequence]) -> Vec<ComparisonUnit
     result
 }
 
+/// Detect completely identical sources (optimization)
+///
+/// If both sides have the same groups with identical sha1_hash at each position,
+/// we can immediately return all Equal sequences without expensive LCS computation.
+fn detect_identical_sources(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+) -> Option<Vec<CorrelatedSequence>> {
+    // Must have same length
+    if units1.len() != units2.len() {
+        return None;
+    }
+
+    // Skip for very small inputs (not worth the overhead)
+    if units1.len() < 3 {
+        return None;
+    }
+
+    // Check that all sha1_hashes match at corresponding positions
+    let all_match = units1
+        .iter()
+        .zip(units2.iter())
+        .all(|(u1, u2)| match (u1, u2) {
+            (ComparisonUnit::Group(g1), ComparisonUnit::Group(g2)) => g1.sha1_hash == g2.sha1_hash,
+            (ComparisonUnit::Word(w1), ComparisonUnit::Word(w2)) => w1.sha1_hash == w2.sha1_hash,
+            _ => false,
+        });
+
+    if !all_match {
+        return None;
+    }
+
+    // All units are identical - return Equal sequences
+    let result: Vec<_> = units1
+        .iter()
+        .zip(units2.iter())
+        .map(|(u1, u2)| CorrelatedSequence::equal(vec![u1.clone()], vec![u2.clone()]))
+        .collect();
+
+    Some(result)
+}
+
 /// Detect completely unrelated sources (optimization)
 ///
 /// Matches C# DetectUnrelatedSources (WmlComparer.cs:5745-5774)
@@ -2363,14 +2553,8 @@ fn detect_unrelated_sources(
     units1: &[ComparisonUnit],
     units2: &[ComparisonUnit],
 ) -> Option<Vec<CorrelatedSequence>> {
-    let groups1: Vec<_> = units1
-        .iter()
-        .filter_map(|u| u.as_group())
-        .collect();
-    let groups2: Vec<_> = units2
-        .iter()
-        .filter_map(|u| u.as_group())
-        .collect();
+    let groups1: Vec<_> = units1.iter().filter_map(|u| u.as_group()).collect();
+    let groups2: Vec<_> = units2.iter().filter_map(|u| u.as_group()).collect();
 
     if groups1.len() <= 3 || groups2.len() <= 3 {
         return None;
@@ -2420,13 +2604,9 @@ fn do_lcs_algorithm_for_table(
     };
 
     if rows1.len() == rows2.len() {
-        let all_rows_match = rows1
-            .iter()
-            .zip(rows2.iter())
-            .all(|(r1, r2)| {
-                r1.correlated_sha1_hash.is_some()
-                    && r1.correlated_sha1_hash == r2.correlated_sha1_hash
-            });
+        let all_rows_match = rows1.iter().zip(rows2.iter()).all(|(r1, r2)| {
+            r1.correlated_sha1_hash.is_some() && r1.correlated_sha1_hash == r2.correlated_sha1_hash
+        });
 
         if all_rows_match {
             let sequences: Vec<_> = rows1
@@ -2552,7 +2732,9 @@ mod tests {
 
         // Should have Equal for "hello" and Deleted for "world"
         let has_equal = result.iter().any(|s| s.status == CorrelationStatus::Equal);
-        let has_deleted = result.iter().any(|s| s.status == CorrelationStatus::Deleted);
+        let has_deleted = result
+            .iter()
+            .any(|s| s.status == CorrelationStatus::Deleted);
         assert!(has_equal);
         assert!(has_deleted);
     }
@@ -2569,7 +2751,9 @@ mod tests {
         let result = lcs(units1, units2, &settings);
 
         let has_equal = result.iter().any(|s| s.status == CorrelationStatus::Equal);
-        let has_inserted = result.iter().any(|s| s.status == CorrelationStatus::Inserted);
+        let has_inserted = result
+            .iter()
+            .any(|s| s.status == CorrelationStatus::Inserted);
         assert!(has_equal);
         assert!(has_inserted);
     }
@@ -2582,8 +2766,12 @@ mod tests {
 
         let result = lcs(units1, units2, &settings);
 
-        let has_deleted = result.iter().any(|s| s.status == CorrelationStatus::Deleted);
-        let has_inserted = result.iter().any(|s| s.status == CorrelationStatus::Inserted);
+        let has_deleted = result
+            .iter()
+            .any(|s| s.status == CorrelationStatus::Deleted);
+        let has_inserted = result
+            .iter()
+            .any(|s| s.status == CorrelationStatus::Inserted);
         assert!(has_deleted);
         assert!(has_inserted);
     }
@@ -2619,7 +2807,9 @@ mod tests {
         assert!(result.is_some());
 
         let sequences = result.unwrap();
-        assert!(sequences.iter().any(|s| s.status == CorrelationStatus::Equal));
+        assert!(sequences
+            .iter()
+            .any(|s| s.status == CorrelationStatus::Equal));
     }
 
     #[test]
@@ -2641,7 +2831,9 @@ mod tests {
         assert!(result.is_some());
 
         let sequences = result.unwrap();
-        assert!(sequences.iter().any(|s| s.status == CorrelationStatus::Equal));
+        assert!(sequences
+            .iter()
+            .any(|s| s.status == CorrelationStatus::Equal));
     }
 
     #[test]
@@ -2700,7 +2892,9 @@ mod tests {
     fn make_para_mark() -> ComparisonUnitWord {
         let settings = WmlComparerSettings::default();
         let atoms = vec![ComparisonUnitAtom::new(
-            ContentElement::ParagraphProperties { element_xml: String::new() },
+            ContentElement::ParagraphProperties {
+                element_xml: String::new(),
+            },
             vec![],
             "main",
             &settings,

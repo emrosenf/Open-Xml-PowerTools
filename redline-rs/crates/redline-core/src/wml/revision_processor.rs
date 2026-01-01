@@ -40,13 +40,13 @@ pub fn normalize_duplicate_textboxes(_doc: &mut XmlDocument) -> Result<(), Strin
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_reverse_revisions_info() {
         let info = ReverseRevisionsInfo::new();
         assert!(!info.in_insert);
     }
-    
+
     #[test]
     fn test_block_content_info() {
         let info = BlockContentInfo {

@@ -32,11 +32,11 @@ pub fn simplify_markup(doc: &mut XmlDocument, root: NodeId, settings: &SimplifyM
         settings_copy.remove_rsid_info = true;
         remove_elements_for_document_comparison(doc, root);
     }
-    
+
     if settings.remove_rsid_info {
         remove_rsid_info_in_settings(doc, root);
     }
-    
+
     simplify_markup_for_part(doc, root, settings);
 }
 
@@ -50,7 +50,7 @@ fn remove_rsid_info_in_settings(doc: &mut XmlDocument, root: NodeId) {
                 .unwrap_or(false)
         })
         .collect();
-    
+
     for rsid_node in rsids_to_remove {
         doc.remove(rsid_node);
     }
@@ -64,9 +64,9 @@ fn remove_elements_for_document_comparison(doc: &mut XmlDocument, root: NodeId) 
                 if let Some(name) = data.name() {
                     if *name == W::bookmark_start() {
                         if let Some(attrs) = data.attributes() {
-                            return attrs.iter().any(|attr| {
-                                attr.name == W::name() && attr.value == "_GoBack"
-                            });
+                            return attrs
+                                .iter()
+                                .any(|attr| attr.name == W::name() && attr.value == "_GoBack");
                         }
                     }
                 }
@@ -74,14 +74,15 @@ fn remove_elements_for_document_comparison(doc: &mut XmlDocument, root: NodeId) 
             false
         })
         .collect();
-    
+
     for bookmark_start in goback_bookmarks {
         if let Some(data) = doc.get(bookmark_start) {
             if let Some(attrs) = data.attributes() {
-                let bookmark_id = attrs.iter()
+                let bookmark_id = attrs
+                    .iter()
                     .find(|a| a.name == W::id())
                     .map(|a| a.value.clone());
-                
+
                 if let Some(id) = bookmark_id {
                     let bookmark_ends: Vec<NodeId> = doc
                         .descendants(root)
@@ -100,7 +101,7 @@ fn remove_elements_for_document_comparison(doc: &mut XmlDocument, root: NodeId) 
                             false
                         })
                         .collect();
-                    
+
                     for end in bookmark_ends {
                         doc.remove(end);
                     }
@@ -111,19 +112,23 @@ fn remove_elements_for_document_comparison(doc: &mut XmlDocument, root: NodeId) 
     }
 }
 
-fn simplify_markup_for_part(doc: &mut XmlDocument, root: NodeId, settings: &SimplifyMarkupSettings) {
+fn simplify_markup_for_part(
+    doc: &mut XmlDocument,
+    root: NodeId,
+    settings: &SimplifyMarkupSettings,
+) {
     if settings.remove_rsid_info {
         remove_rsid_transform(doc, root);
     }
-    
+
     if settings.remove_content_controls {
         remove_content_controls(doc, root);
     }
-    
+
     if settings.remove_smart_tags {
         remove_smart_tags(doc, root);
     }
-    
+
     if settings.remove_hyperlinks {
         remove_hyperlinks(doc, root);
     }
@@ -131,7 +136,7 @@ fn simplify_markup_for_part(doc: &mut XmlDocument, root: NodeId, settings: &Simp
 
 fn remove_rsid_transform(doc: &mut XmlDocument, root: NodeId) {
     let nodes: Vec<NodeId> = doc.descendants(root).collect();
-    
+
     for node_id in nodes {
         if let Some(data) = doc.get_mut(node_id) {
             if let Some(attrs) = data.attributes_mut() {
@@ -151,9 +156,10 @@ fn remove_content_controls(doc: &mut XmlDocument, root: NodeId) {
                 .unwrap_or(false)
         })
         .collect();
-    
+
     for sdt in sdt_nodes {
-        let sdt_content_children: Vec<NodeId> = doc.children(sdt)
+        let sdt_content_children: Vec<NodeId> = doc
+            .children(sdt)
             .filter(|&child_id| {
                 doc.get(child_id)
                     .and_then(|data| data.name())
@@ -162,7 +168,7 @@ fn remove_content_controls(doc: &mut XmlDocument, root: NodeId) {
             })
             .flat_map(|sdt_content| doc.children(sdt_content).collect::<Vec<_>>())
             .collect();
-        
+
         if let Some(parent) = doc.parent(sdt) {
             for child in sdt_content_children {
                 doc.reparent(parent, child);
@@ -182,10 +188,10 @@ fn remove_smart_tags(doc: &mut XmlDocument, root: NodeId) {
                 .unwrap_or(false)
         })
         .collect();
-    
+
     for smart_tag in smart_tag_nodes {
         let children: Vec<NodeId> = doc.children(smart_tag).collect();
-        
+
         if let Some(parent) = doc.parent(smart_tag) {
             for child in children {
                 doc.reparent(parent, child);
@@ -196,7 +202,7 @@ fn remove_smart_tags(doc: &mut XmlDocument, root: NodeId) {
 }
 
 /// Remove hyperlinks by unwrapping their content
-/// 
+///
 /// Corresponds to C# MarkupSimplifier.cs line 370-372:
 /// ```csharp
 /// if (settings.RemoveHyperlinks && (element.Name == W.hyperlink))
@@ -212,10 +218,10 @@ fn remove_hyperlinks(doc: &mut XmlDocument, root: NodeId) {
                 .unwrap_or(false)
         })
         .collect();
-    
+
     for hyperlink in hyperlink_nodes {
         let children: Vec<NodeId> = doc.children(hyperlink).collect();
-        
+
         if let Some(parent) = doc.parent(hyperlink) {
             for child in children {
                 doc.reparent(parent, child);
@@ -236,7 +242,7 @@ pub fn transform_element_to_single_character_runs(_doc: &mut XmlDocument, _root:
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_simplify_markup_settings_default() {
         let settings = SimplifyMarkupSettings::default();

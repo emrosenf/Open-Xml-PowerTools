@@ -25,7 +25,7 @@
 
 use crate::package::OoxmlPackage;
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{A, R, V, W, WP14, PT};
+use crate::xml::namespaces::{A, PT, R, V, W, WP14};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
 use sha1::{Digest, Sha1};
@@ -91,7 +91,7 @@ pub fn compute_drawing_identity(
 /// Find all w:txbxContent descendants within a drawing element.
 fn find_textbox_contents(doc: &XmlDocument, node: NodeId) -> Vec<NodeId> {
     let mut txbx_nodes = Vec::new();
-    
+
     for desc in doc.descendants(node) {
         if let Some(data) = doc.get(desc) {
             if let Some(name) = data.name() {
@@ -101,7 +101,7 @@ fn find_textbox_contents(doc: &XmlDocument, node: NodeId) -> Vec<NodeId> {
             }
         }
     }
-    
+
     txbx_nodes
 }
 
@@ -113,11 +113,11 @@ fn find_textbox_contents(doc: &XmlDocument, node: NodeId) -> Vec<NodeId> {
 fn compute_textbox_identity(doc: &XmlDocument, txbx_contents: &[NodeId]) -> String {
     let mut hasher = Sha1::new();
     hasher.update(TEXTBOX_DRAWING_PREFIX.as_bytes());
-    
+
     for &txbx_node in txbx_contents {
         hash_textbox_content_recursive(doc, txbx_node, &mut hasher);
     }
-    
+
     let result = hasher.finalize();
     format!("{:x}", result)
 }
@@ -125,12 +125,12 @@ fn compute_textbox_identity(doc: &XmlDocument, txbx_contents: &[NodeId]) -> Stri
 /// Recursively hash textbox content, extracting text and structure.
 fn hash_textbox_content_recursive(doc: &XmlDocument, node: NodeId, hasher: &mut Sha1) {
     let Some(data) = doc.get(node) else { return };
-    
+
     match data {
         XmlNodeData::Element { name, .. } => {
             // Include element name in hash for structural identity
             hasher.update(name.local_name.as_bytes());
-            
+
             // Recurse into children
             for child in doc.children(node) {
                 hash_textbox_content_recursive(doc, child, hasher);
@@ -153,8 +153,8 @@ fn find_blip_embed(doc: &XmlDocument, node: NodeId) -> Option<String> {
                     if let Some(attrs) = data.attributes() {
                         // Look for r:embed attribute
                         for attr in attrs {
-                            if attr.name.local_name == "embed" 
-                                && attr.name.namespace.as_deref() == Some(R::NS) 
+                            if attr.name.local_name == "embed"
+                                && attr.name.namespace.as_deref() == Some(R::NS)
                             {
                                 return Some(attr.value.clone());
                             }
@@ -177,8 +177,8 @@ fn find_vml_imagedata_relid(doc: &XmlDocument, node: NodeId) -> Option<String> {
                     if let Some(attrs) = data.attributes() {
                         // Look for r:id attribute first
                         for attr in attrs {
-                            if attr.name.local_name == "id" 
-                                && attr.name.namespace.as_deref() == Some(R::NS) 
+                            if attr.name.local_name == "id"
+                                && attr.name.namespace.as_deref() == Some(R::NS)
                             {
                                 return Some(attr.value.clone());
                             }
@@ -205,14 +205,14 @@ fn resolve_and_hash_image(
 ) -> Option<String> {
     // Get the relationships file path for the source part
     let rels_path = get_relationships_path(source_part);
-    
+
     // Try to parse the relationships and find the target
     let rels_content = package.get_part(&rels_path)?;
     let target = parse_relationship_target(rels_content, rel_id)?;
-    
+
     // Resolve relative path to absolute part path
     let image_path = resolve_part_path(source_part, &target);
-    
+
     // Get the image bytes and hash them
     let image_bytes = package.get_part(&image_path)?;
     Some(sha1_hash_bytes(image_bytes))
@@ -235,7 +235,7 @@ fn parse_relationship_target(rels_content: &[u8], rel_id: &str) -> Option<String
     // Simple XML parsing for relationship files
     // Format: <Relationship Id="rIdX" Target="target/path.ext" Type="..." />
     let content = std::str::from_utf8(rels_content).ok()?;
-    
+
     // Find the relationship with matching Id
     for line in content.lines() {
         if line.contains(&format!("Id=\"{}\"", rel_id)) {
@@ -249,7 +249,7 @@ fn parse_relationship_target(rels_content: &[u8], rel_id: &str) -> Option<String
             }
         }
     }
-    
+
     None
 }
 
@@ -259,14 +259,14 @@ fn resolve_part_path(source_part: &str, relative_target: &str) -> String {
     if relative_target.starts_with('/') {
         return relative_target.trim_start_matches('/').to_string();
     }
-    
+
     // Get directory of source part
     let source_dir = if let Some(last_slash) = source_part.rfind('/') {
         &source_part[..last_slash]
     } else {
         ""
     };
-    
+
     // Combine and normalize
     if source_dir.is_empty() {
         relative_target.to_string()
@@ -287,7 +287,7 @@ fn sha1_hash_bytes(bytes: &[u8]) -> String {
 /// This is the existing behavior - hash the XML structure excluding PT attributes.
 fn compute_xml_structure_hash(doc: &XmlDocument, node: NodeId) -> String {
     use crate::xml::namespaces::PT;
-    
+
     let mut hasher = Sha1::new();
     hash_xml_element_recursive(doc, node, &mut hasher, &PT::Unid(), &PT::SHA1Hash());
     let result = hasher.finalize();
@@ -295,20 +295,20 @@ fn compute_xml_structure_hash(doc: &XmlDocument, node: NodeId) -> String {
 }
 
 /// Recursively hash XML element structure.
-/// 
+///
 /// Skips:
 /// - PT namespace attributes (Unid, SHA1Hash)
 /// - Relationship attributes (r:embed, r:id, r:link) which vary between saves
 /// - WP14 namespace attributes (anchorId, editId) which are edit-tracking IDs
 fn hash_xml_element_recursive(
-    doc: &XmlDocument, 
-    node: NodeId, 
+    doc: &XmlDocument,
+    node: NodeId,
     hasher: &mut Sha1,
     pt_unid: &crate::xml::xname::XName,
     pt_sha1: &crate::xml::xname::XName,
 ) {
     let Some(data) = doc.get(node) else { return };
-    
+
     match data {
         XmlNodeData::Element { name, attributes } => {
             hasher.update(name.local_name.as_bytes());
@@ -345,8 +345,11 @@ fn hash_xml_element_recursive(
             filtered_attrs.sort_by(|a, b| {
                 let a_ns = a.name.namespace.as_deref().unwrap_or("");
                 let b_ns = b.name.namespace.as_deref().unwrap_or("");
-                (a_ns, a.name.local_name.as_str(), a.value.as_str())
-                    .cmp(&(b_ns, b.name.local_name.as_str(), b.value.as_str()))
+                (a_ns, a.name.local_name.as_str(), a.value.as_str()).cmp(&(
+                    b_ns,
+                    b.name.local_name.as_str(),
+                    b.value.as_str(),
+                ))
             });
 
             for attr in filtered_attrs {
@@ -371,14 +374,11 @@ pub fn has_textbox_content(doc: &XmlDocument, drawing_node: NodeId) -> bool {
 }
 
 /// Get information about a drawing element for debugging.
-pub fn get_drawing_info(
-    doc: &XmlDocument,
-    drawing_node: NodeId,
-) -> DrawingInfo {
+pub fn get_drawing_info(doc: &XmlDocument, drawing_node: NodeId) -> DrawingInfo {
     let has_textbox = has_textbox_content(doc, drawing_node);
     let blip_embed = find_blip_embed(doc, drawing_node);
     let vml_relid = find_vml_imagedata_relid(doc, drawing_node);
-    
+
     DrawingInfo {
         has_textbox,
         blip_embed,
@@ -413,7 +413,10 @@ mod tests {
         // Verify it's consistent
         assert_eq!(sha1_hash_bytes(content), sha1_hash_bytes(content));
         // Different content produces different hash
-        assert_ne!(sha1_hash_bytes(b"test content"), sha1_hash_bytes(b"other content"));
+        assert_ne!(
+            sha1_hash_bytes(b"test content"),
+            sha1_hash_bytes(b"other content")
+        );
     }
 
     #[test]
@@ -450,7 +453,7 @@ mod tests {
         let textbox = doc.add_child(shape, XmlNodeData::element(XName::new(V::NS, "textbox")));
         let txbx = doc.add_child(textbox, XmlNodeData::element(W::txbxContent()));
         doc.add_child(txbx, XmlNodeData::Text("Hello".to_string()));
-        
+
         let txbx_contents = find_textbox_contents(&doc, drawing);
         assert_eq!(txbx_contents.len(), 1);
         assert_eq!(txbx_contents[0], txbx);
@@ -460,16 +463,17 @@ mod tests {
     fn test_find_blip_embed() {
         let mut doc = XmlDocument::new();
         let drawing = doc.add_root(XmlNodeData::element(W::drawing()));
-        let blip = doc.add_child(drawing, XmlNodeData::Element {
-            name: XName::new(A::NS, "blip"),
-            attributes: vec![
-                crate::xml::xname::XAttribute {
+        let blip = doc.add_child(
+            drawing,
+            XmlNodeData::Element {
+                name: XName::new(A::NS, "blip"),
+                attributes: vec![crate::xml::xname::XAttribute {
                     name: XName::new(R::NS, "embed"),
                     value: "rId5".to_string(),
-                }
-            ],
-        });
-        
+                }],
+            },
+        );
+
         let embed = find_blip_embed(&doc, drawing);
         assert_eq!(embed, Some("rId5".to_string()));
     }
@@ -478,16 +482,17 @@ mod tests {
     fn test_find_vml_imagedata_relid() {
         let mut doc = XmlDocument::new();
         let pict = doc.add_root(XmlNodeData::element(W::pict()));
-        let imagedata = doc.add_child(pict, XmlNodeData::Element {
-            name: XName::new(V::NS, "imagedata"),
-            attributes: vec![
-                crate::xml::xname::XAttribute {
+        let imagedata = doc.add_child(
+            pict,
+            XmlNodeData::Element {
+                name: XName::new(V::NS, "imagedata"),
+                attributes: vec![crate::xml::xname::XAttribute {
                     name: XName::new(R::NS, "id"),
                     value: "rId7".to_string(),
-                }
-            ],
-        });
-        
+                }],
+            },
+        );
+
         let relid = find_vml_imagedata_relid(&doc, pict);
         assert_eq!(relid, Some("rId7".to_string()));
     }
@@ -499,7 +504,7 @@ mod tests {
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image2.jpg"/>
 </Relationships>"#;
-        
+
         assert_eq!(
             parse_relationship_target(rels_content, "rId1"),
             Some("media/image1.png".to_string())
@@ -508,10 +513,7 @@ mod tests {
             parse_relationship_target(rels_content, "rId2"),
             Some("media/image2.jpg".to_string())
         );
-        assert_eq!(
-            parse_relationship_target(rels_content, "rId99"),
-            None
-        );
+        assert_eq!(parse_relationship_target(rels_content, "rId99"), None);
     }
 
     #[test]
@@ -521,11 +523,11 @@ mod tests {
         let txbx = doc.add_child(drawing, XmlNodeData::element(W::txbxContent()));
         let para = doc.add_child(txbx, XmlNodeData::element(W::p()));
         doc.add_child(para, XmlNodeData::Text("Hello World".to_string()));
-        
+
         let txbx_contents = find_textbox_contents(&doc, drawing);
         let hash1 = compute_textbox_identity(&doc, &txbx_contents);
         let hash2 = compute_textbox_identity(&doc, &txbx_contents);
-        
+
         assert_eq!(hash1, hash2);
         assert!(!hash1.is_empty());
     }
@@ -537,10 +539,10 @@ mod tests {
         let txbx = doc.add_child(drawing, XmlNodeData::element(W::txbxContent()));
         let para = doc.add_child(txbx, XmlNodeData::element(W::p()));
         doc.add_child(para, XmlNodeData::Text("Hello World".to_string()));
-        
+
         // Without package, should compute textbox identity
         let hash = compute_drawing_identity(&doc, drawing, None, "word/document.xml");
-        
+
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 40); // SHA1 hex length
     }
@@ -549,19 +551,20 @@ mod tests {
     fn test_compute_drawing_identity_fallback_to_xml() {
         let mut doc = XmlDocument::new();
         let drawing = doc.add_root(XmlNodeData::element(W::drawing()));
-        let blip = doc.add_child(drawing, XmlNodeData::Element {
-            name: XName::new(A::NS, "blip"),
-            attributes: vec![
-                crate::xml::xname::XAttribute {
+        let blip = doc.add_child(
+            drawing,
+            XmlNodeData::Element {
+                name: XName::new(A::NS, "blip"),
+                attributes: vec![crate::xml::xname::XAttribute {
                     name: XName::new(R::NS, "embed"),
                     value: "rId5".to_string(),
-                }
-            ],
-        });
-        
+                }],
+            },
+        );
+
         // Without package, should fall back to XML structure hash
         let hash = compute_drawing_identity(&doc, drawing, None, "word/document.xml");
-        
+
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 40); // SHA1 hex length
     }
@@ -571,16 +574,19 @@ mod tests {
         let mut doc1 = XmlDocument::new();
         let drawing1 = doc1.add_root(XmlNodeData::element(W::drawing()));
         let txbx = doc1.add_child(drawing1, XmlNodeData::element(W::txbxContent()));
-        
+
         assert!(has_textbox_content(&doc1, drawing1));
-        
+
         let mut doc2 = XmlDocument::new();
         let drawing2 = doc2.add_root(XmlNodeData::element(W::drawing()));
-        let blip = doc2.add_child(drawing2, XmlNodeData::Element {
-            name: XName::new(A::NS, "blip"),
-            attributes: vec![],
-        });
-        
+        let blip = doc2.add_child(
+            drawing2,
+            XmlNodeData::Element {
+                name: XName::new(A::NS, "blip"),
+                attributes: vec![],
+            },
+        );
+
         assert!(!has_textbox_content(&doc2, drawing2));
     }
 
@@ -588,16 +594,17 @@ mod tests {
     fn test_get_drawing_info() {
         let mut doc = XmlDocument::new();
         let drawing = doc.add_root(XmlNodeData::element(W::drawing()));
-        let blip = doc.add_child(drawing, XmlNodeData::Element {
-            name: XName::new(A::NS, "blip"),
-            attributes: vec![
-                crate::xml::xname::XAttribute {
+        let blip = doc.add_child(
+            drawing,
+            XmlNodeData::Element {
+                name: XName::new(A::NS, "blip"),
+                attributes: vec![crate::xml::xname::XAttribute {
                     name: XName::new(R::NS, "embed"),
                     value: "rId5".to_string(),
-                }
-            ],
-        });
-        
+                }],
+            },
+        );
+
         let info = get_drawing_info(&doc, drawing);
         assert!(!info.has_textbox);
         assert_eq!(info.blip_embed, Some("rId5".to_string()));

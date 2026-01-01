@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::package::OoxmlPackage;
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{MC, M, W};
+use crate::xml::namespaces::{M, MC, W};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
 use std::io::Write;
@@ -16,9 +16,12 @@ impl WmlDocument {
         let mut buffer = std::io::Cursor::new(Vec::new());
         {
             let mut zip = zip::ZipWriter::new(&mut buffer);
-            
+
             // Add [Content_Types].xml
-            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default())?;
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )?;
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -27,12 +30,15 @@ impl WmlDocument {
 </Types>"#)?;
 
             // Add word/document.xml
-            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())?;
+            zip.start_file(
+                "word/document.xml",
+                zip::write::SimpleFileOptions::default(),
+            )?;
             zip.write_all(main_xml)?;
-            
+
             zip.finish()?;
         }
-        
+
         Self::from_bytes(&buffer.into_inner())
     }
 
@@ -115,7 +121,7 @@ impl WmlDocument {
 
 pub fn find_document_body(doc: &XmlDocument) -> Option<NodeId> {
     let root = doc.root()?;
-    
+
     for child in doc.descendants(root) {
         if let Some(data) = doc.get(child) {
             if let Some(name) = data.name() {
@@ -125,7 +131,7 @@ pub fn find_document_body(doc: &XmlDocument) -> Option<NodeId> {
             }
         }
     }
-    
+
     None
 }
 
@@ -142,7 +148,7 @@ fn extract_text_recursive(
     accept_revisions: bool,
 ) {
     let Some(data) = doc.get(node) else { return };
-    
+
     match data {
         XmlNodeData::Text(text) => {
             texts.push(text.clone());
@@ -150,15 +156,15 @@ fn extract_text_recursive(
         XmlNodeData::Element { name, .. } => {
             let ns = name.namespace.as_deref();
             let local = name.local_name.as_str();
-            
+
             if ns == Some(W::NS) && local == "del" && accept_revisions {
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "delText" {
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "t" {
                 for child in doc.children(node) {
                     if let Some(XmlNodeData::Text(text)) = doc.get(child) {
@@ -167,45 +173,51 @@ fn extract_text_recursive(
                 }
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "br" {
                 texts.push("\n".to_string());
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "tab" {
                 texts.push("\t".to_string());
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "footnoteReference" {
                 if let Some(attrs) = data.attributes() {
-                    let id = attrs.iter()
-                        .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
+                    let id = attrs
+                        .iter()
+                        .find(|a| {
+                            a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS)
+                        })
                         .map(|a| a.value.as_str())
                         .unwrap_or("0");
                     texts.push(format!(" FOOTNOTEREF{} ", id));
                 }
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "endnoteReference" {
                 if let Some(attrs) = data.attributes() {
-                    let id = attrs.iter()
-                        .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
+                    let id = attrs
+                        .iter()
+                        .find(|a| {
+                            a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS)
+                        })
                         .map(|a| a.value.as_str())
                         .unwrap_or("0");
                     texts.push(format!(" ENDNOTEREF{} ", id));
                 }
                 return;
             }
-            
+
             if ns == Some(M::NS) && (local == "oMath" || local == "oMathPara") {
                 let math_hash = compute_math_hash(doc, node);
                 texts.push(format!(" MATH{:08x} ", math_hash));
                 return;
             }
-            
+
             if ns == Some(MC::NS) && local == "AlternateContent" {
                 if let Some(fallback) = find_child_by_name(doc, node, MC::NS, "Fallback") {
                     for child in doc.children(fallback) {
@@ -220,7 +232,7 @@ fn extract_text_recursive(
                     return;
                 }
             }
-            
+
             if ns == Some(W::NS) && local == "txbxContent" {
                 texts.push(" TXBXSTART ".to_string());
                 for child in doc.children(node) {
@@ -229,13 +241,13 @@ fn extract_text_recursive(
                 texts.push(" TXBXEND ".to_string());
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "drawing" {
                 let drawing_info = get_drawing_info(doc, node);
                 texts.push(format!(" {} ", drawing_info));
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "pict" {
                 if has_textbox(doc, node) {
                     for child in doc.children(node) {
@@ -244,12 +256,15 @@ fn extract_text_recursive(
                     return;
                 }
                 let embed_ref = find_embed_reference(doc, node);
-                let hash: u32 = embed_ref.as_deref().unwrap_or("unknown").bytes()
+                let hash: u32 = embed_ref
+                    .as_deref()
+                    .unwrap_or("unknown")
+                    .bytes()
                     .fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
                 texts.push(format!(" PICT{:08x} ", hash));
                 return;
             }
-            
+
             for child in doc.children(node) {
                 extract_text_recursive(doc, child, texts, accept_revisions);
             }
@@ -275,10 +290,13 @@ fn compute_math_hash(doc: &XmlDocument, node: NodeId) -> u32 {
     let mut math_texts = Vec::new();
     extract_math_text(doc, node, &mut math_texts);
     let content = math_texts.join("");
-    
+
     let mut hash: u32 = 0;
     for ch in content.chars() {
-        hash = hash.wrapping_shl(5).wrapping_sub(hash).wrapping_add(ch as u32);
+        hash = hash
+            .wrapping_shl(5)
+            .wrapping_sub(hash)
+            .wrapping_add(ch as u32);
     }
     hash
 }
@@ -296,7 +314,7 @@ fn extract_math_text(doc: &XmlDocument, node: NodeId, texts: &mut Vec<String>) {
             }
         }
     }
-    
+
     for child in doc.children(node) {
         extract_math_text(doc, child, texts);
     }
@@ -304,7 +322,7 @@ fn extract_math_text(doc: &XmlDocument, node: NodeId, texts: &mut Vec<String>) {
 
 fn get_drawing_info(doc: &XmlDocument, node: NodeId) -> String {
     let mut hash_input = String::new();
-    
+
     if let Some(extent) = find_descendant_by_local_name(doc, node, "extent") {
         if let Some(data) = doc.get(extent) {
             if let Some(attrs) = data.attributes() {
@@ -316,15 +334,17 @@ fn get_drawing_info(doc: &XmlDocument, node: NodeId) -> String {
             }
         }
     }
-    
+
     if let Some(embed_ref) = find_embed_reference(doc, node) {
         hash_input.push_str(&embed_ref);
     }
-    
+
     if hash_input.is_empty() {
         "DRAWINGunknown".to_string()
     } else {
-        let hash: u32 = hash_input.bytes().fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
+        let hash: u32 = hash_input
+            .bytes()
+            .fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
         format!("DRAWING{:08x}", hash)
     }
 }
@@ -346,8 +366,8 @@ fn find_embed_reference(doc: &XmlDocument, node: NodeId) -> Option<String> {
     if let Some(data) = doc.get(node) {
         if let Some(attrs) = data.attributes() {
             for attr in attrs {
-                let is_embed_attr = attr.name.local_name == "embed" 
-                    || attr.name.local_name == "relid" 
+                let is_embed_attr = attr.name.local_name == "embed"
+                    || attr.name.local_name == "relid"
                     || attr.name.local_name == "id";
                 if is_embed_attr && attr.name.namespace.is_some() {
                     return Some(attr.value.clone());
@@ -355,13 +375,13 @@ fn find_embed_reference(doc: &XmlDocument, node: NodeId) -> Option<String> {
             }
         }
     }
-    
+
     for child in doc.children(node) {
         if let Some(result) = find_embed_reference(doc, child) {
             return Some(result);
         }
     }
-    
+
     None
 }
 
@@ -384,25 +404,30 @@ pub fn find_paragraphs(doc: &XmlDocument, start: NodeId) -> Vec<NodeId> {
     paragraphs
 }
 
-fn find_paragraphs_recursive(doc: &XmlDocument, node: NodeId, paragraphs: &mut Vec<NodeId>, in_textbox: bool) {
+fn find_paragraphs_recursive(
+    doc: &XmlDocument,
+    node: NodeId,
+    paragraphs: &mut Vec<NodeId>,
+    in_textbox: bool,
+) {
     if let Some(data) = doc.get(node) {
         if let Some(name) = data.name() {
             let ns = name.namespace.as_deref();
             let local = name.local_name.as_str();
-            
+
             if ns == Some(W::NS) && local == "txbxContent" {
                 for child in doc.children(node) {
                     find_paragraphs_recursive(doc, child, paragraphs, true);
                 }
                 return;
             }
-            
+
             if ns == Some(W::NS) && local == "p" && !in_textbox {
                 paragraphs.push(node);
             }
         }
     }
-    
+
     for child in doc.children(node) {
         find_paragraphs_recursive(doc, child, paragraphs, in_textbox);
     }
@@ -411,20 +436,20 @@ fn find_paragraphs_recursive(doc: &XmlDocument, node: NodeId, paragraphs: &mut V
 pub fn extract_all_text(doc: &XmlDocument, body: NodeId) -> String {
     let paragraphs = find_paragraphs(doc, body);
     let mut texts = Vec::new();
-    
+
     for para in paragraphs {
         let para_text = extract_paragraph_text(doc, para);
         if !para_text.is_empty() {
             texts.push(para_text);
         }
     }
-    
+
     texts.join("\n").trim().to_string()
 }
 
 pub fn find_footnotes_root(doc: &XmlDocument) -> Option<NodeId> {
     let root = doc.root()?;
-    
+
     for child in doc.descendants(root) {
         if let Some(data) = doc.get(child) {
             if let Some(name) = data.name() {
@@ -434,13 +459,13 @@ pub fn find_footnotes_root(doc: &XmlDocument) -> Option<NodeId> {
             }
         }
     }
-    
+
     None
 }
 
 pub fn find_endnotes_root(doc: &XmlDocument) -> Option<NodeId> {
     let root = doc.root()?;
-    
+
     for child in doc.descendants(root) {
         if let Some(data) = doc.get(child) {
             if let Some(name) = data.name() {
@@ -450,22 +475,26 @@ pub fn find_endnotes_root(doc: &XmlDocument) -> Option<NodeId> {
             }
         }
     }
-    
+
     None
 }
 
 pub fn find_note_paragraphs(doc: &XmlDocument, root: NodeId) -> Vec<NodeId> {
     let mut paragraphs = Vec::new();
-    
+
     for node in doc.descendants(root) {
         if let Some(data) = doc.get(node) {
             if let Some(name) = data.name() {
-                if name.namespace.as_deref() == Some(W::NS) 
-                    && (name.local_name == "footnote" || name.local_name == "endnote") 
+                if name.namespace.as_deref() == Some(W::NS)
+                    && (name.local_name == "footnote" || name.local_name == "endnote")
                 {
                     if let Some(attrs) = data.attributes() {
-                        let id = attrs.iter()
-                            .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
+                        let id = attrs
+                            .iter()
+                            .find(|a| {
+                                a.name.local_name == "id"
+                                    && a.name.namespace.as_deref() == Some(W::NS)
+                            })
                             .map(|a| a.value.as_str());
                         if let Some(id_val) = id {
                             if id_val == "0" || id_val == "-1" {
@@ -480,7 +509,7 @@ pub fn find_note_paragraphs(doc: &XmlDocument, root: NodeId) -> Vec<NodeId> {
             }
         }
     }
-    
+
     paragraphs
 }
 
@@ -488,12 +517,16 @@ pub fn find_note_by_id(doc: &XmlDocument, root: NodeId, id: &str) -> Option<Node
     for node in doc.descendants(root) {
         if let Some(data) = doc.get(node) {
             if let Some(name) = data.name() {
-                if name.namespace.as_deref() == Some(W::NS) 
-                    && (name.local_name == "footnote" || name.local_name == "endnote") 
+                if name.namespace.as_deref() == Some(W::NS)
+                    && (name.local_name == "footnote" || name.local_name == "endnote")
                 {
                     if let Some(attrs) = data.attributes() {
-                        let node_id = attrs.iter()
-                            .find(|a| a.name.local_name == "id" && a.name.namespace.as_deref() == Some(W::NS))
+                        let node_id = attrs
+                            .iter()
+                            .find(|a| {
+                                a.name.local_name == "id"
+                                    && a.name.namespace.as_deref() == Some(W::NS)
+                            })
                             .map(|a| a.value.as_str());
                         if let Some(id_val) = node_id {
                             if id_val == id {
@@ -520,7 +553,7 @@ mod tests {
         let run = doc.add_child(para, XmlNodeData::element(W::r()));
         let text_elem = doc.add_child(run, XmlNodeData::element(W::t()));
         doc.add_child(text_elem, XmlNodeData::Text("Hello World".to_string()));
-        
+
         let result = extract_paragraph_text(&doc, para);
         assert_eq!(result, "Hello World");
     }

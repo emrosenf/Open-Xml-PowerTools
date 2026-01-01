@@ -63,7 +63,9 @@ impl LcsTraceFilter {
 
     /// Get the output path for the trace file
     pub fn get_output_path(&self) -> PathBuf {
-        self.output_path.clone().unwrap_or_else(|| PathBuf::from("lcs-trace.json"))
+        self.output_path
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("lcs-trace.json"))
     }
 }
 
@@ -113,32 +115,32 @@ pub struct WmlComparerSettings {
     /// Characters that separate words for comparison purposes.
     /// Default includes space, punctuation, and Chinese punctuation.
     pub word_separators: Vec<char>,
-    
+
     /// Author name for tracked revisions. If None, the author will be extracted
     /// from the modified document's LastModifiedBy or Creator core property.
     pub author_for_revisions: Option<String>,
-    
+
     /// Date/time for tracked revisions in ISO 8601 format.
     /// If None, the date will be extracted from the modified document's
     /// dcterms:modified property, falling back to current time.
     pub date_time_for_revisions: Option<String>,
-    
+
     /// Threshold for detail level in comparison (0.0-1.0).
     /// Lower values provide more detailed comparison.
     pub detail_threshold: f64,
-    
+
     /// Whether to perform case-insensitive comparison.
     pub case_insensitive: bool,
-    
+
     /// Whether to treat breaking and non-breaking spaces as equivalent.
     pub conflate_breaking_and_nonbreaking_spaces: bool,
-    
+
     /// Whether to track formatting changes as revisions.
     pub track_formatting_changes: bool,
-    
+
     /// Culture info for locale-specific comparison (e.g., "en-US", "zh-CN").
     pub culture_info: Option<String>,
-    
+
     /// Starting ID for footnote and endnote numbering.
     pub starting_id_for_footnotes_endnotes: i32,
 
@@ -173,11 +175,11 @@ impl Default for WmlComparerSettings {
             ],
             author_for_revisions: None, // Extract from source2 if not set
             date_time_for_revisions: None, // Extract from source2 if not set
-            detail_threshold: 0.15, // C# default: 0.15
-            case_insensitive: false, // C# default: false
+            detail_threshold: 0.15,     // C# default: 0.15
+            case_insensitive: false,    // C# default: false
             conflate_breaking_and_nonbreaking_spaces: true, // C# default: true
             track_formatting_changes: true, // C# default: true
-            culture_info: None, // C# default: null
+            culture_info: None,         // C# default: null
             starting_id_for_footnotes_endnotes: 1, // C# default: 1
             #[cfg(feature = "trace")]
             lcs_trace_filter: None,
@@ -239,7 +241,10 @@ impl WmlComparerSettings {
     /// Always returns false when compiled without the "trace" feature.
     #[cfg(feature = "trace")]
     pub fn is_tracing_enabled(&self) -> bool {
-        self.lcs_trace_filter.as_ref().map(|f| f.is_enabled()).unwrap_or(false)
+        self.lcs_trace_filter
+            .as_ref()
+            .map(|f| f.is_enabled())
+            .unwrap_or(false)
     }
 
     /// Check if LCS tracing is enabled.
@@ -254,7 +259,10 @@ impl WmlComparerSettings {
     /// Only available when compiled with the "trace" feature.
     #[cfg(feature = "trace")]
     pub fn should_trace_paragraph(&self, paragraph_text: &str) -> bool {
-        self.lcs_trace_filter.as_ref().map(|f| f.matches(paragraph_text)).unwrap_or(false)
+        self.lcs_trace_filter
+            .as_ref()
+            .map(|f| f.matches(paragraph_text))
+            .unwrap_or(false)
     }
 
     /// Check if a paragraph matches the trace filter.
@@ -288,10 +296,10 @@ impl Default for WmlComparerConsolidateSettings {
 pub struct WmlRevisedDocumentInfo {
     /// The revised document.
     pub revised_document: Vec<u8>, // Placeholder for WmlDocument type
-    
+
     /// Name of the revisor.
     pub revisor: String,
-    
+
     /// Color associated with this revision (RGB).
     pub color: (u8, u8, u8),
 }
@@ -302,10 +310,10 @@ pub struct WmlRevisedDocumentInfo {
 pub enum WmlComparerRevisionType {
     /// Content was inserted.
     Inserted,
-    
+
     /// Content was deleted.
     Deleted,
-    
+
     /// Formatting was changed.
     FormatChanged,
 }
@@ -316,28 +324,28 @@ pub enum WmlComparerRevisionType {
 pub struct WmlComparerRevision {
     /// Type of this revision.
     pub revision_type: WmlComparerRevisionType,
-    
+
     /// Text content of the revision.
     pub text: String,
-    
+
     /// Author who made the revision.
     pub author: String,
-    
+
     /// Date when the revision was made.
     pub date: String,
-    
+
     /// XML element containing the content (serialized).
     /// C# type: XElement
     pub content_x_element: Option<String>,
-    
+
     /// XML element representing the revision markup (serialized).
     /// C# type: XElement
     pub revision_x_element: Option<String>,
-    
+
     /// URI of the part containing this revision.
     /// C# type: Uri
     pub part_uri: Option<String>,
-    
+
     /// Content type of the part.
     pub part_content_type: Option<String>,
 }
@@ -349,20 +357,20 @@ mod tests {
     #[test]
     fn default_settings_have_expected_values() {
         let settings = WmlComparerSettings::default();
-        
+
         // Check boolean defaults
         assert!(!settings.case_insensitive);
         assert!(settings.conflate_breaking_and_nonbreaking_spaces);
         assert!(settings.track_formatting_changes);
-        
+
         // Check numeric defaults
         assert!((settings.detail_threshold - 0.15).abs() < f64::EPSILON);
         assert_eq!(settings.starting_id_for_footnotes_endnotes, 1);
-        
+
         // Check Option defaults
         assert!(settings.author_for_revisions.is_none());
         assert!(settings.culture_info.is_none());
-        
+
         // Check word separators contain expected characters
         assert!(settings.word_separators.contains(&' '));
         assert!(settings.word_separators.contains(&'-'));
@@ -370,7 +378,7 @@ mod tests {
         assert!(settings.word_separators.contains(&'的')); // Chinese particle
         assert!(settings.word_separators.contains(&'$')); // Currency symbol
         assert!(settings.word_separators.contains(&'€')); // Euro
-        
+
         // Verify exact length (16 from C# + 10 currency symbols = 26)
         assert_eq!(settings.word_separators.len(), 26);
     }
@@ -383,39 +391,45 @@ mod tests {
             .with_track_formatting(false)
             .with_culture_info("en-US")
             .with_date_time("2025-12-28T12:00:00Z");
-        
-        assert_eq!(settings.author_for_revisions, Some("Test Author".to_string()));
+
+        assert_eq!(
+            settings.author_for_revisions,
+            Some("Test Author".to_string())
+        );
         assert!(settings.case_insensitive);
         assert!(!settings.track_formatting_changes);
         assert_eq!(settings.culture_info, Some("en-US".to_string()));
-        assert_eq!(settings.date_time_for_revisions, Some("2025-12-28T12:00:00Z".to_string()));
+        assert_eq!(
+            settings.date_time_for_revisions,
+            Some("2025-12-28T12:00:00Z".to_string())
+        );
     }
-    
+
     #[test]
     fn is_word_separator_works() {
         let settings = WmlComparerSettings::default();
-        
+
         assert!(settings.is_word_separator(' '));
         assert!(settings.is_word_separator('-'));
         assert!(settings.is_word_separator('（'));
         assert!(!settings.is_word_separator('a'));
         assert!(!settings.is_word_separator('Z'));
     }
-    
+
     #[test]
     fn consolidate_settings_defaults() {
         let settings = WmlComparerConsolidateSettings::default();
         assert!(settings.consolidate_with_table);
     }
-    
+
     #[test]
     fn revision_type_enum_values() {
         use WmlComparerRevisionType::*;
-        
+
         let inserted = Inserted;
         let deleted = Deleted;
         let format_changed = FormatChanged;
-        
+
         assert_ne!(inserted, deleted);
         assert_ne!(deleted, format_changed);
         assert_ne!(format_changed, inserted);

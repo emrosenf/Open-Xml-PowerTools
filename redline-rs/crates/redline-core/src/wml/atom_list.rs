@@ -1,7 +1,9 @@
 use crate::package::OoxmlPackage;
-use crate::wml::comparison_unit::{AncestorInfo, ComparisonUnitAtom, ContentElement, generate_unid};
+use crate::wml::comparison_unit::{
+    generate_unid, AncestorInfo, ComparisonUnitAtom, ContentElement,
+};
 use crate::wml::drawing_identity::compute_drawing_identity;
-use crate::wml::formatting::{compute_normalized_rpr, compute_formatting_signature};
+use crate::wml::formatting::{compute_formatting_signature, compute_normalized_rpr};
 use crate::wml::settings::WmlComparerSettings;
 use crate::xml::arena::XmlDocument;
 use crate::xml::builder::serialize_subtree;
@@ -13,9 +15,25 @@ use std::collections::HashSet;
 
 fn allowable_run_children() -> HashSet<String> {
     [
-        "br", "drawing", "cr", "dayLong", "dayShort", "footnoteReference", "endnoteReference",
-        "monthLong", "monthShort", "noBreakHyphen", "pgNum", "ptab", "softHyphen", "sym",
-        "tab", "yearLong", "yearShort", "fldChar", "instrText",
+        "br",
+        "drawing",
+        "cr",
+        "dayLong",
+        "dayShort",
+        "footnoteReference",
+        "endnoteReference",
+        "monthLong",
+        "monthShort",
+        "noBreakHyphen",
+        "pgNum",
+        "ptab",
+        "softHyphen",
+        "sym",
+        "tab",
+        "yearLong",
+        "yearShort",
+        "fldChar",
+        "instrText",
         // NOTE: commentRangeStart/End removed - they are thrown away to match C# behavior
         // C# WmlComparer throws away comment markers during comparison (see comparer.rs line 533)
     ]
@@ -25,17 +43,30 @@ fn allowable_run_children() -> HashSet<String> {
 }
 
 fn allowable_run_children_math() -> HashSet<String> {
-    ["oMathPara", "oMath"].iter().map(|s| s.to_string()).collect()
+    ["oMathPara", "oMath"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
 }
 
 fn elements_to_throw_away() -> HashSet<String> {
     [
-        "lastRenderedPageBreak", "proofErr", "tblPr", "sectPr", "permEnd", "permStart",
-        "footnoteRef", "endnoteRef", "separator", "continuationSeparator",
+        "lastRenderedPageBreak",
+        "proofErr",
+        "tblPr",
+        "sectPr",
+        "permEnd",
+        "permStart",
+        "footnoteRef",
+        "endnoteRef",
+        "separator",
+        "continuationSeparator",
         // Comment markers are thrown away to match C# WmlComparer behavior.
         // Including them causes identical text adjacent to comments to be marked as changed
         // because the comment marker atoms affect word hashes. See comparer.rs line 533.
-        "commentRangeStart", "commentRangeEnd", "commentReference",
+        "commentRangeStart",
+        "commentRangeEnd",
+        "commentReference",
     ]
     .iter()
     .map(|s| s.to_string())
@@ -49,32 +80,143 @@ struct RecursionInfo {
 }
 
 const RECURSION_ELEMENTS: &[RecursionInfo] = &[
-    RecursionInfo { element_name: "del", namespace: W::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "ins", namespace: W::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "tbl", namespace: W::NS, child_props_to_skip: &["tblPr", "tblGrid", "tblPrEx"] },
-    RecursionInfo { element_name: "tr", namespace: W::NS, child_props_to_skip: &["trPr", "tblPrEx"] },
-    RecursionInfo { element_name: "tc", namespace: W::NS, child_props_to_skip: &["tcPr", "tblPrEx"] },
-    RecursionInfo { element_name: "pict", namespace: W::NS, child_props_to_skip: &["shapetype"] },
-    RecursionInfo { element_name: "group", namespace: V::NS, child_props_to_skip: &["fill", "stroke", "shadow", "path", "formulas", "handles", "lock", "extrusion"] },
-    RecursionInfo { element_name: "shape", namespace: V::NS, child_props_to_skip: &["fill", "stroke", "shadow", "textpath", "path", "formulas", "handles", "imagedata", "lock", "extrusion", "wrap"] },
-    RecursionInfo { element_name: "rect", namespace: V::NS, child_props_to_skip: &["fill", "stroke", "shadow", "textpath", "path", "formulas", "handles", "lock", "extrusion"] },
-    RecursionInfo { element_name: "textbox", namespace: V::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "lock", namespace: O::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "txbxContent", namespace: W::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "wrap", namespace: W10::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "sdt", namespace: W::NS, child_props_to_skip: &["sdtPr", "sdtEndPr"] },
-    RecursionInfo { element_name: "sdtContent", namespace: W::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "hyperlink", namespace: W::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "fldSimple", namespace: W::NS, child_props_to_skip: &[] },
-    RecursionInfo { element_name: "shapetype", namespace: V::NS, child_props_to_skip: &["stroke", "path", "fill", "shadow", "formulas", "handles"] },
-    RecursionInfo { element_name: "smartTag", namespace: W::NS, child_props_to_skip: &["smartTagPr"] },
-    RecursionInfo { element_name: "ruby", namespace: W::NS, child_props_to_skip: &["rubyPr"] },
+    RecursionInfo {
+        element_name: "del",
+        namespace: W::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "ins",
+        namespace: W::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "tbl",
+        namespace: W::NS,
+        child_props_to_skip: &["tblPr", "tblGrid", "tblPrEx"],
+    },
+    RecursionInfo {
+        element_name: "tr",
+        namespace: W::NS,
+        child_props_to_skip: &["trPr", "tblPrEx"],
+    },
+    RecursionInfo {
+        element_name: "tc",
+        namespace: W::NS,
+        child_props_to_skip: &["tcPr", "tblPrEx"],
+    },
+    RecursionInfo {
+        element_name: "pict",
+        namespace: W::NS,
+        child_props_to_skip: &["shapetype"],
+    },
+    RecursionInfo {
+        element_name: "group",
+        namespace: V::NS,
+        child_props_to_skip: &[
+            "fill",
+            "stroke",
+            "shadow",
+            "path",
+            "formulas",
+            "handles",
+            "lock",
+            "extrusion",
+        ],
+    },
+    RecursionInfo {
+        element_name: "shape",
+        namespace: V::NS,
+        child_props_to_skip: &[
+            "fill",
+            "stroke",
+            "shadow",
+            "textpath",
+            "path",
+            "formulas",
+            "handles",
+            "imagedata",
+            "lock",
+            "extrusion",
+            "wrap",
+        ],
+    },
+    RecursionInfo {
+        element_name: "rect",
+        namespace: V::NS,
+        child_props_to_skip: &[
+            "fill",
+            "stroke",
+            "shadow",
+            "textpath",
+            "path",
+            "formulas",
+            "handles",
+            "lock",
+            "extrusion",
+        ],
+    },
+    RecursionInfo {
+        element_name: "textbox",
+        namespace: V::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "lock",
+        namespace: O::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "txbxContent",
+        namespace: W::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "wrap",
+        namespace: W10::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "sdt",
+        namespace: W::NS,
+        child_props_to_skip: &["sdtPr", "sdtEndPr"],
+    },
+    RecursionInfo {
+        element_name: "sdtContent",
+        namespace: W::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "hyperlink",
+        namespace: W::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "fldSimple",
+        namespace: W::NS,
+        child_props_to_skip: &[],
+    },
+    RecursionInfo {
+        element_name: "shapetype",
+        namespace: V::NS,
+        child_props_to_skip: &["stroke", "path", "fill", "shadow", "formulas", "handles"],
+    },
+    RecursionInfo {
+        element_name: "smartTag",
+        namespace: W::NS,
+        child_props_to_skip: &["smartTagPr"],
+    },
+    RecursionInfo {
+        element_name: "ruby",
+        namespace: W::NS,
+        child_props_to_skip: &["rubyPr"],
+    },
 ];
 
 pub fn assign_unid_to_all_elements(doc: &mut XmlDocument, content_parent: NodeId) {
     let pt_unid = PT::Unid();
     let descendants: Vec<NodeId> = doc.descendants(content_parent).collect();
-    
+
     for node_id in descendants {
         if let Some(data) = doc.get(node_id) {
             if data.is_element() {
@@ -82,7 +224,7 @@ pub fn assign_unid_to_all_elements(doc: &mut XmlDocument, content_parent: NodeId
                     .attributes()
                     .map(|attrs| attrs.iter().any(|a| a.name == pt_unid))
                     .unwrap_or(false);
-                
+
                 if !has_unid {
                     let unid = generate_unid();
                     doc.set_attribute(node_id, &pt_unid, &unid);
@@ -127,7 +269,7 @@ pub fn create_comparison_unit_atom_list_with_package(
     let allowable = allowable_run_children();
     let allowable_math = allowable_run_children_math();
     let throw_away = elements_to_throw_away();
-    
+
     create_atom_list_recurse(
         doc,
         content_parent,
@@ -140,7 +282,7 @@ pub fn create_comparison_unit_atom_list_with_package(
         None,
         package,
     );
-    
+
     atoms
 }
 
@@ -158,24 +300,36 @@ fn create_atom_list_recurse(
 ) {
     let Some(data) = doc.get(node) else { return };
     let Some(name) = data.name() else { return };
-    
+
     let ns = name.namespace.as_deref();
     let local = name.local_name.as_str();
-    
+
     if ns == Some(W::NS) && (local == "body" || local == "footnote" || local == "endnote") {
         let children: Vec<_> = doc.children(node).collect();
         for child in children {
-            create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None, package);
+            create_atom_list_recurse(
+                doc,
+                child,
+                atoms,
+                part_name,
+                allowable,
+                allowable_math,
+                throw_away,
+                settings,
+                None,
+                package,
+            );
         }
         return;
     }
-    
+
     if ns == Some(W::NS) && local == "p" {
         let children: Vec<_> = doc.children(node).collect();
-        
+
         // Find the pPr element and serialize it for later reconstruction
         // This matches C# behavior where the full pPr element (with pStyle, jc, rPr, etc.) is stored
-        let ppr_xml = children.iter()
+        let ppr_xml = children
+            .iter()
             .find(|&&child| {
                 doc.get(child)
                     .and_then(|d| d.name())
@@ -184,26 +338,41 @@ fn create_atom_list_recurse(
             })
             .map(|&ppr_node| serialize_element_tree(doc, ppr_node))
             .unwrap_or_else(String::new);
-        
+
         for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
-                    if !(child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "pPr") {
-                        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, None, package);
+                    if !(child_name.namespace.as_deref() == Some(W::NS)
+                        && child_name.local_name == "pPr")
+                    {
+                        create_atom_list_recurse(
+                            doc,
+                            child,
+                            atoms,
+                            part_name,
+                            allowable,
+                            allowable_math,
+                            throw_away,
+                            settings,
+                            None,
+                            package,
+                        );
                     }
                 }
             }
         }
-        
+
         // Build ancestor chain INCLUDING the paragraph itself
         // This is critical for footnotes/endnotes where the paragraph is the first ancestor
         // (since build_ancestor_chain stops at footnote/endnote container)
         let mut ancestors = build_ancestor_chain(doc, node);
         // Prepend the paragraph itself as the first ancestor
         ancestors.insert(0, build_ancestor_info_for_node(doc, node));
-        
+
         let mut atom = ComparisonUnitAtom::new(
-            ContentElement::ParagraphProperties { element_xml: ppr_xml },
+            ContentElement::ParagraphProperties {
+                element_xml: ppr_xml,
+            },
             ancestors,
             part_name,
             settings,
@@ -212,25 +381,27 @@ fn create_atom_list_recurse(
         atoms.push(atom);
         return;
     }
-    
+
     if ns == Some(W::NS) && local == "r" {
         let normalized_rpr = compute_normalized_rpr(doc, node, settings);
         let formatting_signature = compute_formatting_signature(doc, normalized_rpr);
-        
+
         let children: Vec<_> = doc.children(node).collect();
         for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
-                    if !(child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "rPr") {
+                    if !(child_name.namespace.as_deref() == Some(W::NS)
+                        && child_name.local_name == "rPr")
+                    {
                         create_atom_list_recurse(
-                            doc, 
-                            child, 
-                            atoms, 
-                            part_name, 
-                            allowable, 
-                            allowable_math, 
-                            throw_away, 
-                            settings, 
+                            doc,
+                            child,
+                            atoms,
+                            part_name,
+                            allowable,
+                            allowable_math,
+                            throw_away,
+                            settings,
                             formatting_signature.clone(),
                             package,
                         );
@@ -240,15 +411,16 @@ fn create_atom_list_recurse(
         }
         return;
     }
-    
+
     if ns == Some(W::NS) && (local == "t" || local == "delText") {
         let text = extract_text_content(doc, node);
-        
+
         // Check for xml:space="preserve"
-        let preserve_space = get_attribute_value(doc, node, "http://www.w3.org/XML/1998/namespace", "space")
-            .map(|v| v == "preserve")
-            .unwrap_or(false);
-            
+        let preserve_space =
+            get_attribute_value(doc, node, "http://www.w3.org/XML/1998/namespace", "space")
+                .map(|v| v == "preserve")
+                .unwrap_or(false);
+
         let processed_text = if preserve_space {
             text
         } else {
@@ -256,14 +428,14 @@ fn create_atom_list_recurse(
             // This prevents XML formatting (newlines/indentation) from becoming content
             text.trim().to_string()
         };
-        
+
         // Build ancestor chain INCLUDING the w:t element itself at the END
         // This ensures coalesce_recurse reaches the "t" case at line 1167
         // at the correct depth level (after paragraphs and runs are created)
         // Note: ancestors[0] is outermost (p), higher indices are inner (r, t)
         let mut ancestors = build_ancestor_chain(doc, node);
         ancestors.push(build_ancestor_info_for_node(doc, node));
-        
+
         for ch in processed_text.chars() {
             let mut atom = ComparisonUnitAtom::new(
                 ContentElement::Text(ch),
@@ -276,17 +448,25 @@ fn create_atom_list_recurse(
         }
         return;
     }
-    
-    if (ns == Some(W::NS) && allowable.contains(local)) || 
-       (ns == Some(M::NS) && allowable_math.contains(local)) {
+
+    if (ns == Some(W::NS) && allowable.contains(local))
+        || (ns == Some(M::NS) && allowable_math.contains(local))
+    {
         let ancestors = build_ancestor_chain(doc, node);
-        let content = create_content_element_with_package(doc, node, ns.unwrap_or(""), local, part_name, package);
+        let content = create_content_element_with_package(
+            doc,
+            node,
+            ns.unwrap_or(""),
+            local,
+            part_name,
+            package,
+        );
         let mut atom = ComparisonUnitAtom::new(content, ancestors, part_name, settings);
         atom.formatting_signature = current_formatting_signature.clone();
         atoms.push(atom);
         return;
     }
-    
+
     if ns == Some(W::NS) && local == "object" {
         let ancestors = build_ancestor_chain(doc, node);
         let hash = compute_element_hash(doc, node);
@@ -300,24 +480,24 @@ fn create_atom_list_recurse(
         atoms.push(atom);
         return;
     }
-    
+
     if let Some(re) = find_recursion_element(ns, local) {
         let skip_props: HashSet<&str> = re.child_props_to_skip.iter().copied().collect();
-        
+
         let children: Vec<_> = doc.children(node).collect();
         for child in children {
             if let Some(child_data) = doc.get(child) {
                 if let Some(child_name) = child_data.name() {
                     if !skip_props.contains(child_name.local_name.as_str()) {
                         create_atom_list_recurse(
-                            doc, 
-                            child, 
-                            atoms, 
-                            part_name, 
-                            allowable, 
-                            allowable_math, 
-                            throw_away, 
-                            settings, 
+                            doc,
+                            child,
+                            atoms,
+                            part_name,
+                            allowable,
+                            allowable_math,
+                            throw_away,
+                            settings,
                             current_formatting_signature.clone(),
                             package,
                         );
@@ -327,81 +507,110 @@ fn create_atom_list_recurse(
         }
         return;
     }
-    
+
     if ns == Some(W::NS) && throw_away.contains(local) {
         return;
     }
-    
+
     // Handle mc:AlternateContent - only process one branch to avoid duplicates
-    // Word documents often contain both DrawingML (mc:Choice) and VML (mc:Fallback) 
+    // Word documents often contain both DrawingML (mc:Choice) and VML (mc:Fallback)
     // representations of the same content (like textboxes). We prefer Fallback for
     // compatibility, matching C# WmlComparer FlattenAlternateContent behavior.
     // See C# WmlComparer.cs:500-541
     if ns == Some(MC::NS) && local == "AlternateContent" {
         let children: Vec<_> = doc.children(node).collect();
-        
+
         // First try mc:Fallback (VML representation - more compatible)
-        let fallback_node = children.iter().find(|&&child| {
-            doc.get(child)
-                .and_then(|d| d.name())
-                .map(|n| n.namespace.as_deref() == Some(MC::NS) && n.local_name == "Fallback")
-                .unwrap_or(false)
-        }).copied();
-        
+        let fallback_node = children
+            .iter()
+            .find(|&&child| {
+                doc.get(child)
+                    .and_then(|d| d.name())
+                    .map(|n| n.namespace.as_deref() == Some(MC::NS) && n.local_name == "Fallback")
+                    .unwrap_or(false)
+            })
+            .copied();
+
         if let Some(fallback) = fallback_node {
             let fallback_children: Vec<_> = doc.children(fallback).collect();
             for fallback_child in fallback_children {
                 create_atom_list_recurse(
-                    doc, fallback_child, atoms, part_name, 
-                    allowable, allowable_math, throw_away, 
-                    settings, current_formatting_signature.clone(),
+                    doc,
+                    fallback_child,
+                    atoms,
+                    part_name,
+                    allowable,
+                    allowable_math,
+                    throw_away,
+                    settings,
+                    current_formatting_signature.clone(),
                     package,
                 );
             }
             return;
         }
-        
+
         // No Fallback found, try mc:Choice
-        let choice_node = children.iter().find(|&&child| {
-            doc.get(child)
-                .and_then(|d| d.name())
-                .map(|n| n.namespace.as_deref() == Some(MC::NS) && n.local_name == "Choice")
-                .unwrap_or(false)
-        }).copied();
-        
+        let choice_node = children
+            .iter()
+            .find(|&&child| {
+                doc.get(child)
+                    .and_then(|d| d.name())
+                    .map(|n| n.namespace.as_deref() == Some(MC::NS) && n.local_name == "Choice")
+                    .unwrap_or(false)
+            })
+            .copied();
+
         if let Some(choice) = choice_node {
             let choice_children: Vec<_> = doc.children(choice).collect();
             for choice_child in choice_children {
                 create_atom_list_recurse(
-                    doc, choice_child, atoms, part_name, 
-                    allowable, allowable_math, throw_away, 
-                    settings, current_formatting_signature.clone(),
+                    doc,
+                    choice_child,
+                    atoms,
+                    part_name,
+                    allowable,
+                    allowable_math,
+                    throw_away,
+                    settings,
+                    current_formatting_signature.clone(),
                     package,
                 );
             }
             return;
         }
-        
+
         // Neither found - skip this AlternateContent entirely
         return;
     }
-    
+
     let children: Vec<_> = doc.children(node).collect();
     for child in children {
-        create_atom_list_recurse(doc, child, atoms, part_name, allowable, allowable_math, throw_away, settings, current_formatting_signature.clone(), package);
+        create_atom_list_recurse(
+            doc,
+            child,
+            atoms,
+            part_name,
+            allowable,
+            allowable_math,
+            throw_away,
+            settings,
+            current_formatting_signature.clone(),
+            package,
+        );
     }
 }
 
 fn find_recursion_element(ns: Option<&str>, local: &str) -> Option<&'static RecursionInfo> {
-    RECURSION_ELEMENTS.iter().find(|re| {
-        Some(re.namespace) == ns && re.element_name == local
-    })
+    RECURSION_ELEMENTS
+        .iter()
+        .find(|re| Some(re.namespace) == ns && re.element_name == local)
 }
 
 fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
     let pt_unid = PT::Unid();
     let mut ancestors = Vec::new();
-    
+
     // Note: indextree's ancestors() includes the node itself as the first element,
     // so we skip it to get only the true ancestors (parent, grandparent, etc.)
     for ancestor_id in doc.ancestors(node).skip(1) {
@@ -409,39 +618,50 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
             if let Some(name) = data.name() {
                 let ns = name.namespace.as_deref();
                 let local = name.local_name.as_str();
-                
+
                 // Stop at container elements - these are not included in ancestor chain.
                 // C# WmlComparer.cs line 8054/8088: TakeWhile(a => a.Name != W.body && a.Name != W.footnotes && a.Name != W.endnotes)
                 // Also stop at individual footnote/endnote elements to prevent nested footnotes during coalesce.
                 // When processing inserted/deleted footnotes via build_note_doc_with_status(), the coalesce
                 // code already wraps content in a new footnote element - if we include the original footnote
                 // in ancestors, we get invalid nested <w:footnote><w:footnote> structure.
-                if ns == Some(W::NS) && (local == "body" || local == "footnotes" || local == "endnotes" || local == "footnote" || local == "endnote") {
+                if ns == Some(W::NS)
+                    && (local == "body"
+                        || local == "footnotes"
+                        || local == "endnotes"
+                        || local == "footnote"
+                        || local == "endnote")
+                {
                     break;
                 }
-                
+
                 // Filter out namespace declarations - they should only appear on the root element
                 // during serialization, not on every descendant element
                 let attrs = std::sync::Arc::new(
                     data.attributes()
-                        .map(|a| a.iter()
-                            .filter(|attr| {
-                                // Keep attribute if it's NOT a namespace declaration
-                                // Namespace declarations have namespace = "http://www.w3.org/2000/xmlns/"
-                                // or are the "xmlns" attribute with no namespace
-                                let is_xmlns_ns = attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
-                                let is_xmlns_attr = attr.name.namespace.is_none() && attr.name.local_name == "xmlns";
-                                !is_xmlns_ns && !is_xmlns_attr
-                            })
-                            .cloned()
-                            .collect::<Vec<_>>())
-                        .unwrap_or_default()
+                        .map(|a| {
+                            a.iter()
+                                .filter(|attr| {
+                                    // Keep attribute if it's NOT a namespace declaration
+                                    // Namespace declarations have namespace = "http://www.w3.org/2000/xmlns/"
+                                    // or are the "xmlns" attribute with no namespace
+                                    let is_xmlns_ns = attr.name.namespace.as_deref()
+                                        == Some("http://www.w3.org/2000/xmlns/");
+                                    let is_xmlns_attr = attr.name.namespace.is_none()
+                                        && attr.name.local_name == "xmlns";
+                                    !is_xmlns_ns && !is_xmlns_attr
+                                })
+                                .cloned()
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default(),
                 );
-                let unid = attrs.iter()
+                let unid = attrs
+                    .iter()
                     .find(|a| a.name == pt_unid)
                     .map(|a| a.value.clone())
                     .unwrap_or_default();
-                
+
                 // For run elements (w:r), capture the rPr child element for reconstruction
                 // This is critical for preserving formatting in comparison output
                 // C# equivalent: ancestorBeingConstructed.Element(W.rPr) in CoalesceRecurse
@@ -450,20 +670,20 @@ fn build_ancestor_chain(doc: &XmlDocument, node: NodeId) -> Vec<AncestorInfo> {
                 } else {
                     None
                 };
-                
+
                 ancestors.push(AncestorInfo {
                     node_id: ancestor_id,
                     namespace: name.namespace.clone(),
                     local_name: local.to_string(),
                     unid,
                     attributes: attrs,
-                    has_merged_cells: false,  // Stub - not implemented yet
+                    has_merged_cells: false, // Stub - not implemented yet
                     rpr_xml,
                 });
             }
         }
     }
-    
+
     ancestors.reverse();
     ancestors
 }
@@ -474,26 +694,31 @@ fn build_ancestor_info_for_node(doc: &XmlDocument, node: NodeId) -> AncestorInfo
     let pt_unid = PT::Unid();
     let data = doc.get(node).expect("node must exist");
     let name = data.name().expect("node must have a name");
-    
+
     // Filter out namespace declarations
     let attrs = std::sync::Arc::new(
         data.attributes()
-            .map(|a| a.iter()
-                .filter(|attr| {
-                    let is_xmlns_ns = attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
-                    let is_xmlns_attr = attr.name.namespace.is_none() && attr.name.local_name == "xmlns";
-                    !is_xmlns_ns && !is_xmlns_attr
-                })
-                .cloned()
-                .collect::<Vec<_>>())
-            .unwrap_or_default()
+            .map(|a| {
+                a.iter()
+                    .filter(|attr| {
+                        let is_xmlns_ns =
+                            attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
+                        let is_xmlns_attr =
+                            attr.name.namespace.is_none() && attr.name.local_name == "xmlns";
+                        !is_xmlns_ns && !is_xmlns_attr
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default(),
     );
-    
-    let unid = attrs.iter()
+
+    let unid = attrs
+        .iter()
         .find(|a| a.name == pt_unid)
         .map(|a| a.value.clone())
         .unwrap_or_default();
-    
+
     AncestorInfo {
         node_id: node,
         namespace: name.namespace.clone(),
@@ -512,7 +737,8 @@ fn extract_rpr_xml(doc: &XmlDocument, run_id: NodeId) -> Option<String> {
     for child in doc.children(run_id) {
         if let Some(child_data) = doc.get(child) {
             if let Some(child_name) = child_data.name() {
-                if child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "rPr" {
+                if child_name.namespace.as_deref() == Some(W::NS) && child_name.local_name == "rPr"
+                {
                     // Serialize the rPr element and all its children
                     return Some(serialize_element_tree(doc, child));
                 }
@@ -532,11 +758,11 @@ fn serialize_element_tree(doc: &XmlDocument, node: NodeId) -> String {
 
 fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut String) {
     let Some(data) = doc.get(node) else { return };
-    
+
     match data {
         XmlNodeData::Element { name, attributes } => {
             result.push('<');
-            
+
             // Add namespace prefix
             if let Some(ns) = &name.namespace {
                 if let Some(prefix) = get_prefix_for_ns(ns) {
@@ -545,14 +771,14 @@ fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut Str
                 }
             }
             result.push_str(&name.local_name);
-            
+
             // Add attributes (skip internal pt: namespace attributes)
             for attr in attributes {
                 // Skip PowerTools internal tracking attributes
                 if attr.name.namespace.as_deref() == Some("http://powertools.codeplex.com/2011") {
                     continue;
                 }
-                
+
                 result.push(' ');
                 if let Some(ns) = &attr.name.namespace {
                     if let Some(prefix) = get_prefix_for_ns(ns) {
@@ -565,7 +791,7 @@ fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut Str
                 result.push_str(&escape_xml_attr(&attr.value));
                 result.push('"');
             }
-            
+
             let children: Vec<_> = doc.children(node).collect();
             if children.is_empty() {
                 result.push_str("/>");
@@ -628,9 +854,9 @@ fn extract_text_content(doc: &XmlDocument, node: NodeId) -> String {
 /// Create a content element with package access for proper drawing identity.
 /// This version uses the drawing identity module to compute SHA1 of image content.
 fn create_content_element_with_package(
-    doc: &XmlDocument, 
-    node: NodeId, 
-    ns: &str, 
+    doc: &XmlDocument,
+    node: NodeId,
+    ns: &str,
     local: &str,
     part_name: &str,
     package: Option<&OoxmlPackage>,
@@ -641,9 +867,14 @@ fn create_content_element_with_package(
         (W::NS, "cr") => ContentElement::CarriageReturn,
         (W::NS, "ptab") => {
             let alignment = get_attribute_value(doc, node, W::NS, "alignment").unwrap_or_default();
-            let relative_to = get_attribute_value(doc, node, W::NS, "relativeTo").unwrap_or_default();
+            let relative_to =
+                get_attribute_value(doc, node, W::NS, "relativeTo").unwrap_or_default();
             let leader = get_attribute_value(doc, node, W::NS, "leader").unwrap_or_default();
-            ContentElement::PositionalTab { alignment, relative_to, leader }
+            ContentElement::PositionalTab {
+                alignment,
+                relative_to,
+                leader,
+            }
         }
         (W::NS, "footnoteReference") => {
             let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();
@@ -671,7 +902,10 @@ fn create_content_element_with_package(
                 eprintln!("WARNING: Drawing element_xml appears empty or missing children!");
                 eprintln!("  Hash: {}", hash);
                 eprintln!("  XML length: {}", element_xml.len());
-                eprintln!("  First 200 chars: {}", &element_xml.chars().take(200).collect::<String>());
+                eprintln!(
+                    "  First 200 chars: {}",
+                    &element_xml.chars().take(200).collect::<String>()
+                );
             }
             ContentElement::Drawing { hash, element_xml }
         }
@@ -681,12 +915,15 @@ fn create_content_element_with_package(
             ContentElement::Symbol { font, char_code }
         }
         (W::NS, "fldChar") => {
-            let fld_char_type = get_attribute_value(doc, node, W::NS, "fldCharType").unwrap_or_default();
+            let fld_char_type =
+                get_attribute_value(doc, node, W::NS, "fldCharType").unwrap_or_default();
             match fld_char_type.as_str() {
                 "begin" => ContentElement::FieldBegin,
                 "separate" => ContentElement::FieldSeparator,
                 "end" => ContentElement::FieldEnd,
-                _ => ContentElement::Unknown { name: format!("fldChar:{}", fld_char_type) },
+                _ => ContentElement::Unknown {
+                    name: format!("fldChar:{}", fld_char_type),
+                },
             }
         }
         (W::NS, "noBreakHyphen") => ContentElement::Text('\u{2011}'), // Non-breaking hyphen
@@ -696,17 +933,24 @@ fn create_content_element_with_package(
             let element_xml = serialize_subtree(doc, node).unwrap_or_default();
             ContentElement::Math { hash, element_xml }
         }
-        _ => ContentElement::Unknown { name: local.to_string() },
+        _ => ContentElement::Unknown {
+            name: local.to_string(),
+        },
     }
 }
 
 fn get_attribute_value(doc: &XmlDocument, node: NodeId, ns: &str, local: &str) -> Option<String> {
     let data = doc.get(node)?;
     let attrs = data.attributes()?;
-    
-    attrs.iter()
+
+    attrs
+        .iter()
         .find(|a| a.name.local_name == local && a.name.namespace.as_deref() == Some(ns))
-        .or_else(|| attrs.iter().find(|a| a.name.local_name == local && a.name.namespace.is_none()))
+        .or_else(|| {
+            attrs
+                .iter()
+                .find(|a| a.name.local_name == local && a.name.namespace.is_none())
+        })
         .map(|a| a.value.clone())
 }
 
@@ -719,7 +963,7 @@ fn compute_element_hash(doc: &XmlDocument, node: NodeId) -> String {
 
 fn hash_element_recursive(doc: &XmlDocument, node: NodeId, hasher: &mut Sha1) {
     let Some(data) = doc.get(node) else { return };
-    
+
     match data {
         XmlNodeData::Element { name, attributes } => {
             hasher.update(name.local_name.as_bytes());
@@ -729,9 +973,9 @@ fn hash_element_recursive(doc: &XmlDocument, node: NodeId, hasher: &mut Sha1) {
                 if attr.name != pt_unid && attr.name != pt_sha1 {
                     // Skip RSID attributes (random session IDs) which change frequently
                     // but don't represent content changes
-                    let is_rsid = attr.name.namespace.as_deref() == Some(W::NS) && 
-                        (attr.name.local_name.starts_with("rsid"));
-                    
+                    let is_rsid = attr.name.namespace.as_deref() == Some(W::NS)
+                        && (attr.name.local_name.starts_with("rsid"));
+
                     if !is_rsid {
                         hasher.update(attr.name.local_name.as_bytes());
                         hasher.update(attr.value.as_bytes());

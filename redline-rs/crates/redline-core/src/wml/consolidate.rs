@@ -13,28 +13,28 @@ use crate::wml::settings::{
 struct ConsolidationInfo {
     /// Name of the revisor.
     pub revisor: String,
-    
+
     /// Color associated with this revision (RGB).
     pub color: (u8, u8, u8),
-    
+
     /// The revision element (XML).
     /// C# type: XElement
     pub revision_element: String, // Placeholder for XML element
-    
+
     /// Whether to insert before the anchor element.
     pub insert_before: bool,
-    
+
     /// SHA1 hash of the revision for deduplication.
     pub revision_hash: Option<String>,
-    
+
     /// Footnote elements associated with this revision.
     /// C# type: XElement[]
     pub footnotes: Vec<String>, // Placeholder for XML elements
-    
+
     /// Endnote elements associated with this revision.
     /// C# type: XElement[]
     pub endnotes: Vec<String>, // Placeholder for XML elements
-    
+
     /// String representation of revision (for debugging).
     pub revision_string: Option<String>,
 }
@@ -55,17 +55,17 @@ impl Default for ConsolidationInfo {
 }
 
 /// Consolidate multiple revised documents into a single document with tracked revisions.
-/// 
+///
 /// Port of WmlComparer.Consolidate (overload 1) from WmlComparer.cs lines 994-1000.
-/// 
+///
 /// This is the primary entry point for consolidation. It compares each revised document
 /// against the original and merges all revisions into a single consolidated document.
-/// 
+///
 /// # Arguments
 /// * `original` - The original document bytes
 /// * `revised_document_info_list` - List of revised documents with revisor names and colors
 /// * `settings` - Comparison settings
-/// 
+///
 /// # Returns
 /// The consolidated document bytes with all revisions merged
 pub fn consolidate(
@@ -74,19 +74,24 @@ pub fn consolidate(
     settings: &WmlComparerSettings,
 ) -> Result<Vec<u8>> {
     let consolidate_settings = WmlComparerConsolidateSettings::default();
-    consolidate_with_settings(original, revised_document_info_list, settings, &consolidate_settings)
+    consolidate_with_settings(
+        original,
+        revised_document_info_list,
+        settings,
+        &consolidate_settings,
+    )
 }
 
 /// Consolidate with explicit consolidate settings.
-/// 
+///
 /// Port of WmlComparer.Consolidate (overload 2) from WmlComparer.cs lines 1002-1456.
-/// 
+///
 /// # Arguments
 /// * `original` - The original document bytes
 /// * `revised_document_info_list` - List of revised documents with revisor names and colors
 /// * `settings` - Comparison settings
 /// * `consolidate_settings` - Settings for how to consolidate (e.g., use tables)
-/// 
+///
 /// # Returns
 /// The consolidated document bytes with all revisions merged
 pub fn consolidate_with_settings(
@@ -152,16 +157,16 @@ pub fn consolidate_with_settings(
     // Step 8: Return consolidated document (lines 1452-1455)
     // var newConsolidatedDocument = new WmlDocument("consolidated.docx", consolidatedMs.ToArray());
     // return newConsolidatedDocument;
-    
+
     Err(crate::error::RedlineError::UnsupportedFeature {
-        feature: "Consolidate implementation requires full OpenXML document handling".to_string()
+        feature: "Consolidate implementation requires full OpenXML document handling".to_string(),
     })
 }
 
 /// Add consolidation info to an element as an annotation.
-/// 
+///
 /// Port of AddToAnnotation from WmlComparer.cs lines 1806-1835.
-/// 
+///
 /// This method:
 /// 1. Moves related parts (images, etc.) from delta to consolidated document
 /// 2. Clones and hashes the revision element for deduplication
@@ -179,22 +184,20 @@ fn add_to_annotation(
     // 4. Generate SHA1 hash of string representation
     // 5. Get or create annotation list on element
     // 6. Add consolidation info to list
-    
+
     Err(crate::error::RedlineError::UnsupportedFeature {
-        feature: "add_to_annotation requires XML element manipulation".to_string()
+        feature: "add_to_annotation requires XML element manipulation".to_string(),
     })
 }
 
 /// Move footnotes and endnotes for consolidated revisions.
-/// 
+///
 /// Port of MoveFootnotesEndnotesForConsolidatedRevisions from WmlComparer.cs lines 1465-1514.
-/// 
+///
 /// When multiple revisors make identical changes, their revisions are consolidated into one.
 /// This function handles the footnote/endnote references in the consolidated revision.
 #[allow(dead_code)]
-fn move_footnotes_endnotes_for_consolidated_revisions(
-    _ci: &ConsolidationInfo,
-) -> Result<()> {
+fn move_footnotes_endnotes_for_consolidated_revisions(_ci: &ConsolidationInfo) -> Result<()> {
     // C# implementation (lines 1465-1514):
     // 1. Get max footnote/endnote IDs from consolidated document
     // 2. For each footnote reference in revision element:
@@ -203,16 +206,17 @@ fn move_footnotes_endnotes_for_consolidated_revisions(
     //    - Clone footnote with new ID
     //    - Add to consolidated document
     // 3. Same process for endnotes
-    
+
     Err(crate::error::RedlineError::UnsupportedFeature {
-        feature: "move_footnotes_endnotes_for_consolidated_revisions requires XML manipulation".to_string()
+        feature: "move_footnotes_endnotes_for_consolidated_revisions requires XML manipulation"
+            .to_string(),
     })
 }
 
 /// Assemble conjoined revision content into table structure.
-/// 
+///
 /// Port of AssembledConjoinedRevisionContent from WmlComparer.cs lines 1587-1804.
-/// 
+///
 /// This creates the visual representation of revisions, either:
 /// - As a table with colored background (if consolidate_with_table = true)
 /// - As raw paragraph/table elements (if consolidate_with_table = false)
@@ -224,12 +228,12 @@ fn assembled_conjoined_revision_content(
     _consolidate_settings: &WmlComparerConsolidateSettings,
 ) -> Result<Vec<String>> {
     // C# implementation (lines 1587-1804):
-    // 
+    //
     // 1. Get max footnote/endnote IDs (lines 1590-1598)
     // 2. Extract revisor name from first ConsolidationInfo (line 1600)
     // 3. Create caption paragraph with revisor name (lines 1602-1612)
     // 4. Convert color to hex string (lines 1614-1617)
-    // 
+    //
     // If consolidate_with_table (lines 1619-1738):
     //   - Create table with single cell
     //   - Set table style and background color
@@ -247,14 +251,14 @@ fn assembled_conjoined_revision_content(
     //
     // Both paths:
     //   - Set author attribute on all revision elements to revisor name
-    
+
     Err(crate::error::RedlineError::UnsupportedFeature {
-        feature: "assembled_conjoined_revision_content requires XML manipulation".to_string()
+        feature: "assembled_conjoined_revision_content requires XML manipulation".to_string(),
     })
 }
 
 /// Check if content contains footnote/endnote references with revisions.
-/// 
+///
 /// Port of ContentContainsFootnoteEndnoteReferencesThatHaveRevisions from WmlComparer.cs lines 916-947.
 #[allow(dead_code)]
 fn content_contains_footnote_endnote_references_that_have_revisions(
@@ -266,9 +270,11 @@ fn content_contains_footnote_endnote_references_that_have_revisions(
     // 3. Check if footnote contains w:ins or w:del
     // 4. Same for w:endnoteReference / EndnotesPart
     // 5. Return true if any footnote/endnote has revisions
-    
+
     Err(crate::error::RedlineError::UnsupportedFeature {
-        feature: "content_contains_footnote_endnote_references_that_have_revisions requires XML access".to_string()
+        feature:
+            "content_contains_footnote_endnote_references_that_have_revisions requires XML access"
+                .to_string(),
     })
 }
 
@@ -290,9 +296,12 @@ mod tests {
         let original = vec![];
         let revised = vec![];
         let settings = WmlComparerSettings::default();
-        
+
         let result = consolidate(&original, &revised, &settings);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires full OpenXML document handling"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires full OpenXML document handling"));
     }
 }

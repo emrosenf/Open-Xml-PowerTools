@@ -13,41 +13,53 @@
 use crate::hash::sha1::sha1_hash_string;
 use crate::wml::settings::WmlComparerSettings;
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::{W, PT};
+use crate::xml::namespaces::{PT, W};
 use crate::xml::node::XmlNodeData;
 use indextree::NodeId;
 use std::collections::HashSet;
 
 /// Formatting properties considered for comparison (C# WmlComparer.cs:8314-8336)
 static ALLOWED_FORMATTING_PROPERTIES: &[&str] = &[
-    "b", "bCs", "i", "iCs", "u",
-    "sz", "szCs", "color", "rFonts",
-    "highlight", "strike", "dstrike",
-    "caps", "smallCaps",
+    "b",
+    "bCs",
+    "i",
+    "iCs",
+    "u",
+    "sz",
+    "szCs",
+    "color",
+    "rFonts",
+    "highlight",
+    "strike",
+    "dstrike",
+    "caps",
+    "smallCaps",
 ];
 
 /// Properties where attribute values are semantically significant (C# WmlComparer.cs:8338-8345)
-static PROPS_WITH_VALUES: &[&str] = &[
-    "u", "color", "sz", "szCs", "rFonts", "highlight",
-];
+static PROPS_WITH_VALUES: &[&str] = &["u", "color", "sz", "szCs", "rFonts", "highlight"];
 
 /// Font attribute names preserved for rFonts elements
 static FONT_ATTRIBUTES: &[&str] = &["ascii", "hAnsi", "cs", "eastAsia"];
 
-fn clone_element_deep_in_place(doc: &mut XmlDocument, source: NodeId, parent: Option<NodeId>) -> NodeId {
+fn clone_element_deep_in_place(
+    doc: &mut XmlDocument,
+    source: NodeId,
+    parent: Option<NodeId>,
+) -> NodeId {
     let source_data = doc.get(source).expect("Source node must exist").clone();
-    
+
     // Use new_node for orphan nodes to avoid overwriting the document root
     let cloned = match parent {
         Some(p) => doc.add_child(p, source_data),
-        None => doc.new_node(source_data),  // Don't use add_root - it overwrites the document root!
+        None => doc.new_node(source_data), // Don't use add_root - it overwrites the document root!
     };
-    
+
     let children: Vec<_> = doc.children(source).collect();
     for child in children {
         clone_element_deep_in_place(doc, child, Some(cloned));
     }
-    
+
     cloned
 }
 
@@ -77,21 +89,21 @@ pub fn compute_normalized_rpr(
         return None;
     }
 
-    let rpr_node = doc.children(run_node)
-        .find(|&child| {
-            doc.get(child)
-                .and_then(|data| data.name())
-                .map(|name| name == &W::rPr())
-                .unwrap_or(false)
-        })?;
+    let rpr_node = doc.children(run_node).find(|&child| {
+        doc.get(child)
+            .and_then(|data| data.name())
+            .map(|name| name == &W::rPr())
+            .unwrap_or(false)
+    })?;
 
     let clone_node = clone_element_deep_in_place(doc, rpr_node, None);
 
     let allowed_set: HashSet<&str> = ALLOWED_FORMATTING_PROPERTIES.iter().copied().collect();
     let props_with_values_set: HashSet<&str> = PROPS_WITH_VALUES.iter().copied().collect();
     let font_attrs_set: HashSet<&str> = FONT_ATTRIBUTES.iter().copied().collect();
-    
-    let elements_to_remove: Vec<NodeId> = doc.children(clone_node)
+
+    let elements_to_remove: Vec<NodeId> = doc
+        .children(clone_node)
         .filter(|&child| {
             doc.get(child)
                 .and_then(|data| data.name())
@@ -106,36 +118,37 @@ pub fn compute_normalized_rpr(
 
     let mut all_descendants: Vec<NodeId> = vec![clone_node];
     all_descendants.extend(doc.descendants(clone_node));
-    
+
     for node_id in all_descendants {
         if let Some(data) = doc.get(node_id) {
             if let XmlNodeData::Element { name, .. } = data {
                 let element_name = name.local_name.clone();
-                
+
                 if let Some(data_mut) = doc.get_mut(node_id) {
                     if let XmlNodeData::Element { attributes, .. } = data_mut {
                         let mut attrs_to_remove = Vec::new();
-                        
+
                         for attr in attributes.iter() {
                             let is_pt_namespace = attr.name.namespace.as_deref() == Some(PT::NS);
-                            let is_xmlns = attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/");
-                            
+                            let is_xmlns = attr.name.namespace.as_deref()
+                                == Some("http://www.w3.org/2000/xmlns/");
+
                             if is_pt_namespace
                                 || is_xmlns
                                 || attr.name.local_name == "Unid"
-                                || attr.name.local_name.to_lowercase().starts_with("rsid") 
+                                || attr.name.local_name.to_lowercase().starts_with("rsid")
                             {
                                 attrs_to_remove.push(attr.name.clone());
                             } else if props_with_values_set.contains(element_name.as_str()) {
-                                let should_keep = attr.name.local_name == "val" 
+                                let should_keep = attr.name.local_name == "val"
                                     || font_attrs_set.contains(attr.name.local_name.as_str());
-                                
+
                                 if !should_keep {
                                     attrs_to_remove.push(attr.name.clone());
                                 }
                             }
                         }
-                        
+
                         for attr_name in attrs_to_remove {
                             doc.remove_attribute(node_id, &attr_name);
                         }
@@ -145,8 +158,9 @@ pub fn compute_normalized_rpr(
         }
     }
 
-    let has_content = doc.children(clone_node).next().is_some() 
-        || doc.get(clone_node)
+    let has_content = doc.children(clone_node).next().is_some()
+        || doc
+            .get(clone_node)
             .and_then(|data| data.attributes())
             .map(|attrs| !attrs.is_empty())
             .unwrap_or(false);
@@ -193,7 +207,7 @@ fn serialize_node_recursive(doc: &XmlDocument, node: NodeId, result: &mut String
                     result.push_str("w:");
                 }
                 result.push_str(&name.local_name);
-                
+
                 for attr in attributes {
                     result.push(' ');
                     if attr.name.namespace.is_some() {
@@ -204,7 +218,7 @@ fn serialize_node_recursive(doc: &XmlDocument, node: NodeId, result: &mut String
                     result.push_str(&attr.value);
                     result.push('"');
                 }
-                
+
                 let has_children = doc.children(node).next().is_some();
                 if has_children {
                     result.push('>');
@@ -258,8 +272,7 @@ pub fn compute_formatting_signature_hash(
     doc: &XmlDocument,
     normalized_rpr: Option<NodeId>,
 ) -> Option<String> {
-    compute_formatting_signature(doc, normalized_rpr)
-        .map(|sig| sha1_hash_string(&sig))
+    compute_formatting_signature(doc, normalized_rpr).map(|sig| sha1_hash_string(&sig))
 }
 
 /// Check if two formatting signatures differ.
@@ -284,8 +297,8 @@ pub fn formatting_differs(before: &Option<String>, after: &Option<String>) -> bo
 mod tests {
     use super::*;
     use crate::xml::arena::XmlDocument;
-    use crate::xml::node::XmlNodeData;
     use crate::xml::namespaces::W;
+    use crate::xml::node::XmlNodeData;
 
     #[test]
     fn test_allowed_properties_list() {
@@ -310,9 +323,9 @@ mod tests {
     fn test_compute_normalized_rpr_disabled() {
         let mut doc = XmlDocument::new();
         let root = doc.add_root(XmlNodeData::element(W::r()));
-        
+
         let settings = WmlComparerSettings::default().with_track_formatting(false);
-        
+
         let result = compute_normalized_rpr(&mut doc, root, &settings);
         assert!(result.is_none());
     }
@@ -322,15 +335,21 @@ mod tests {
         assert!(!formatting_differs(&None, &None));
         assert!(formatting_differs(&None, &Some("test".to_string())));
         assert!(formatting_differs(&Some("test".to_string()), &None));
-        assert!(!formatting_differs(&Some("same".to_string()), &Some("same".to_string())));
-        assert!(formatting_differs(&Some("before".to_string()), &Some("after".to_string())));
+        assert!(!formatting_differs(
+            &Some("same".to_string()),
+            &Some("same".to_string())
+        ));
+        assert!(formatting_differs(
+            &Some("before".to_string()),
+            &Some("after".to_string())
+        ));
     }
 
     #[test]
     fn test_compute_formatting_signature() {
         let mut doc = XmlDocument::new();
         let rpr = doc.add_root(XmlNodeData::element(W::rPr()));
-        
+
         let sig = compute_formatting_signature(&doc, Some(rpr));
         assert!(sig.is_some());
         assert!(sig.unwrap().contains("rPr"));

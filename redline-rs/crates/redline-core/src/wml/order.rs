@@ -294,9 +294,11 @@ fn order_element_recursive(doc: &mut XmlDocument, node_id: NodeId) {
 /// Reorder children of a node according to the given order map
 fn reorder_children(doc: &mut XmlDocument, parent: NodeId, order_map: &HashMap<XName, i32>) {
     // Collect children with their sort keys
-    let mut children_with_keys: Vec<(NodeId, i32)> = doc.children(parent)
+    let mut children_with_keys: Vec<(NodeId, i32)> = doc
+        .children(parent)
         .map(|child| {
-            let key = doc.get(child)
+            let key = doc
+                .get(child)
                 .and_then(|d| d.name())
                 .map(|name| get_element_order(name, order_map))
                 .unwrap_or(999);
@@ -307,7 +309,7 @@ fn reorder_children(doc: &mut XmlDocument, parent: NodeId, order_map: &HashMap<X
     // Check if already in order
     let mut is_sorted = true;
     for i in 1..children_with_keys.len() {
-        if children_with_keys[i].1 < children_with_keys[i-1].1 {
+        if children_with_keys[i].1 < children_with_keys[i - 1].1 {
             is_sorted = false;
             break;
         }
