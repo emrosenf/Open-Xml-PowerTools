@@ -159,7 +159,7 @@ pub fn accept_revisions_by_id(document: &[u8], revision_ids: &[i32]) -> Result<V
     // But `accept_revisions_by_id` returns a NEW `XmlDocument` (arena).
     // We need to serialize this `XmlDocument` to XML string/bytes and put it into the package.
 
-    let xml_string = redline_core::xml::builder::serialize(&new_xml)
+    let _xml_string = redline_core::xml::builder::serialize(&new_xml)
         .map_err(|e| JsError::new(&e.to_string()))?;
 
     let mut mut_doc = redline_core::WmlDocument::from_bytes(document)
