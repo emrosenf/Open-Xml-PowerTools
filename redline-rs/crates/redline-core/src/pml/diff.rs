@@ -297,6 +297,19 @@ impl PmlDiffEngine {
         settings: &PmlComparerSettings,
         result: &mut PmlComparisonResult,
     ) {
+        if shape1.type_ != shape2.type_ {
+            result.changes.push(pml_change!(
+                slide: slide_index,
+                shape: shape2.id.to_string(),
+                type: PmlChangeType::ShapeTypeChanged,
+                desc: format!(
+                    "Shape '{}' type changed from {} to {}",
+                    shape2.name, shape1.type_, shape2.type_
+                )
+            ));
+            return;
+        }
+
         // Transform changes
         if settings.compare_shape_transforms {
             if let (Some(t1), Some(t2)) = (&shape1.transform, &shape2.transform) {

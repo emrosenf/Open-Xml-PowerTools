@@ -1,9 +1,10 @@
 use super::arena::XmlDocument;
 use super::node::XmlNodeData;
+use super::xname::{XAttribute, XName};
 use crate::error::Result;
 use quick_xml::events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event};
 use quick_xml::Writer;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 
 pub fn serialize(doc: &XmlDocument) -> Result<String> {
@@ -17,15 +18,32 @@ pub fn serialize_subtree(doc: &XmlDocument, node_id: indextree::NodeId) -> Resul
 
     let mut writer = Writer::new(Cursor::new(Vec::new()));
 
-    // Build namespace map from the node and its ancestors
-    let mut namespace_map = NamespaceMap::new();
-    if let Some(node_data) = doc.get(node_id) {
-        if let Some(attrs) = node_data.attributes() {
-            extend_namespace_map(&mut namespace_map, attrs);
+    let Some(node_data) = doc.get(node_id) else {
+        return Ok(String::new());
+    };
+
+    match node_data {
+        XmlNodeData::Element { name, attributes } => {
+            let mut merged_attrs = attributes.clone();
+            let mut declared: HashSet<XName> = merged_attrs
+                .iter()
+                .filter(|attr| is_xmlns_attr(attr))
+                .map(|attr| attr.name.clone())
+                .collect();
+
+            let inherited = collect_ancestor_namespace_attrs(doc, node_id, &mut declared);
+            merged_attrs.extend(inherited);
+
+            let mut namespace_map = NamespaceMap::new();
+            extend_namespace_map(&mut namespace_map, &merged_attrs);
+
+            write_element_with_attrs(doc, node_id, name, &merged_attrs, &mut writer, &namespace_map)?;
+        }
+        _ => {
+            let namespace_map = NamespaceMap::new();
+            write_node(doc, node_id, &mut writer, &namespace_map)?;
         }
     }
-
-    write_node(doc, node_id, &mut writer, &namespace_map)?;
 
     let bytes = writer.into_inner().into_inner();
     Ok(String::from_utf8(bytes).expect("XML should be valid UTF-8"))
@@ -52,6 +70,39 @@ pub fn serialize_bytes(doc: &XmlDocument) -> Result<Vec<u8>> {
 }
 
 type NamespaceMap = HashMap<String, String>;
+
+fn is_xmlns_attr(attr: &XAttribute) -> bool {
+    (attr.name.namespace.is_none() && attr.name.local_name == "xmlns")
+        || attr.name.namespace.as_deref() == Some("http://www.w3.org/2000/xmlns/")
+}
+
+fn collect_ancestor_namespace_attrs(
+    doc: &XmlDocument,
+    node_id: indextree::NodeId,
+    declared: &mut HashSet<XName>,
+) -> Vec<XAttribute> {
+    let mut collected = Vec::new();
+    let mut ancestors = doc.ancestors(node_id);
+    ancestors.next(); // skip the node itself
+
+    for ancestor_id in ancestors {
+        let Some(data) = doc.get(ancestor_id) else {
+            continue;
+        };
+        let Some(attrs) = data.attributes() else {
+            continue;
+        };
+
+        for attr in attrs {
+            if is_xmlns_attr(attr) && !declared.contains(&attr.name) {
+                declared.insert(attr.name.clone());
+                collected.push(attr.clone());
+            }
+        }
+    }
+
+    collected
+}
 
 fn extend_namespace_map(namespace_map: &mut NamespaceMap, attributes: &[super::xname::XAttribute]) {
     for attr in attributes {
@@ -106,55 +157,7 @@ fn write_node<W: std::io::Write>(
 
     match node_data {
         XmlNodeData::Element { name, attributes } => {
-            let mut scoped_map = namespace_map.clone();
-            extend_namespace_map(&mut scoped_map, attributes);
-
-            let tag_name = if let Some(ns) = &name.namespace {
-                let prefix = prefix_for_namespace(ns, &scoped_map);
-                if prefix.is_empty() {
-                    name.local_name.clone()
-                } else {
-                    format!("{}:{}", prefix, &name.local_name)
-                }
-            } else {
-                name.local_name.clone()
-            };
-
-            let mut elem = BytesStart::new(&tag_name);
-            
-            for attr in attributes {
-                let attr_name = if let Some(ns) = &attr.name.namespace {
-                    let prefix = prefix_for_attribute(ns, &scoped_map);
-                    if prefix.is_empty() {
-                        attr.name.local_name.clone()
-                    } else {
-                        format!("{}:{}", prefix, &attr.name.local_name)
-                    }
-                } else {
-                    attr.name.local_name.clone()
-                };
-                elem.push_attribute((attr_name.as_str(), attr.value.as_str()));
-            }
-
-            let children: Vec<_> = doc.children(node_id).collect();
-            
-            if children.is_empty() {
-                writer
-                    .write_event(Event::Empty(elem))
-                    .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
-            } else {
-                writer
-                    .write_event(Event::Start(elem))
-                    .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
-                
-                for child_id in children {
-                    write_node(doc, child_id, writer, &scoped_map)?;
-                }
-                
-                writer
-                    .write_event(Event::End(BytesEnd::new(&tag_name)))
-                    .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
-            }
+            write_element_with_attrs(doc, node_id, name, attributes, writer, namespace_map)?;
         }
         XmlNodeData::Text(text) => {
             writer
@@ -181,6 +184,67 @@ fn write_node<W: std::io::Write>(
                 .write_event(Event::PI(quick_xml::events::BytesPI::new(&pi_content)))
                 .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
         }
+    }
+
+    Ok(())
+}
+
+fn write_element_with_attrs<W: std::io::Write>(
+    doc: &XmlDocument,
+    node_id: indextree::NodeId,
+    name: &XName,
+    attributes: &[XAttribute],
+    writer: &mut Writer<W>,
+    namespace_map: &NamespaceMap,
+) -> Result<()> {
+    let mut scoped_map = namespace_map.clone();
+    extend_namespace_map(&mut scoped_map, attributes);
+
+    let tag_name = if let Some(ns) = &name.namespace {
+        let prefix = prefix_for_namespace(ns, &scoped_map);
+        if prefix.is_empty() {
+            name.local_name.clone()
+        } else {
+            format!("{}:{}", prefix, &name.local_name)
+        }
+    } else {
+        name.local_name.clone()
+    };
+
+    let mut elem = BytesStart::new(&tag_name);
+
+    for attr in attributes {
+        let attr_name = if let Some(ns) = &attr.name.namespace {
+            let prefix = prefix_for_attribute(ns, &scoped_map);
+            if prefix.is_empty() {
+                attr.name.local_name.clone()
+            } else {
+                format!("{}:{}", prefix, &attr.name.local_name)
+            }
+        } else {
+            attr.name.local_name.clone()
+        };
+        elem.push_attribute((attr_name.as_str(), attr.value.as_str()));
+    }
+
+    let children: Vec<_> = doc.children(node_id).collect();
+
+    if children.is_empty() {
+        writer
+            .write_event(Event::Empty(elem))
+            .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
+    } else {
+        writer
+            .write_event(Event::Start(elem))
+            .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
+
+        for child_id in children {
+            write_node(doc, child_id, writer, &scoped_map)?;
+        }
+
+        writer
+            .write_event(Event::End(BytesEnd::new(&tag_name)))
+            .map_err(|e| crate::error::RedlineError::XmlWrite(e.to_string()))?;
     }
 
     Ok(())
