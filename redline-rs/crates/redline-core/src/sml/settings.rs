@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 /// Settings for controlling spreadsheet comparison behavior.
 /// 100% parity with C# SmlComparerSettings.
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct SmlComparerSettings {
     // ===== Phase 1: Core Comparison Settings =====
-    
     /// Whether to compare cell values.
     pub compare_values: bool,
 
@@ -37,7 +37,6 @@ pub struct SmlComparerSettings {
     pub log_callback: Option<fn(&str)>,
 
     // ===== Highlight Colors (ARGB hex without #) =====
-    
     /// Fill color for added cells (default: light green).
     pub added_cell_color: String,
 
@@ -60,7 +59,6 @@ pub struct SmlComparerSettings {
     pub deleted_row_color: String,
 
     // ===== Phase 2: Row/Column Alignment Settings =====
-    
     /// Enable row alignment using LCS algorithm to detect inserted/deleted rows.
     pub enable_row_alignment: bool,
 
@@ -78,7 +76,6 @@ pub struct SmlComparerSettings {
     pub row_signature_sample_size: i32,
 
     // ===== Phase 3: Additional Comparison Settings =====
-    
     /// Whether to compare named ranges (defined names).
     pub compare_named_ranges: bool,
 
@@ -98,7 +95,6 @@ pub struct SmlComparerSettings {
     pub compare_hyperlinks: bool,
 
     // ===== Highlight Colors for Phase 3 Features =====
-    
     /// Fill color for named range changes (default: light purple).
     pub named_range_change_color: String,
 
@@ -129,18 +125,30 @@ impl std::fmt::Debug for SmlComparerSettings {
             .field("deleted_row_color", &self.deleted_row_color)
             .field("enable_row_alignment", &self.enable_row_alignment)
             .field("enable_column_alignment", &self.enable_column_alignment)
-            .field("enable_sheet_rename_detection", &self.enable_sheet_rename_detection)
-            .field("sheet_rename_similarity_threshold", &self.sheet_rename_similarity_threshold)
+            .field(
+                "enable_sheet_rename_detection",
+                &self.enable_sheet_rename_detection,
+            )
+            .field(
+                "sheet_rename_similarity_threshold",
+                &self.sheet_rename_similarity_threshold,
+            )
             .field("row_signature_sample_size", &self.row_signature_sample_size)
             .field("compare_named_ranges", &self.compare_named_ranges)
             .field("compare_comments", &self.compare_comments)
             .field("compare_data_validation", &self.compare_data_validation)
             .field("compare_merged_cells", &self.compare_merged_cells)
-            .field("compare_conditional_formatting", &self.compare_conditional_formatting)
+            .field(
+                "compare_conditional_formatting",
+                &self.compare_conditional_formatting,
+            )
             .field("compare_hyperlinks", &self.compare_hyperlinks)
             .field("named_range_change_color", &self.named_range_change_color)
             .field("comment_change_color", &self.comment_change_color)
-            .field("data_validation_change_color", &self.data_validation_change_color)
+            .field(
+                "data_validation_change_color",
+                &self.data_validation_change_color,
+            )
             .finish()
     }
 }
@@ -253,7 +261,7 @@ mod tests {
     #[test]
     fn default_settings_have_expected_values() {
         let settings = SmlComparerSettings::default();
-        
+
         // Phase 1 defaults
         assert!(settings.compare_values);
         assert!(settings.compare_formulas);
@@ -303,12 +311,12 @@ mod tests {
     #[test]
     fn log_callback_can_be_set() {
         let mut settings = SmlComparerSettings::new();
-        
+
         // Simple function for logging
         fn test_logger(_msg: &str) {
             // In real usage, this would log somewhere
         }
-        
+
         settings.log_callback = Some(test_logger);
         settings.log("test message"); // Should not panic
     }

@@ -111,6 +111,7 @@ pub struct LcsTraceOutput {
 /// Settings for WmlComparer document comparison.
 /// Faithful port of WmlComparerSettings from C# OpenXmlPowerTools.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct WmlComparerSettings {
     /// Characters that separate words for comparison purposes.
     /// Default includes space, punctuation, and Chinese punctuation.
