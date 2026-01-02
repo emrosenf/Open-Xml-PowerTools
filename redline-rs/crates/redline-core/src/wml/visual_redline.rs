@@ -613,12 +613,20 @@ fn add_summary_table(
         None,
     );
 
-    // Filename rows (only if provided)
+    // Filename rows (only if provided) - show just the filename, not full path
     if let Some(ref older) = settings.older_filename {
-        add_info_row(doc, tbl, "Original filename:", older);
+        let filename = std::path::Path::new(older)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(older);
+        add_info_row(doc, tbl, "Original:", filename);
     }
     if let Some(ref newer) = settings.newer_filename {
-        add_info_row(doc, tbl, "Modified filename:", newer);
+        let filename = std::path::Path::new(newer)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(newer);
+        add_info_row(doc, tbl, "Modified:", filename);
     }
 
     // Changes header
@@ -692,14 +700,14 @@ fn add_table_properties(doc: &mut XmlDocument, tbl: NodeId) {
         XmlNodeData::element_with_attrs(W::jc(), vec![XAttribute::new(W::val(), "center")]),
     );
 
-    // Table width (60% of page)
+    // Table width (auto - only as wide as needed)
     doc.add_child(
         tbl_pr,
         XmlNodeData::element_with_attrs(
             W::tblW(),
             vec![
-                XAttribute::new(W::w_val(), "6000"),
-                XAttribute::new(W::type_(), "pct"),
+                XAttribute::new(W::w_val(), "0"),
+                XAttribute::new(W::type_(), "auto"),
             ],
         ),
     );
