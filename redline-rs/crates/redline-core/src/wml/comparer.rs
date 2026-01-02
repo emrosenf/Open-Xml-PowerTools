@@ -461,9 +461,11 @@ impl WmlComparer {
         source2: &WmlDocument,
         settings: Option<&WmlComparerSettings>,
     ) -> Result<WmlComparisonResult> {
-        use std::time::Instant;
+        // Timing is only available on native platforms, not WASM
+        #[cfg(not(target_arch = "wasm32"))]
         let timing_enabled = std::env::var("WML_TIMING").is_ok();
-        let t0 = Instant::now();
+        #[cfg(not(target_arch = "wasm32"))]
+        let t0 = std::time::Instant::now();
 
         let mut settings = settings.cloned().unwrap_or_default();
 
@@ -495,6 +497,7 @@ impl WmlComparer {
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
         preprocess_markup(&mut doc2, body2, &preprocess_settings)
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
+        #[cfg(not(target_arch = "wasm32"))]
         if timing_enabled {
             eprintln!("  preprocess: {:?}", t0.elapsed());
         }
@@ -532,12 +535,14 @@ impl WmlComparer {
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
         repair_unids_after_revision_acceptance(&mut doc2, body2)
             .map_err(|e| crate::error::RedlineError::ComparisonFailed(e))?;
+        #[cfg(not(target_arch = "wasm32"))]
         if timing_enabled {
             eprintln!("  accept_revisions: {:?}", t0.elapsed());
         }
 
         let atoms1 = create_comparison_unit_atom_list(&mut doc1, body1, "main", &settings);
         let atoms2 = create_comparison_unit_atom_list(&mut doc2, body2, "main", &settings);
+        #[cfg(not(target_arch = "wasm32"))]
         if timing_enabled {
             eprintln!("  create_atoms: {:?}", t0.elapsed());
         }
@@ -563,11 +568,24 @@ impl WmlComparer {
             correlated_atoms,
             lcs_traces,
         ) = {
-            let root_data = doc2.get(doc2.root().unwrap()).unwrap();
-            let root_name = root_data.name().unwrap().clone();
+            let root_id = doc2.root().ok_or_else(|| {
+                crate::error::RedlineError::ComparisonFailed(
+                    "No root in document 2 for atoms comparison".to_string(),
+                )
+            })?;
+            let root_data = doc2.get(root_id).ok_or_else(|| {
+                crate::error::RedlineError::ComparisonFailed("Failed to get root data".to_string())
+            })?;
+            let root_name = root_data
+                .name()
+                .ok_or_else(|| {
+                    crate::error::RedlineError::ComparisonFailed("Root has no name".to_string())
+                })?
+                .clone();
             let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
             compare_atoms_internal(atoms1, atoms2, root_name, root_attrs, &settings)?
         };
+        #[cfg(not(target_arch = "wasm32"))]
         if timing_enabled {
             eprintln!("  compare_atoms: {:?}", t0.elapsed());
         }
@@ -661,6 +679,7 @@ impl WmlComparer {
         };
 
         let result_bytes = result_doc.to_bytes()?;
+        #[cfg(not(target_arch = "wasm32"))]
         if timing_enabled {
             eprintln!("  finalize: {:?}", t0.elapsed());
         }
@@ -1669,9 +1688,11 @@ fn compare_atoms_internal(
     Vec<ComparisonUnitAtom>,
     Option<Vec<super::settings::LcsTraceOutput>>,
 )> {
-    use std::time::Instant;
+    // Timing is only available on native platforms, not WASM
+    #[cfg(not(target_arch = "wasm32"))]
     let timing_enabled = std::env::var("WML_TIMING").is_ok();
-    let t0 = Instant::now();
+    #[cfg(not(target_arch = "wasm32"))]
+    let t0 = std::time::Instant::now();
 
     let mut word_settings = WordSeparatorSettings::default();
     if settings.conflate_breaking_and_nonbreaking_spaces {
@@ -1680,6 +1701,7 @@ fn compare_atoms_internal(
 
     let units1 = get_comparison_unit_list(atoms1, &word_settings);
     let units2 = get_comparison_unit_list(atoms2, &word_settings);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    unit_list: {:?}", t0.elapsed());
     }
@@ -1706,16 +1728,19 @@ fn compare_atoms_internal(
     let lcs_traces: Option<Vec<super::settings::LcsTraceOutput>> = None;
 
     let correlated = lcs(units1.clone(), units2.clone(), settings);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    lcs: {:?}", t0.elapsed());
     }
 
     let mut flattened_atoms = flatten_to_atoms(&correlated);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    flatten: {:?}", t0.elapsed());
     }
 
     assemble_ancestor_unids(&mut flattened_atoms);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    ancestor_unids: {:?}", t0.elapsed());
     }
@@ -1730,6 +1755,7 @@ fn compare_atoms_internal(
     // Suppress deletions that represent "moved" content (appears elsewhere as EQUAL)
     // This handles the case where text moved from one paragraph to another
     flattened_atoms = suppress_moved_deletions(flattened_atoms, settings);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    pre_coalesce: {:?}", t0.elapsed());
     }
@@ -1737,6 +1763,7 @@ fn compare_atoms_internal(
     // Count revisions from atom list (C# GetRevisions algorithm)
     // This groups adjacent atoms by correlation status, which is how C# counts
     let mut coalesce_result = coalesce(&flattened_atoms, settings, root_name, root_attrs);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    coalesce: {:?}", t0.elapsed());
     }
@@ -1759,6 +1786,7 @@ fn compare_atoms_internal(
     // This MUST happen after mark_content_as_deleted_or_inserted and coalesce_adjacent_runs
     // because those functions can create new empty rPr elements
     super::coalesce::remove_empty_rpr_elements(&mut coalesce_result.document, coalesce_result.root);
+    #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    post_process: {:?}", t0.elapsed());
     }
@@ -2092,7 +2120,9 @@ fn build_note_doc_with_status(
     };
 
     let Some(root) = root else {
-        let fallback_root = doc.root().unwrap();
+        let fallback_root = doc.root().ok_or_else(|| {
+            RedlineError::ComparisonFailed("No root in note document".to_string())
+        })?;
         return Ok((
             0,
             0,
@@ -2133,8 +2163,13 @@ fn build_note_doc_with_status(
         reconcile_formatting_changes(&mut atoms, settings);
     }
 
-    let root_data = doc.get(note_id).unwrap();
-    let root_name = root_data.name().unwrap().clone();
+    let root_data = doc.get(note_id).ok_or_else(|| {
+        RedlineError::ComparisonFailed("Failed to get note node data".to_string())
+    })?;
+    let root_name = root_data
+        .name()
+        .ok_or_else(|| RedlineError::ComparisonFailed("Note node has no name".to_string()))?
+        .clone();
     let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
 
     let (ins, del) = count_revisions_from_atoms(&atoms);
@@ -2176,8 +2211,13 @@ fn compare_part_content(
     let atoms1 = create_comparison_unit_atom_list(doc1, root1, part_name, settings);
     let atoms2 = create_comparison_unit_atom_list(doc2, root2, part_name, settings);
 
-    let root_data = doc2.get(root2).unwrap();
-    let root_name = root_data.name().unwrap().clone();
+    let root_data = doc2
+        .get(root2)
+        .ok_or_else(|| RedlineError::ComparisonFailed("Failed to get root2 data".to_string()))?;
+    let root_name = root_data
+        .name()
+        .ok_or_else(|| RedlineError::ComparisonFailed("Root2 has no name".to_string()))?
+        .clone();
     let root_attrs = root_data.attributes().unwrap_or(&[]).to_vec();
 
     // Call compare_atoms_internal and discard the flattened atoms and traces (not needed for notes)

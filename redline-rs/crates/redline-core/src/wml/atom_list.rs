@@ -36,6 +36,8 @@ fn allowable_run_children() -> HashSet<String> {
         "instrText",
         // NOTE: commentRangeStart/End removed - they are thrown away to match C# behavior
         // C# WmlComparer throws away comment markers during comparison (see comparer.rs line 533)
+        // NOTE: lastRenderedPageBreak removed - it's a rendering hint, not semantic content.
+        // Including it in comparison breaks text matching when breaks are in different positions.
     ]
     .iter()
     .map(|s| s.to_string())
@@ -51,14 +53,14 @@ fn allowable_run_children_math() -> HashSet<String> {
 
 fn elements_to_throw_away() -> HashSet<String> {
     [
-        "lastRenderedPageBreak",
+        // lastRenderedPageBreak - now preserved as RenderingPageBreak atom
+        // footnoteRef - now preserved as FootnoteReference atom
+        // endnoteRef - now preserved as EndnoteReference atom
         "proofErr",
         "tblPr",
         "sectPr",
         "permEnd",
         "permStart",
-        "footnoteRef",
-        "endnoteRef",
         "separator",
         "continuationSeparator",
         // Comment markers are thrown away to match C# WmlComparer behavior.
@@ -862,9 +864,19 @@ fn create_content_element_with_package(
     package: Option<&OoxmlPackage>,
 ) -> ContentElement {
     match (ns, local) {
-        (W::NS, "br") => ContentElement::Break,
+        (W::NS, "br") => {
+            // Check for type attribute to distinguish break types
+            let break_type = get_attribute_value(doc, node, W::NS, "type")
+                .unwrap_or_default();
+            match break_type.as_str() {
+                "page" => ContentElement::PageBreak,
+                "column" => ContentElement::ColumnBreak,
+                _ => ContentElement::Break,  // textWrapping or no type
+            }
+        }
         (W::NS, "tab") => ContentElement::Tab,
         (W::NS, "cr") => ContentElement::CarriageReturn,
+        (W::NS, "lastRenderedPageBreak") => ContentElement::LastRenderedPageBreak,
         (W::NS, "ptab") => {
             let alignment = get_attribute_value(doc, node, W::NS, "alignment").unwrap_or_default();
             let relative_to =
@@ -883,6 +895,14 @@ fn create_content_element_with_package(
         (W::NS, "endnoteReference") => {
             let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();
             ContentElement::EndnoteReference { id }
+        }
+        (W::NS, "footnoteRef") => {
+            // footnoteRef is a marker element in the footnote itself (no id attribute)
+            ContentElement::FootnoteReference { id: String::new() }
+        }
+        (W::NS, "endnoteRef") => {
+            // endnoteRef is a marker element in the endnote itself (no id attribute)
+            ContentElement::EndnoteReference { id: String::new() }
         }
         (W::NS, "commentRangeStart") => {
             let id = get_attribute_value(doc, node, W::NS, "id").unwrap_or_default();

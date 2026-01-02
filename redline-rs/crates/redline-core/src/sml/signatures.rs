@@ -238,22 +238,15 @@ impl WorksheetSignature {
 
     /// Get all cells in a specific row.
     pub fn get_cells_in_row(&self, row: i32) -> Vec<&CellSignature> {
-        let mut cells: Vec<&CellSignature> = self
-            .cells
-            .values()
-            .filter(|c| c.row == row)
-            .collect();
+        let mut cells: Vec<&CellSignature> = self.cells.values().filter(|c| c.row == row).collect();
         cells.sort_by_key(|c| c.column);
         cells
     }
 
     /// Get all cells in a specific column.
     pub fn get_cells_in_column(&self, col: i32) -> Vec<&CellSignature> {
-        let mut cells: Vec<&CellSignature> = self
-            .cells
-            .values()
-            .filter(|c| c.column == col)
-            .collect();
+        let mut cells: Vec<&CellSignature> =
+            self.cells.values().filter(|c| c.column == col).collect();
         cells.sort_by_key(|c| c.row);
         cells
     }
@@ -385,11 +378,7 @@ pub(crate) struct HyperlinkSignature {
 
 impl HyperlinkSignature {
     pub fn compute_hash(&self) -> String {
-        let content = format!(
-            "{}|{}",
-            self.target,
-            self.display.as_deref().unwrap_or("")
-        );
+        let content = format!("{}|{}", self.target, self.display.as_deref().unwrap_or(""));
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
         let result = hasher.finalize();
@@ -459,7 +448,7 @@ mod tests {
     #[test]
     fn worksheet_compute_content_hash() {
         let mut sig = WorksheetSignature::new("Sheet1".to_string(), "rId1".to_string());
-        
+
         sig.cells.insert(
             "A1".to_string(),
             CellSignature {

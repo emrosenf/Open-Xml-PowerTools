@@ -13,9 +13,7 @@
 
 use crate::sml::result::SmlComparisonResult;
 use crate::sml::settings::SmlComparerSettings;
-use crate::sml::signatures::{
-    CellSignature, WorkbookSignature, WorksheetSignature,
-};
+use crate::sml::signatures::{CellSignature, WorkbookSignature, WorksheetSignature};
 use crate::sml::types::{SmlChange, SmlChangeType};
 use std::collections::{HashMap, HashSet};
 
@@ -147,13 +145,19 @@ fn match_sheets(
         });
     }
 
-    let mut unmatched1: Vec<_> = sheets1.difference(&common_sheets.iter().cloned().collect()).cloned().collect();
-    let mut unmatched2: Vec<_> = sheets2.difference(&common_sheets.iter().cloned().collect()).cloned().collect();
+    let mut unmatched1: Vec<_> = sheets1
+        .difference(&common_sheets.iter().cloned().collect())
+        .cloned()
+        .collect();
+    let mut unmatched2: Vec<_> = sheets2
+        .difference(&common_sheets.iter().cloned().collect())
+        .cloned()
+        .collect();
 
     // Try to detect renames based on content similarity
     if settings.enable_sheet_rename_detection && !unmatched1.is_empty() && !unmatched2.is_empty() {
         let renamed = detect_renamed_sheets(sig1, sig2, &unmatched1, &unmatched2, settings);
-        
+
         // Remove matched sheets from unmatched lists
         for r in &renamed {
             if let Some(old) = &r.old_name {
@@ -161,7 +165,7 @@ fn match_sheets(
             }
             unmatched2.retain(|n| n != &r.new_name);
         }
-        
+
         matches.extend(renamed);
     }
 
@@ -228,11 +232,12 @@ fn detect_renamed_sheets(
 
     // Second pass: similarity-based matching
     // Collect keys to avoid simultaneous borrow issues
-    let unmatched1_filtered: Vec<_> = unmatched1.iter()
+    let unmatched1_filtered: Vec<_> = unmatched1
+        .iter()
         .filter(|n| !used1.contains(*n))
         .cloned()
         .collect();
-    
+
     for name1 in unmatched1_filtered {
         let ws1 = &sig1.sheets[&name1];
         let mut best_similarity = 0.0;
@@ -242,7 +247,9 @@ fn detect_renamed_sheets(
             let ws2 = &sig2.sheets[name2];
             let similarity = compute_sheet_similarity(ws1, ws2);
 
-            if similarity > best_similarity && similarity >= settings.sheet_rename_similarity_threshold {
+            if similarity > best_similarity
+                && similarity >= settings.sheet_rename_similarity_threshold
+            {
                 best_similarity = similarity;
                 best_match = Some(name2.clone());
             }
@@ -881,7 +888,12 @@ mod tests {
     #[test]
     fn compute_lcs_works() {
         let seq1 = vec!["A".to_string(), "B".to_string(), "C".to_string()];
-        let seq2 = vec!["A".to_string(), "X".to_string(), "B".to_string(), "C".to_string()];
+        let seq2 = vec![
+            "A".to_string(),
+            "X".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+        ];
         let lcs = compute_lcs(&seq1, &seq2);
         assert_eq!(lcs, vec!["A", "B", "C"]);
     }

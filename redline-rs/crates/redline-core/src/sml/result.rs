@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::sml::types::{SmlChange, SmlChangeType};
+use serde::{Deserialize, Serialize};
 
 /// Result of comparing two spreadsheets, containing all detected changes.
 /// 100% parity with C# SmlComparisonResult class.
@@ -27,62 +27,98 @@ impl SmlComparisonResult {
 
     /// Get number of value changes.
     pub fn value_changes(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::ValueChanged).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::ValueChanged)
+            .count()
     }
 
     /// Get number of formula changes.
     pub fn formula_changes(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::FormulaChanged).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::FormulaChanged)
+            .count()
     }
 
     /// Get number of format changes.
     pub fn format_changes(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::FormatChanged).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::FormatChanged)
+            .count()
     }
 
     /// Get number of cells added.
     pub fn cells_added(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::CellAdded).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::CellAdded)
+            .count()
     }
 
     /// Get number of cells deleted.
     pub fn cells_deleted(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::CellDeleted).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::CellDeleted)
+            .count()
     }
 
     /// Get number of sheets added.
     pub fn sheets_added(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::SheetAdded).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::SheetAdded)
+            .count()
     }
 
     /// Get number of sheets deleted.
     pub fn sheets_deleted(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::SheetDeleted).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::SheetDeleted)
+            .count()
     }
 
     /// Get number of sheets renamed (Phase 2).
     pub fn sheets_renamed(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::SheetRenamed).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::SheetRenamed)
+            .count()
     }
 
     /// Get number of rows inserted (Phase 2).
     pub fn rows_inserted(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::RowInserted).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::RowInserted)
+            .count()
     }
 
     /// Get number of rows deleted (Phase 2).
     pub fn rows_deleted(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::RowDeleted).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::RowDeleted)
+            .count()
     }
 
     /// Get number of columns inserted (Phase 2).
     pub fn columns_inserted(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::ColumnInserted).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::ColumnInserted)
+            .count()
     }
 
     /// Get number of columns deleted (Phase 2).
     pub fn columns_deleted(&self) -> usize {
-        self.changes.iter().filter(|c| c.change_type == SmlChangeType::ColumnDeleted).count()
+        self.changes
+            .iter()
+            .filter(|c| c.change_type == SmlChangeType::ColumnDeleted)
+            .count()
     }
 
     /// Get all changes for a specific sheet.
@@ -185,6 +221,9 @@ mod tests {
         let result = SmlComparisonResult::new();
         let json = result.to_json();
         // The JSON contains the "changes" field from the struct
-        assert!(json.contains("\"changes\""), "JSON should contain 'changes' field");
+        assert!(
+            json.contains("\"changes\""),
+            "JSON should contain 'changes' field"
+        );
     }
 }

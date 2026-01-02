@@ -1,8 +1,6 @@
-use std::collections::HashSet;
 use super::settings::PmlComparerSettings;
-use super::slide_matching::{
-    ShapeSignature, SlideSignature, PmlShapeType,
-};
+use super::slide_matching::{PmlShapeType, ShapeSignature, SlideSignature};
+use std::collections::HashSet;
 
 // ==================================================================================
 // Shape Matching Classes
@@ -61,7 +59,14 @@ impl PmlShapeMatchEngine {
 
         // Pass 4: Fuzzy matching
         if settings.enable_fuzzy_shape_matching {
-            Self::fuzzy_match(slide1, slide2, &mut matches, &mut used1, &mut used2, settings);
+            Self::fuzzy_match(
+                slide1,
+                slide2,
+                &mut matches,
+                &mut used1,
+                &mut used2,
+                settings,
+            );
         }
 
         // Remaining unmatched
@@ -320,7 +325,8 @@ impl PmlShapeMatchEngine {
                     if tb1.plain_text == tb2.plain_text {
                         score += 0.5;
                     } else {
-                        let text_sim = Self::compute_text_similarity(&tb1.plain_text, &tb2.plain_text);
+                        let text_sim =
+                            Self::compute_text_similarity(&tb1.plain_text, &tb2.plain_text);
                         score += text_sim * 0.5;
                     }
                 } else if s1.content_hash == s2.content_hash {
@@ -387,8 +393,8 @@ impl PmlShapeMatchEngine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::slide_matching::PlaceholderInfo;
+    use super::*;
 
     fn create_test_shape(id: u32, name: &str, type_: PmlShapeType) -> ShapeSignature {
         ShapeSignature {
@@ -494,17 +500,29 @@ mod tests {
 
     #[test]
     fn test_levenshtein_distance() {
-        assert_eq!(PmlShapeMatchEngine::levenshtein_distance("kitten", "sitting"), 3);
-        assert_eq!(PmlShapeMatchEngine::levenshtein_distance("hello", "hello"), 0);
+        assert_eq!(
+            PmlShapeMatchEngine::levenshtein_distance("kitten", "sitting"),
+            3
+        );
+        assert_eq!(
+            PmlShapeMatchEngine::levenshtein_distance("hello", "hello"),
+            0
+        );
         assert_eq!(PmlShapeMatchEngine::levenshtein_distance("", "test"), 4);
     }
 
     #[test]
     fn test_compute_text_similarity() {
-        assert_eq!(PmlShapeMatchEngine::compute_text_similarity("hello", "hello"), 1.0);
+        assert_eq!(
+            PmlShapeMatchEngine::compute_text_similarity("hello", "hello"),
+            1.0
+        );
         assert_eq!(PmlShapeMatchEngine::compute_text_similarity("", ""), 1.0);
-        assert_eq!(PmlShapeMatchEngine::compute_text_similarity("", "test"), 0.0);
-        
+        assert_eq!(
+            PmlShapeMatchEngine::compute_text_similarity("", "test"),
+            0.0
+        );
+
         let sim = PmlShapeMatchEngine::compute_text_similarity("hello", "hallo");
         assert!(sim > 0.7 && sim < 1.0);
     }
@@ -540,10 +558,14 @@ mod tests {
 
         // Should have 2 matches: 1 deleted, 1 inserted (fuzzy matching won't match due to different types)
         assert_eq!(matches.len(), 2);
-        
-        let deleted = matches.iter().find(|m| m.match_type == ShapeMatchType::Deleted);
-        let inserted = matches.iter().find(|m| m.match_type == ShapeMatchType::Inserted);
-        
+
+        let deleted = matches
+            .iter()
+            .find(|m| m.match_type == ShapeMatchType::Deleted);
+        let inserted = matches
+            .iter()
+            .find(|m| m.match_type == ShapeMatchType::Inserted);
+
         assert!(deleted.is_some());
         assert!(inserted.is_some());
     }

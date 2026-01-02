@@ -162,6 +162,7 @@ pub mod W {
     pub fn alignment() -> XName { XName::new(NS, "alignment") }
     pub fn relativeTo() -> XName { XName::new(NS, "relativeTo") }
     pub fn leader() -> XName { XName::new(NS, "leader") }
+    pub fn type_() -> XName { XName::new(NS, "type") }
 }
 
 pub mod S {

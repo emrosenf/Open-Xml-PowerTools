@@ -1,8 +1,8 @@
-use std::collections::{HashSet, HashMap};
-use std::hash::Hash;
-use sha2::{Sha256, Digest};
-use base64::{Engine as _, engine::general_purpose};
 use super::settings::PmlComparerSettings;
+use base64::{engine::general_purpose, Engine as _};
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 
 // ==================================================================================
 // Utility Classes
@@ -144,10 +144,10 @@ impl SlideSignature {
             sb.push_str(title);
         }
         sb.push('|');
-        
+
         let mut shapes: Vec<&ShapeSignature> = self.shapes.iter().collect();
         shapes.sort_by_key(|s| s.z_order);
-        
+
         for shape in shapes {
             sb.push_str(&shape.name);
             sb.push(':');
@@ -158,7 +158,7 @@ impl SlideSignature {
             }
             sb.push('|');
         }
-        
+
         PmlHasher::compute_hash(&sb)
     }
 }
@@ -258,9 +258,10 @@ impl PmlSlideMatchEngine {
                 continue;
             }
 
-            let match_slide = sig2.slides.iter().find(|s2| {
-                !used2.contains(&s2.index) && s2.title_text == slide1.title_text
-            });
+            let match_slide = sig2
+                .slides
+                .iter()
+                .find(|s2| !used2.contains(&s2.index) && s2.title_text == slide1.title_text);
 
             if let Some(match_slide) = match_slide {
                 matches.push(SlideMatch {
@@ -285,13 +286,15 @@ impl PmlSlideMatchEngine {
         used2: &mut HashSet<usize>,
         _settings: &PmlComparerSettings,
     ) {
-        let fingerprints1: HashMap<usize, String> = sig1.slides
+        let fingerprints1: HashMap<usize, String> = sig1
+            .slides
             .iter()
             .filter(|s| !used1.contains(&s.index))
             .map(|s| (s.index, s.compute_fingerprint()))
             .collect();
 
-        let fingerprints2: HashMap<usize, String> = sig2.slides
+        let fingerprints2: HashMap<usize, String> = sig2
+            .slides
             .iter()
             .filter(|s| !used2.contains(&s.index))
             .map(|s| (s.index, s.compute_fingerprint()))
@@ -302,11 +305,11 @@ impl PmlSlideMatchEngine {
                 continue;
             }
             let fp1 = &fingerprints1[&slide1.index];
-            
-            let match_slide = sig2.slides.iter().find(|s2| {
-                !used2.contains(&s2.index) && 
-                fingerprints2.get(&s2.index) == Some(fp1)
-            });
+
+            let match_slide = sig2
+                .slides
+                .iter()
+                .find(|s2| !used2.contains(&s2.index) && fingerprints2.get(&s2.index) == Some(fp1));
 
             if let Some(match_slide) = match_slide {
                 matches.push(SlideMatch {
@@ -331,8 +334,16 @@ impl PmlSlideMatchEngine {
         used2: &mut HashSet<usize>,
         settings: &PmlComparerSettings,
     ) {
-        let remaining1: Vec<&SlideSignature> = sig1.slides.iter().filter(|s| !used1.contains(&s.index)).collect();
-        let remaining2: Vec<&SlideSignature> = sig2.slides.iter().filter(|s| !used2.contains(&s.index)).collect();
+        let remaining1: Vec<&SlideSignature> = sig1
+            .slides
+            .iter()
+            .filter(|s| !used1.contains(&s.index))
+            .collect();
+        let remaining2: Vec<&SlideSignature> = sig2
+            .slides
+            .iter()
+            .filter(|s| !used2.contains(&s.index))
+            .collect();
 
         if remaining1.is_empty() || remaining2.is_empty() {
             return;
@@ -354,9 +365,13 @@ impl PmlSlideMatchEngine {
             let mut best_j = -1;
 
             for i in 0..remaining1.len() {
-                if matched1.contains(&i) { continue; }
+                if matched1.contains(&i) {
+                    continue;
+                }
                 for j in 0..remaining2.len() {
-                    if matched2.contains(&j) { continue; }
+                    if matched2.contains(&j) {
+                        continue;
+                    }
                     if similarities[i][j] > best_sim {
                         best_sim = similarities[i][j];
                         best_i = i as i32;
@@ -398,11 +413,15 @@ impl PmlSlideMatchEngine {
         used1: &mut HashSet<usize>,
         used2: &mut HashSet<usize>,
     ) {
-        let remaining1: Vec<&SlideSignature> = sig1.slides.iter()
+        let remaining1: Vec<&SlideSignature> = sig1
+            .slides
+            .iter()
             .filter(|s| !used1.contains(&s.index))
             .collect(); // Already sorted by index naturally if vector is ordered
-        
-        let remaining2: Vec<&SlideSignature> = sig2.slides.iter()
+
+        let remaining2: Vec<&SlideSignature> = sig2
+            .slides
+            .iter()
             .filter(|s| !used2.contains(&s.index))
             .collect();
 
@@ -460,7 +479,7 @@ impl PmlSlideMatchEngine {
         // Title match
         let t1 = s1.title_text.as_deref().unwrap_or("");
         let t2 = s2.title_text.as_deref().unwrap_or("");
-        
+
         if !t1.is_empty() || !t2.is_empty() {
             max_score += 3.0;
             if !t1.is_empty() && t1 == t2 {
@@ -491,30 +510,34 @@ impl PmlSlideMatchEngine {
         let types1: Vec<_> = s1.shapes.iter().map(|s| &s.type_).collect();
         let types2: Vec<_> = s2.shapes.iter().map(|s| &s.type_).collect();
         let _common_types = types1.iter().filter(|t| types2.contains(t)).count(); // This is rough intersection, C# Intersect does set intersection
-        
+
         // Exact C# Intersect behavior: Distinct elements that appear in both
         let distinct_types1: HashSet<_> = types1.into_iter().collect();
         let distinct_types2: HashSet<_> = types2.into_iter().collect();
         let common_count = distinct_types1.intersection(&distinct_types2).count();
         let total_count = std::cmp::max(distinct_types1.len(), distinct_types2.len());
-        
+
         if total_count > 0 {
             score += common_count as f64 / total_count as f64;
         }
 
         // Shape names overlap
         max_score += 2.0;
-        let names1: HashSet<_> = s1.shapes.iter()
+        let names1: HashSet<_> = s1
+            .shapes
+            .iter()
             .map(|s| &s.name)
             .filter(|n| !n.is_empty())
             .collect();
-        let names2: HashSet<_> = s2.shapes.iter()
+        let names2: HashSet<_> = s2
+            .shapes
+            .iter()
             .map(|s| &s.name)
             .filter(|n| !n.is_empty())
             .collect();
         let common_names = names1.intersection(&names2).count();
         let total_names = std::cmp::max(names1.len(), names2.len());
-        
+
         if total_names > 0 {
             score += 2.0 * common_names as f64 / total_names as f64;
         }
@@ -538,11 +561,13 @@ impl PmlSlideMatchEngine {
         }
 
         // Simple Jaccard similarity on words
-        let words1: HashSet<String> = s1.to_lowercase()
+        let words1: HashSet<String> = s1
+            .to_lowercase()
             .split_whitespace()
             .map(|s| s.to_string())
             .collect();
-        let words2: HashSet<String> = s2.to_lowercase()
+        let words2: HashSet<String> = s2
+            .to_lowercase()
             .split_whitespace()
             .map(|s| s.to_string())
             .collect();

@@ -33,7 +33,7 @@ impl PreProcessSettings {
             remove_content_controls: true,
             remove_field_codes: true,
             remove_go_back_bookmark: true,
-            remove_last_rendered_page_break: true,
+            remove_last_rendered_page_break: false,  // Preserve for display accuracy
             remove_permissions: true,
             remove_proof: true,
             remove_smart_tags: true,
@@ -142,7 +142,7 @@ mod tests {
         assert!(settings.simplify_settings.remove_content_controls);
         assert!(settings.simplify_settings.remove_field_codes);
         assert!(settings.simplify_settings.remove_go_back_bookmark);
-        assert!(settings.simplify_settings.remove_last_rendered_page_break);
+        assert!(!settings.simplify_settings.remove_last_rendered_page_break);  // Now preserved
         assert!(settings.simplify_settings.remove_permissions);
         assert!(settings.simplify_settings.remove_proof);
         assert!(settings.simplify_settings.remove_smart_tags);

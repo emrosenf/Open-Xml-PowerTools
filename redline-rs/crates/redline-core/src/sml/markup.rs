@@ -14,10 +14,10 @@
 //! This is a faithful port of C# SmlMarkupRenderer from SmlComparer.cs.
 
 use crate::error::Result;
-use crate::sml::{SmlComparerSettings, SmlComparisonResult, SmlDocument};
 use crate::sml::types::{SmlChange, SmlChangeType};
-use crate::xml::{XmlDocument, XmlNodeData, XName, XAttribute, S, R};
+use crate::sml::{SmlComparerSettings, SmlComparisonResult, SmlDocument};
 use crate::xml::namespaces::XMLNS;
+use crate::xml::{XAttribute, XName, XmlDocument, XmlNodeData, R, S};
 use std::collections::HashMap;
 
 /// Internal structure holding style IDs for highlight fills.
@@ -154,7 +154,8 @@ fn get_sheet_paths(pkg: &crate::package::OoxmlPackage) -> Result<HashMap<String,
                                 if attr.name.local_name == "name" {
                                     sheet_name = Some(attr.value.clone());
                                 } else if attr.name.local_name == "id"
-                                    && attr.name.namespace.as_deref() == Some(R::NS) {
+                                    && attr.name.namespace.as_deref() == Some(R::NS)
+                                {
                                     r_id = Some(attr.value.clone());
                                 }
                             }
@@ -174,7 +175,10 @@ fn get_sheet_paths(pkg: &crate::package::OoxmlPackage) -> Result<HashMap<String,
 }
 
 /// Add highlight fill styles to the workbook styles.
-fn add_highlight_styles(styles_doc: &mut XmlDocument, settings: &SmlComparerSettings) -> HighlightStyles {
+fn add_highlight_styles(
+    styles_doc: &mut XmlDocument,
+    settings: &SmlComparerSettings,
+) -> HighlightStyles {
     let mut styles = HighlightStyles {
         added_fill_id: 0,
         modified_value_fill_id: 0,
@@ -192,21 +196,25 @@ fn add_highlight_styles(styles_doc: &mut XmlDocument, settings: &SmlComparerSett
 
     // Find or create fills element
     let fills_name = S::fills();
-    let fills_id = styles_doc.find_child(root, &fills_name)
-        .unwrap_or_else(|| {
-            // Create fills element
-            let fills = styles_doc.add_child(root, XmlNodeData::element_with_attrs(
+    let fills_id = styles_doc.find_child(root, &fills_name).unwrap_or_else(|| {
+        // Create fills element
+        let fills = styles_doc.add_child(
+            root,
+            XmlNodeData::element_with_attrs(
                 fills_name.clone(),
                 vec![XAttribute::new(XName::local("count"), "0")],
-            ));
-            fills
-        });
+            ),
+        );
+        fills
+    });
 
     // Count existing fills
     let fill_name = S::fill();
-    let mut fill_count: usize = styles_doc.children(fills_id)
+    let mut fill_count: usize = styles_doc
+        .children(fills_id)
         .filter(|&c| {
-            styles_doc.get(c)
+            styles_doc
+                .get(c)
                 .and_then(|d| d.name())
                 .map(|n| n == &fill_name)
                 .unwrap_or(false)
@@ -235,19 +243,25 @@ fn add_highlight_styles(styles_doc: &mut XmlDocument, settings: &SmlComparerSett
 
     // Find or create cellXfs element
     let cell_xfs_name = S::cellXfs();
-    let cell_xfs_id = styles_doc.find_child(root, &cell_xfs_name)
+    let cell_xfs_id = styles_doc
+        .find_child(root, &cell_xfs_name)
         .unwrap_or_else(|| {
-            styles_doc.add_child(root, XmlNodeData::element_with_attrs(
-                cell_xfs_name.clone(),
-                vec![XAttribute::new(XName::local("count"), "0")],
-            ))
+            styles_doc.add_child(
+                root,
+                XmlNodeData::element_with_attrs(
+                    cell_xfs_name.clone(),
+                    vec![XAttribute::new(XName::local("count"), "0")],
+                ),
+            )
         });
 
     // Count existing xf elements
     let xf_name = S::xf();
-    let mut xf_count: usize = styles_doc.children(cell_xfs_id)
+    let mut xf_count: usize = styles_doc
+        .children(cell_xfs_id)
         .filter(|&c| {
-            styles_doc.get(c)
+            styles_doc
+                .get(c)
                 .and_then(|d| d.name())
                 .map(|n| n == &xf_name)
                 .unwrap_or(false)
@@ -281,37 +295,49 @@ fn add_highlight_styles(styles_doc: &mut XmlDocument, settings: &SmlComparerSett
 fn add_solid_fill(doc: &mut XmlDocument, fills_id: indextree::NodeId, color: &str) {
     let fill_id = doc.add_child(fills_id, XmlNodeData::element(S::fill()));
 
-    let pattern_fill = doc.add_child(fill_id, XmlNodeData::element_with_attrs(
-        S::patternFill(),
-        vec![XAttribute::new(XName::local("patternType"), "solid")],
-    ));
+    let pattern_fill = doc.add_child(
+        fill_id,
+        XmlNodeData::element_with_attrs(
+            S::patternFill(),
+            vec![XAttribute::new(XName::local("patternType"), "solid")],
+        ),
+    );
 
     // fgColor with RGB (prepend FF for alpha)
     let rgb = format!("FF{}", color);
-    doc.add_child(pattern_fill, XmlNodeData::element_with_attrs(
-        S::fgColor(),
-        vec![XAttribute::new(XName::local("rgb"), &rgb)],
-    ));
+    doc.add_child(
+        pattern_fill,
+        XmlNodeData::element_with_attrs(
+            S::fgColor(),
+            vec![XAttribute::new(XName::local("rgb"), &rgb)],
+        ),
+    );
 
     // bgColor indexed=64
-    doc.add_child(pattern_fill, XmlNodeData::element_with_attrs(
-        S::bgColor(),
-        vec![XAttribute::new(XName::local("indexed"), "64")],
-    ));
+    doc.add_child(
+        pattern_fill,
+        XmlNodeData::element_with_attrs(
+            S::bgColor(),
+            vec![XAttribute::new(XName::local("indexed"), "64")],
+        ),
+    );
 }
 
 /// Add an xf element with the given fill ID
 fn add_xf_with_fill(doc: &mut XmlDocument, cell_xfs_id: indextree::NodeId, fill_id: usize) {
-    doc.add_child(cell_xfs_id, XmlNodeData::element_with_attrs(
-        S::xf(),
-        vec![
-            XAttribute::new(XName::local("numFmtId"), "0"),
-            XAttribute::new(XName::local("fontId"), "0"),
-            XAttribute::new(XName::local("fillId"), &fill_id.to_string()),
-            XAttribute::new(XName::local("borderId"), "0"),
-            XAttribute::new(XName::local("applyFill"), "1"),
-        ],
-    ));
+    doc.add_child(
+        cell_xfs_id,
+        XmlNodeData::element_with_attrs(
+            S::xf(),
+            vec![
+                XAttribute::new(XName::local("numFmtId"), "0"),
+                XAttribute::new(XName::local("fontId"), "0"),
+                XAttribute::new(XName::local("fillId"), &fill_id.to_string()),
+                XAttribute::new(XName::local("borderId"), "0"),
+                XAttribute::new(XName::local("applyFill"), "1"),
+            ],
+        ),
+    );
 }
 
 /// Create a minimal styles.xml document
@@ -320,23 +346,26 @@ fn create_minimal_styles() -> XmlDocument {
 
     let root = doc.add_root(XmlNodeData::element_with_attrs(
         S::styleSheet(),
-        vec![XAttribute::new(
-            XName::new(XMLNS::NS, "x"),
-            S::NS,
-        )],
+        vec![XAttribute::new(XName::new(XMLNS::NS, "x"), S::NS)],
     ));
 
     // Add empty fills
-    doc.add_child(root, XmlNodeData::element_with_attrs(
-        S::fills(),
-        vec![XAttribute::new(XName::local("count"), "0")],
-    ));
+    doc.add_child(
+        root,
+        XmlNodeData::element_with_attrs(
+            S::fills(),
+            vec![XAttribute::new(XName::local("count"), "0")],
+        ),
+    );
 
     // Add empty cellXfs
-    doc.add_child(root, XmlNodeData::element_with_attrs(
-        S::cellXfs(),
-        vec![XAttribute::new(XName::local("count"), "0")],
-    ));
+    doc.add_child(
+        root,
+        XmlNodeData::element_with_attrs(
+            S::cellXfs(),
+            vec![XAttribute::new(XName::local("count"), "0")],
+        ),
+    );
 
     doc
 }
@@ -409,10 +438,13 @@ fn find_or_create_row(
     }
 
     // Create new row
-    let new_row = doc.add_child(sheet_data_id, XmlNodeData::element_with_attrs(
-        row_name.clone(),
-        vec![XAttribute::new(XName::local("r"), &row_index.to_string())],
-    ));
+    let new_row = doc.add_child(
+        sheet_data_id,
+        XmlNodeData::element_with_attrs(
+            row_name.clone(),
+            vec![XAttribute::new(XName::local("r"), &row_index.to_string())],
+        ),
+    );
 
     new_row
 }
@@ -441,10 +473,13 @@ fn find_or_create_cell(
     }
 
     // Create new cell
-    let new_cell = doc.add_child(row_id, XmlNodeData::element_with_attrs(
-        cell_name.clone(),
-        vec![XAttribute::new(XName::local("r"), cell_address)],
-    ));
+    let new_cell = doc.add_child(
+        row_id,
+        XmlNodeData::element_with_attrs(
+            cell_name.clone(),
+            vec![XAttribute::new(XName::local("r"), cell_address)],
+        ),
+    );
 
     new_cell
 }
@@ -463,7 +498,10 @@ fn add_comments_for_changes(
     // Determine comments path from sheet path
     // e.g., xl/worksheets/sheet1.xml -> xl/worksheets/../comments1.xml
     let sheet_dir = sheet_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("xl");
-    let sheet_name = sheet_path.rsplit_once('/').map(|(_, n)| n).unwrap_or(sheet_path);
+    let sheet_name = sheet_path
+        .rsplit_once('/')
+        .map(|(_, n)| n)
+        .unwrap_or(sheet_path);
     let sheet_num = sheet_name
         .trim_start_matches("sheet")
         .trim_end_matches(".xml");
@@ -482,7 +520,8 @@ fn add_comments_for_changes(
     };
 
     let comment_list_name = S::commentList();
-    let comment_list_id = comments_doc.find_child(root, &comment_list_name)
+    let comment_list_id = comments_doc
+        .find_child(root, &comment_list_name)
         .unwrap_or_else(|| {
             comments_doc.add_child(root, XmlNodeData::element(comment_list_name.clone()))
         });
@@ -491,7 +530,12 @@ fn add_comments_for_changes(
     for change in changes {
         if let Some(cell_address) = &change.cell_address {
             let comment_text = build_comment_text(change);
-            add_comment(&mut comments_doc, comment_list_id, cell_address, &comment_text);
+            add_comment(
+                &mut comments_doc,
+                comment_list_id,
+                cell_address,
+                &comment_text,
+            );
         }
     }
 
@@ -524,14 +568,22 @@ fn create_comments_document(author: &str) -> XmlDocument {
 }
 
 /// Add a single comment element
-fn add_comment(doc: &mut XmlDocument, comment_list_id: indextree::NodeId, cell_ref: &str, text: &str) {
-    let comment = doc.add_child(comment_list_id, XmlNodeData::element_with_attrs(
-        S::comment(),
-        vec![
-            XAttribute::new(XName::local("ref"), cell_ref),
-            XAttribute::new(XName::local("authorId"), "0"),
-        ],
-    ));
+fn add_comment(
+    doc: &mut XmlDocument,
+    comment_list_id: indextree::NodeId,
+    cell_ref: &str,
+    text: &str,
+) {
+    let comment = doc.add_child(
+        comment_list_id,
+        XmlNodeData::element_with_attrs(
+            S::comment(),
+            vec![
+                XAttribute::new(XName::local("ref"), cell_ref),
+                XAttribute::new(XName::local("authorId"), "0"),
+            ],
+        ),
+    );
 
     let text_elem = doc.add_child(comment, XmlNodeData::element(S::text()));
     let r_elem = doc.add_child(text_elem, XmlNodeData::element(S::r()));
@@ -588,7 +640,10 @@ fn add_vml_drawing_for_comments(
 ) -> Result<()> {
     // Determine VML path
     let sheet_dir = sheet_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("xl");
-    let sheet_name = sheet_path.rsplit_once('/').map(|(_, n)| n).unwrap_or(sheet_path);
+    let sheet_name = sheet_path
+        .rsplit_once('/')
+        .map(|(_, n)| n)
+        .unwrap_or(sheet_path);
     let sheet_num = sheet_name
         .trim_start_matches("sheet")
         .trim_end_matches(".xml");
@@ -602,7 +657,9 @@ fn add_vml_drawing_for_comments(
     vml.push('\n');
     vml.push_str(r#"<v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe">"#);
     vml.push('\n');
-    vml.push_str(r#"<v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/>"#);
+    vml.push_str(
+        r#"<v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/>"#,
+    );
     vml.push('\n');
     vml.push_str("</v:shapetype>\n");
 
@@ -644,10 +701,13 @@ fn add_vml_drawing_for_comments(
         if ws_doc.find_child(root, &legacy_drawing_name).is_none() {
             // Add relationship ID (simplified - in real impl would manage rels properly)
             let rel_id = format!("rId{}", shape_id);
-            ws_doc.add_child(root, XmlNodeData::element_with_attrs(
-                legacy_drawing_name,
-                vec![XAttribute::new(XName::new(R::NS, "id"), &rel_id)],
-            ));
+            ws_doc.add_child(
+                root,
+                XmlNodeData::element_with_attrs(
+                    legacy_drawing_name,
+                    vec![XAttribute::new(XName::new(R::NS, "id"), &rel_id)],
+                ),
+            );
             pkg.put_xml_part(sheet_path, &ws_doc)?;
         }
     }
@@ -676,44 +736,114 @@ fn add_diff_summary_sheet(
 
     // Add summary header
     let mut row_num = 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Spreadsheet Comparison Summary"]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Spreadsheet Comparison Summary"],
+    );
     row_num += 1;
     add_row(&mut ws_doc, sheet_data, row_num, &[""]);
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Total Changes:", &result.total_changes().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Total Changes:", &result.total_changes().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Value Changes:", &result.value_changes().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Value Changes:", &result.value_changes().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Formula Changes:", &result.formula_changes().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Formula Changes:", &result.formula_changes().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Format Changes:", &result.format_changes().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Format Changes:", &result.format_changes().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Cells Added:", &result.cells_added().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Cells Added:", &result.cells_added().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Cells Deleted:", &result.cells_deleted().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Cells Deleted:", &result.cells_deleted().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Sheets Added:", &result.sheets_added().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Sheets Added:", &result.sheets_added().to_string()],
+    );
     row_num += 1;
-    add_row(&mut ws_doc, sheet_data, row_num, &["Sheets Deleted:", &result.sheets_deleted().to_string()]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &["Sheets Deleted:", &result.sheets_deleted().to_string()],
+    );
     row_num += 1;
     add_row(&mut ws_doc, sheet_data, row_num, &[""]);
     row_num += 1;
 
     // Add change details header
-    add_row(&mut ws_doc, sheet_data, row_num, &["Change Type", "Sheet", "Cell", "Old Value", "New Value", "Description"]);
+    add_row(
+        &mut ws_doc,
+        sheet_data,
+        row_num,
+        &[
+            "Change Type",
+            "Sheet",
+            "Cell",
+            "Old Value",
+            "New Value",
+            "Description",
+        ],
+    );
     row_num += 1;
 
     // Add each change
     for change in &result.changes {
         let desc = change.get_description();
-        add_row(&mut ws_doc, sheet_data, row_num, &[
-            &format!("{:?}", change.change_type),
-            change.sheet_name.as_deref().unwrap_or(""),
-            change.cell_address.as_deref().unwrap_or(""),
-            change.old_value.as_deref().or(change.old_formula.as_deref()).unwrap_or(""),
-            change.new_value.as_deref().or(change.new_formula.as_deref()).unwrap_or(""),
-            &desc,
-        ]);
+        add_row(
+            &mut ws_doc,
+            sheet_data,
+            row_num,
+            &[
+                &format!("{:?}", change.change_type),
+                change.sheet_name.as_deref().unwrap_or(""),
+                change.cell_address.as_deref().unwrap_or(""),
+                change
+                    .old_value
+                    .as_deref()
+                    .or(change.old_formula.as_deref())
+                    .unwrap_or(""),
+                change
+                    .new_value
+                    .as_deref()
+                    .or(change.new_formula.as_deref())
+                    .unwrap_or(""),
+                &desc,
+            ],
+        );
         row_num += 1;
     }
 
@@ -746,14 +876,17 @@ fn add_diff_summary_sheet(
 
             // Add new sheet element
             let new_sheet_id = max_sheet_id + 1;
-            workbook_doc.add_child(sheets_id, XmlNodeData::element_with_attrs(
-                S::sheet(),
-                vec![
-                    XAttribute::new(XName::local("name"), "_DiffSummary"),
-                    XAttribute::new(XName::local("sheetId"), &new_sheet_id.to_string()),
-                    XAttribute::new(XName::new(R::NS, "id"), "rIdSummary"),
-                ],
-            ));
+            workbook_doc.add_child(
+                sheets_id,
+                XmlNodeData::element_with_attrs(
+                    S::sheet(),
+                    vec![
+                        XAttribute::new(XName::local("name"), "_DiffSummary"),
+                        XAttribute::new(XName::local("sheetId"), &new_sheet_id.to_string()),
+                        XAttribute::new(XName::new(R::NS, "id"), "rIdSummary"),
+                    ],
+                ),
+            );
 
             pkg.put_xml_part(workbook_path, &workbook_doc)?;
         }
@@ -779,23 +912,34 @@ fn add_diff_summary_sheet(
 }
 
 /// Add a row with values to sheetData
-fn add_row(doc: &mut XmlDocument, sheet_data_id: indextree::NodeId, row_num: usize, values: &[&str]) {
-    let row = doc.add_child(sheet_data_id, XmlNodeData::element_with_attrs(
-        S::row(),
-        vec![XAttribute::new(XName::local("r"), &row_num.to_string())],
-    ));
+fn add_row(
+    doc: &mut XmlDocument,
+    sheet_data_id: indextree::NodeId,
+    row_num: usize,
+    values: &[&str],
+) {
+    let row = doc.add_child(
+        sheet_data_id,
+        XmlNodeData::element_with_attrs(
+            S::row(),
+            vec![XAttribute::new(XName::local("r"), &row_num.to_string())],
+        ),
+    );
 
     for (i, value) in values.iter().enumerate() {
         let col_letter = get_column_letter(i + 1);
         let cell_ref = format!("{}{}", col_letter, row_num);
 
-        let cell = doc.add_child(row, XmlNodeData::element_with_attrs(
-            S::c(),
-            vec![
-                XAttribute::new(XName::local("r"), &cell_ref),
-                XAttribute::new(XName::local("t"), "inlineStr"),
-            ],
-        ));
+        let cell = doc.add_child(
+            row,
+            XmlNodeData::element_with_attrs(
+                S::c(),
+                vec![
+                    XAttribute::new(XName::local("r"), &cell_ref),
+                    XAttribute::new(XName::local("t"), "inlineStr"),
+                ],
+            ),
+        );
 
         let is_elem = doc.add_child(cell, XmlNodeData::element(S::is()));
         let t_elem = doc.add_child(is_elem, XmlNodeData::element(S::t()));

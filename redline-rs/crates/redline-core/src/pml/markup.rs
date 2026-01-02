@@ -761,45 +761,39 @@ mod tests {
     fn group_changes_by_slide_works() {
         let changes = vec![
             PmlChange {
-                slide_index: 1,
+                slide_index: Some(1),
                 shape_id: Some("shape1".to_string()),
                 shape_name: Some("Title".to_string()),
                 change_type: PmlChangeType::TextChanged,
-                description: Some("Text changed".to_string()),
-                new_x: Some(100),
-                new_y: Some(200),
-                old_x: None,
-                old_y: None,
+                new_x: Some(100.0),
+                new_y: Some(200.0),
+                ..Default::default()
             },
             PmlChange {
-                slide_index: 1,
+                slide_index: Some(1),
                 shape_id: Some("shape2".to_string()),
                 shape_name: Some("Content".to_string()),
                 change_type: PmlChangeType::ShapeInserted,
-                description: Some("Shape inserted".to_string()),
-                new_x: Some(300),
-                new_y: Some(400),
-                old_x: None,
-                old_y: None,
+                new_x: Some(300.0),
+                new_y: Some(400.0),
+                ..Default::default()
             },
             PmlChange {
-                slide_index: 2,
+                slide_index: Some(2),
                 shape_id: Some("shape3".to_string()),
                 shape_name: Some("Image".to_string()),
                 change_type: PmlChangeType::ImageReplaced,
-                description: Some("Image replaced".to_string()),
-                new_x: Some(500),
-                new_y: Some(600),
-                old_x: None,
-                old_y: None,
+                new_x: Some(500.0),
+                new_y: Some(600.0),
+                ..Default::default()
             },
         ];
 
         let grouped = group_changes_by_slide(&changes);
 
         assert_eq!(grouped.len(), 2);
-        assert_eq!(grouped.get(&1).unwrap().len(), 2);
-        assert_eq!(grouped.get(&2).unwrap().len(), 1);
+        assert_eq!(grouped.get(&Some(1)).unwrap().len(), 2);
+        assert_eq!(grouped.get(&Some(2)).unwrap().len(), 1);
     }
 
     #[test]
@@ -814,15 +808,9 @@ mod tests {
         let settings = PmlComparerSettings::default();
 
         let change = PmlChange {
-            slide_index: 0,
-            shape_id: None,
-            shape_name: None,
+            slide_index: Some(0),
             change_type: PmlChangeType::ShapeInserted,
-            description: None,
-            new_x: None,
-            new_y: None,
-            old_x: None,
-            old_y: None,
+            ..Default::default()
         };
         let (label, _color) = get_label_for_change(&change, &settings);
         assert_eq!(label, "NEW");

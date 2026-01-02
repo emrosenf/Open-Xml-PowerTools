@@ -156,8 +156,14 @@ pub enum ContentElement {
     ParagraphProperties { element_xml: String },
     /// Run properties marker
     RunProperties,
-    /// Line break (w:br)
+    /// Line break (w:br without type attribute or w:br w:type="textWrapping")
     Break,
+    /// Page break (w:br w:type="page")
+    PageBreak,
+    /// Column break (w:br w:type="column")
+    ColumnBreak,
+    /// Last rendered page break (w:lastRenderedPageBreak)
+    LastRenderedPageBreak,
     /// Carriage return (w:cr)
     CarriageReturn,
     /// Tab (w:tab)
@@ -210,6 +216,9 @@ impl ContentElement {
             ContentElement::ParagraphProperties { .. } => ContentType::ParagraphMark,
             ContentElement::RunProperties => ContentType::Unknown, // rPr atoms are rare
             ContentElement::Break => ContentType::Break,
+            ContentElement::PageBreak => ContentType::Break,
+            ContentElement::ColumnBreak => ContentType::Break,
+            ContentElement::LastRenderedPageBreak => ContentType::Break,
             ContentElement::CarriageReturn => ContentType::Break,
             ContentElement::Tab => ContentType::Tab,
             ContentElement::PositionalTab { .. } => ContentType::Tab,
@@ -240,6 +249,9 @@ impl ContentElement {
             ContentElement::ParagraphProperties { .. } => "pPr",
             ContentElement::RunProperties => "rPr",
             ContentElement::Break => "br",
+            ContentElement::PageBreak => "br",
+            ContentElement::ColumnBreak => "br",
+            ContentElement::LastRenderedPageBreak => "lastRenderedPageBreak",
             ContentElement::CarriageReturn => "cr",
             ContentElement::Tab => "tab",
             ContentElement::PositionalTab { .. } => "ptab",
@@ -273,6 +285,9 @@ impl ContentElement {
             ContentElement::ParagraphProperties { .. } => String::new(), // pPr has no text value
             ContentElement::RunProperties => String::new(),
             ContentElement::Break => String::new(),
+            ContentElement::PageBreak => String::new(),
+            ContentElement::ColumnBreak => String::new(),
+            ContentElement::LastRenderedPageBreak => String::new(),
             ContentElement::CarriageReturn => String::new(),
             ContentElement::Tab => String::new(),
             ContentElement::PositionalTab {
@@ -632,6 +647,9 @@ impl ComparisonUnitAtom {
             ContentElement::ParagraphProperties { .. } => "pPr",
             ContentElement::RunProperties => "rPr",
             ContentElement::Break => "br",
+            ContentElement::PageBreak => "br[page]",
+            ContentElement::ColumnBreak => "br[col]",
+            ContentElement::LastRenderedPageBreak => "lastRenderedPageBreak",
             ContentElement::CarriageReturn => "cr",
             ContentElement::Tab => "tab",
             ContentElement::PositionalTab { .. } => "ptab",

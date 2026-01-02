@@ -2313,6 +2313,27 @@ fn create_content_element(
             }
             Some(br)
         }
+        ContentElement::PageBreak => {
+            let mut attrs = vec![XAttribute::new(W::type_(), "page")];
+            if !status.is_empty() {
+                attrs.push(XAttribute::new(pt_status(), status));
+            }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::br(), attrs)))
+        }
+        ContentElement::ColumnBreak => {
+            let mut attrs = vec![XAttribute::new(W::type_(), "column")];
+            if !status.is_empty() {
+                attrs.push(XAttribute::new(pt_status(), status));
+            }
+            Some(doc.new_node(XmlNodeData::element_with_attrs(W::br(), attrs)))
+        }
+        ContentElement::LastRenderedPageBreak => {
+            let lrpb = doc.new_node(XmlNodeData::element(W::lastRenderedPageBreak()));
+            if !status.is_empty() {
+                doc.set_attribute(lrpb, &pt_status(), status);
+            }
+            Some(lrpb)
+        }
         ContentElement::CarriageReturn => {
             let cr = doc.new_node(XmlNodeData::element(W::cr()));
             if !status.is_empty() {
