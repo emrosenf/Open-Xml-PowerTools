@@ -62,6 +62,26 @@ enum Commands {
         /// Higher values = more coalesced paragraph-level changes
         #[arg(long, default_value = "0.15")]
         detail_threshold: f64,
+
+        /// Transform tracked changes to visual formatting (colored text, no revision markers)
+        #[arg(long)]
+        visual_redline: bool,
+
+        /// Color for insertions in visual redline mode (hex RGB, e.g., 0000FF for blue)
+        #[arg(long, default_value = "0000FF")]
+        insertion_color: String,
+
+        /// Color for deletions in visual redline mode (hex RGB, e.g., FF0000 for red)
+        #[arg(long, default_value = "FF0000")]
+        deletion_color: String,
+
+        /// Color for moved content in visual redline mode (hex RGB, e.g., 008000 for green)
+        #[arg(long, default_value = "008000")]
+        move_color: String,
+
+        /// Skip summary table in visual redline output
+        #[arg(long)]
+        no_summary_table: bool,
     },
     /// Count revisions between two documents (without generating output)
     Count {
@@ -131,6 +151,11 @@ fn main() {
             trace_paragraph,
             trace_output,
             detail_threshold,
+            visual_redline,
+            insertion_color,
+            deletion_color,
+            move_color,
+            no_summary_table,
         } => run_compare(
             &doc1,
             &doc2,
@@ -143,6 +168,11 @@ fn main() {
             trace_paragraph,
             trace_output,
             detail_threshold,
+            visual_redline,
+            &insertion_color,
+            &deletion_color,
+            &move_color,
+            no_summary_table,
         ),
 
         Commands::Count { doc1, doc2, json } => run_count(&doc1, &doc2, json),
@@ -168,6 +198,11 @@ fn run_compare(
     trace_paragraph: Option<String>,
     trace_output: PathBuf,
     detail_threshold: f64,
+    visual_redline: bool,
+    insertion_color: &str,
+    deletion_color: &str,
+    move_color: &str,
+    no_summary_table: bool,
 ) -> Result<(), String> {
     let doc_type = detect_doc_type(doc1, doc_type)?;
 
@@ -224,8 +259,37 @@ fn run_compare(
             let insertions = result.insertions;
             let deletions = result.deletions;
 
+            // Apply visual redline transformation if requested
+            let final_document = if visual_redline {
+                let visual_settings = redline_core::wml::VisualRedlineSettings {
+                    insertion_color: insertion_color.to_string(),
+                    deletion_color: deletion_color.to_string(),
+                    move_color: move_color.to_string(),
+                    add_summary_table: !no_summary_table,
+                    older_filename: Some(doc1.display().to_string()),
+                    newer_filename: Some(doc2.display().to_string()),
+                    ..Default::default()
+                };
+
+                let compared_doc = redline_core::WmlDocument::from_bytes(&result.document)
+                    .map_err(|e| format!("Failed to load comparison result: {}", e))?;
+
+                let visual_result =
+                    redline_core::wml::render_visual_redline(&compared_doc, &visual_settings)
+                        .map_err(|e| format!("Visual redline transformation failed: {}", e))?;
+
+                eprintln!(
+                    "Visual redline: {} insertions, {} deletions, {} moves detected",
+                    visual_result.insertions, visual_result.deletions, visual_result.moves
+                );
+
+                visual_result.document
+            } else {
+                result.document
+            };
+
             // Write output
-            fs::write(&output, &result.document)
+            fs::write(&output, &final_document)
                 .map_err(|e| format!("Failed to write {}: {}", output.display(), e))?;
 
             // Write LCS trace if it was captured

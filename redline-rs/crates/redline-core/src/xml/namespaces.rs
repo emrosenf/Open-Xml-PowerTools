@@ -163,6 +163,41 @@ pub mod W {
     pub fn relativeTo() -> XName { XName::new(NS, "relativeTo") }
     pub fn leader() -> XName { XName::new(NS, "leader") }
     pub fn type_() -> XName { XName::new(NS, "type") }
+
+    // Visual formatting elements (for visual redline feature)
+    pub fn color() -> XName { XName::new(NS, "color") }
+    pub fn u() -> XName { XName::new(NS, "u") }
+    pub fn strike() -> XName { XName::new(NS, "strike") }
+    pub fn b() -> XName { XName::new(NS, "b") }
+    pub fn sz() -> XName { XName::new(NS, "sz") }
+    pub fn szCs() -> XName { XName::new(NS, "szCs") }
+    pub fn rFonts() -> XName { XName::new(NS, "rFonts") }
+    pub fn ascii() -> XName { XName::new(NS, "ascii") }
+    pub fn hAnsi() -> XName { XName::new(NS, "hAnsi") }
+    pub fn cs() -> XName { XName::new(NS, "cs") }
+
+    // Table formatting elements (for summary table)
+    pub fn tblW() -> XName { XName::new(NS, "tblW") }
+    pub fn tblBorders() -> XName { XName::new(NS, "tblBorders") }
+    pub fn top() -> XName { XName::new(NS, "top") }
+    pub fn left() -> XName { XName::new(NS, "left") }
+    pub fn bottom() -> XName { XName::new(NS, "bottom") }
+    pub fn right() -> XName { XName::new(NS, "right") }
+    pub fn insideH() -> XName { XName::new(NS, "insideH") }
+    pub fn insideV() -> XName { XName::new(NS, "insideV") }
+    pub fn gridCol() -> XName { XName::new(NS, "gridCol") }
+    pub fn shd() -> XName { XName::new(NS, "shd") }
+    pub fn jc() -> XName { XName::new(NS, "jc") }
+    pub fn spacing() -> XName { XName::new(NS, "spacing") }
+    pub fn tblCellMar() -> XName { XName::new(NS, "tblCellMar") }
+    pub fn w_val() -> XName { XName::new(NS, "w") }
+    pub fn fill() -> XName { XName::new(NS, "fill") }
+    pub fn space() -> XName { XName::new(NS, "space") }
+    pub fn before() -> XName { XName::new(NS, "before") }
+    pub fn after() -> XName { XName::new(NS, "after") }
+    pub fn line() -> XName { XName::new(NS, "line") }
+    pub fn lineRule() -> XName { XName::new(NS, "lineRule") }
+    pub fn vAlign() -> XName { XName::new(NS, "vAlign") }
 }
 
 pub mod S {

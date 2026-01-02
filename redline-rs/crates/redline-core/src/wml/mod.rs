@@ -23,6 +23,7 @@ mod revision_processor;
 mod settings;
 mod simplify;
 mod types;
+mod visual_redline;
 
 pub use atom_list::{
     assign_unid_to_all_elements, create_comparison_unit_atom_list,
@@ -101,3 +102,4 @@ pub use types::{
     RevisionCounts, WmlChange, WmlChangeDetails, WmlChangeListItem, WmlChangeListOptions,
     WmlChangeType, WmlComparisonResult, WmlWordCount,
 };
+pub use visual_redline::{render_visual_redline, VisualRedlineResult, VisualRedlineSettings};

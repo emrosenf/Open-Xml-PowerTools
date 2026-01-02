@@ -383,3 +383,86 @@ pub fn revert_pml_changes(document: &[u8], changes_json: JsValue) -> Result<Vec<
     redline_core::pml::revert_pml_changes(document, &changes)
         .map_err(|e| JsError::new(&e.to_string()))
 }
+
+// ============================================================================
+// Visual Redline Functions
+// ============================================================================
+
+/// Result of the visual redline transformation
+#[derive(Serialize)]
+pub struct VisualRedlineResultJs {
+    #[serde(with = "serde_bytes")]
+    pub document: Vec<u8>,
+    pub insertions: usize,
+    pub deletions: usize,
+    pub moves: usize,
+    pub format_changes_removed: usize,
+}
+
+/// Transform a document with tracked changes to visual formatting.
+///
+/// This converts OOXML tracked changes (w:ins/w:del) into visual formatting:
+/// - Insertions: colored text with double underline
+/// - Deletions: colored text with strikethrough
+/// - Moves: detected by matching text, shown in different color
+///
+/// The input document should already contain tracked changes (e.g., from compare_word_documents).
+///
+/// Settings JSON format:
+/// ```json
+/// {
+///   "insertion_color": "0000FF",      // Blue (hex RGB)
+///   "deletion_color": "FF0000",       // Red (hex RGB)
+///   "move_color": "008000",           // Green (hex RGB)
+///   "move_detection_min_words": 5,    // Min words for move detection
+///   "add_summary_table": true,        // Add summary table at end
+///   "older_filename": "original.docx", // Optional, for summary table
+///   "newer_filename": "modified.docx"  // Optional, for summary table
+/// }
+/// ```
+#[wasm_bindgen]
+pub fn render_visual_redline(
+    document: &[u8],
+    settings_json: Option<String>,
+) -> Result<JsValue, JsError> {
+    let settings: redline_core::wml::VisualRedlineSettings = settings_json
+        .map(|s| serde_json::from_str(&s))
+        .transpose()
+        .map_err(|e: serde_json::Error| JsError::new(&e.to_string()))?
+        .unwrap_or_default();
+
+    let doc = redline_core::WmlDocument::from_bytes(document)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let result = redline_core::wml::render_visual_redline(&doc, &settings)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let result_struct = VisualRedlineResultJs {
+        document: result.document,
+        insertions: result.insertions,
+        deletions: result.deletions,
+        moves: result.moves,
+        format_changes_removed: result.format_changes_removed,
+    };
+
+    serde_wasm_bindgen::to_value(&result_struct).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Compare two Word documents and render the result as visual redline in one step.
+///
+/// This is a convenience function that combines compare_word_documents and render_visual_redline.
+///
+/// Both compare_settings_json and visual_settings_json are optional.
+#[wasm_bindgen]
+pub fn compare_word_documents_visual(
+    older: &[u8],
+    newer: &[u8],
+    compare_settings_json: Option<String>,
+    visual_settings_json: Option<String>,
+) -> Result<JsValue, JsError> {
+    // First, compare the documents
+    let compared_doc = compare_word_documents(older, newer, compare_settings_json)?;
+
+    // Then, render as visual redline
+    render_visual_redline(&compared_doc, visual_settings_json)
+}
