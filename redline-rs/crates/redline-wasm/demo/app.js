@@ -26,21 +26,48 @@ function setupDropZone(id, isOriginal) {
     const zone = document.getElementById(id);
     const input = zone.querySelector('input');
     
-    zone.addEventListener('click', () => input.click());
-    
-    input.addEventListener('change', (e) => handleFile(e.target.files[0], isOriginal));
-    
-    zone.addEventListener('dragover', (e) => {
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        zone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
         e.preventDefault();
-        zone.classList.add('drag-over');
+        e.stopPropagation();
+    }
+
+    // Highlight drop zone
+    ['dragenter', 'dragover'].forEach(eventName => {
+        zone.addEventListener(eventName, () => zone.classList.add('drag-over'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        zone.addEventListener(eventName, () => zone.classList.remove('drag-over'), false);
+    });
+
+    // Handle dropped files
+    zone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            handleFile(files[0], isOriginal);
+        }
     });
     
-    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    // Handle click to upload
+    zone.addEventListener('click', (e) => {
+        input.click();
+    });
     
-    zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('drag-over');
-        handleFile(e.dataTransfer.files[0], isOriginal);
+    // Prevent input click from bubbling to zone (though input is hidden)
+    input.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+    
+    input.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0], isOriginal);
+        }
     });
 }
 
