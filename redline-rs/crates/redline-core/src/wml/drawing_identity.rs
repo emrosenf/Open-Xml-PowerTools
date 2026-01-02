@@ -31,6 +31,7 @@ use indextree::NodeId;
 use sha1::{Digest, Sha1};
 
 /// Sentinel value for drawings with missing or unresolvable relationships
+#[allow(dead_code)]
 const MISSING_RELATIONSHIP_SENTINEL: &str = "MISSING_RELATIONSHIP";
 
 /// Sentinel value for textbox drawings (content-based identity)

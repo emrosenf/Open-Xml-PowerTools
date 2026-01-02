@@ -4,10 +4,12 @@ use crate::xml::XmlDocument;
 use indextree::NodeId;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct ReverseRevisionsInfo {
     in_insert: bool,
 }
 
+#[allow(dead_code)]
 impl ReverseRevisionsInfo {
     fn new() -> Self {
         Self { in_insert: false }
@@ -29,10 +31,12 @@ pub fn reject_revisions(_doc: &mut XmlDocument) -> Result<(), String> {
     todo!("Port from C# RevisionProcessor.cs:RejectRevisions")
 }
 
+#[allow(dead_code)]
 pub fn reverse_revisions(_doc: &mut XmlDocument) -> Result<(), String> {
     todo!("Port from C# RevisionProcessor.cs:ReverseRevisions")
 }
 
+#[allow(dead_code)]
 pub fn normalize_duplicate_textboxes(_doc: &mut XmlDocument) -> Result<(), String> {
     todo!("Port from C# RevisionProcessor.cs:NormalizeDuplicateTextBoxes")
 }

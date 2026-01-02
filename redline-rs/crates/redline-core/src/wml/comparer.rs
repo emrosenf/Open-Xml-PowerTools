@@ -22,6 +22,8 @@ use super::change_event::detect_format_changes;
 use super::coalesce::{
     coalesce, coalesce_adjacent_runs, mark_content_as_deleted_or_inserted, strip_pt_attributes,
 };
+// Note: comment functions reserved for future multi-party comparison
+#[allow(unused_imports)]
 use super::comments::{add_comments_to_package, extract_comments_data, merge_comments};
 use super::comparison_unit::{
     get_comparison_unit_list, ComparisonCorrelationStatus, ComparisonUnitAtom, ContentElement,
@@ -1017,6 +1019,7 @@ fn count_revisions_smart(
 }
 
 /// Debug helper: count pt:Status attributes in the document
+#[allow(dead_code)]
 fn count_pt_status(doc: &XmlDocument, root: NodeId, status_value: &str) -> usize {
     use crate::wml::coalesce::pt_status;
     let mut count = 0;
@@ -1036,6 +1039,7 @@ fn count_pt_status(doc: &XmlDocument, root: NodeId, status_value: &str) -> usize
 }
 
 /// Debug helper: count w:del and w:ins elements
+#[allow(dead_code)]
 fn count_del_ins(doc: &XmlDocument, root: NodeId) -> (usize, usize) {
     use crate::xml::namespaces::W;
     let mut del_count = 0;

@@ -149,7 +149,9 @@ impl Default for SmlComparisonResult {
     }
 }
 
+// Future: detailed sheet comparison results
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct SheetComparisonResult {
     pub name: String,
     pub status: SheetStatus,
@@ -159,6 +161,7 @@ pub struct SheetComparisonResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum SheetStatus {
     Added,
     Deleted,
@@ -168,6 +171,7 @@ pub enum SheetStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct CellChange {
     pub cell_address: String,
     pub change_type: CellChangeType,
@@ -178,6 +182,7 @@ pub struct CellChange {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum CellChangeType {
     Added,
     Deleted,
@@ -187,12 +192,14 @@ pub enum CellChangeType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct RowChange {
     pub row_number: u32,
     pub change_type: RowChangeType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum RowChangeType {
     Added,
     Deleted,
@@ -200,12 +207,14 @@ pub enum RowChangeType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ColumnChange {
     pub column_letter: String,
     pub change_type: ColumnChangeType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum ColumnChangeType {
     Added,
     Deleted,

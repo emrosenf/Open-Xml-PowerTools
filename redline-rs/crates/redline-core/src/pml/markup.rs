@@ -181,7 +181,7 @@ fn add_change_overlays(
     };
 
     // Find spTree (shape tree)
-    let sp_tree_name = P::sp_tree();
+    let _sp_tree_name = P::sp_tree();
     let sp_tree_id = find_sp_tree(slide_doc, root);
 
     let Some(sp_tree_id) = sp_tree_id else {
@@ -210,8 +210,8 @@ fn add_change_overlays(
 /// Find the spTree element in a slide
 fn find_sp_tree(doc: &XmlDocument, root: indextree::NodeId) -> Option<indextree::NodeId> {
     // Look for cSld/spTree
-    let c_sld_name = P::c_sld();
-    let sp_tree_name = P::sp_tree();
+    let _c_sld_name = P::c_sld();
+    let _sp_tree_name = P::sp_tree();
 
     for node_id in doc.descendants(root) {
         if let Some(data) = doc.get(node_id) {

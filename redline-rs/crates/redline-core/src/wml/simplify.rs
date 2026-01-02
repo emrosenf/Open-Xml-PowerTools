@@ -28,8 +28,8 @@ pub struct SimplifyMarkupSettings {
 
 pub fn simplify_markup(doc: &mut XmlDocument, root: NodeId, settings: &SimplifyMarkupSettings) {
     if settings.remove_markup_for_document_comparison {
-        let mut settings_copy = settings.clone();
-        settings_copy.remove_rsid_info = true;
+        // Note: settings_copy reserved for future per-element settings
+        let _settings_copy = settings.clone();
         remove_elements_for_document_comparison(doc, root);
     }
 

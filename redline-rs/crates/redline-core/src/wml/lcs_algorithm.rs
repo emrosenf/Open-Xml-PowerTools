@@ -233,6 +233,7 @@ fn extract_group_text(group: &ComparisonUnitGroup) -> String {
 
 /// Extract text from a list of units
 #[cfg(feature = "trace")]
+#[allow(dead_code)]
 fn extract_units_text(units: &[ComparisonUnit]) -> String {
     units
         .iter()
@@ -404,6 +405,7 @@ pub fn units_match_filter(
 /// Find the best matching paragraph in the other document
 /// Uses text similarity to find the corresponding paragraph
 #[cfg(feature = "trace")]
+#[allow(dead_code)]
 fn find_corresponding_paragraph(
     target_text: &str,
     units: &[ComparisonUnit],

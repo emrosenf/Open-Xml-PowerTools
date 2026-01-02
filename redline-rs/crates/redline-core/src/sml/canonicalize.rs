@@ -302,7 +302,7 @@ impl SmlCanonicalizer {
         cell_ref: &str,
         shared_strings: &[String],
         style_info: &StyleInfo,
-        settings: &SmlComparerSettings,
+        _settings: &SmlComparerSettings,
     ) -> Result<CellSignature> {
         // Parse cell reference
         let (col, row) = Self::parse_cell_reference(cell_ref)?;

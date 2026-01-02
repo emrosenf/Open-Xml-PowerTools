@@ -10,6 +10,7 @@ use crate::wml::settings::{
 /// Internal struct to track consolidation information for each revision.
 /// Port of ConsolidationInfo class from WmlComparer.cs line 974.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct ConsolidationInfo {
     /// Name of the revisor.
     pub revisor: String,

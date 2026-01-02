@@ -306,6 +306,7 @@ pub(crate) struct CommentSignature {
 }
 
 impl CommentSignature {
+    #[allow(dead_code)]
     pub fn compute_hash(&self) -> String {
         let content = format!("{}|{}", self.author, self.text);
         let mut hasher = Sha256::new();

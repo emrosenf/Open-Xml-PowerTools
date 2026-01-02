@@ -5,8 +5,9 @@
 
 use super::types::{
     PmlChange, PmlChangeDetails, PmlChangeListItem, PmlChangeListOptions, PmlChangeType,
-    PmlWordCount,
 };
+#[allow(unused_imports)]
+use super::types::PmlWordCount;
 
 /// Build a UI-friendly change list from raw changes.
 ///

@@ -122,6 +122,7 @@ struct SheetMatch {
     match_type: SheetMatchType,
     old_name: Option<String>,
     new_name: String,
+    #[allow(dead_code)]
     similarity: f64,
 }
 

@@ -635,7 +635,7 @@ fn build_comment_text(change: &SmlChange) -> String {
 fn add_vml_drawing_for_comments(
     pkg: &mut crate::package::OoxmlPackage,
     sheet_path: &str,
-    comments_path: &str,
+    _comments_path: &str,
     changes: &[&SmlChange],
 ) -> Result<()> {
     // Determine VML path

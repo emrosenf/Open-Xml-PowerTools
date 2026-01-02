@@ -4,8 +4,11 @@
 
 use crate::error::{RedlineError, Result};
 use crate::pml::{PmlChange, PmlChangeType, PmlDocument};
+#[allow(unused_imports)]
 use crate::xml::namespaces::P;
-use crate::xml::{XAttribute, XName, XmlDocument, XmlNodeData};
+use crate::xml::{XName, XmlDocument, XmlNodeData};
+#[allow(unused_imports)]
+use crate::xml::XAttribute;
 use indextree::NodeId;
 
 /// Apply a set of changes to a base PowerPoint document.

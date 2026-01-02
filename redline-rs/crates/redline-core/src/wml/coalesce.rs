@@ -2,6 +2,9 @@
 //!
 //! This is a faithful line-by-line port of CoalesceRecurse from C# WmlComparer.cs (lines 5161-5738).
 
+// Allow dead code for helper functions ported from C# that may be used in future enhancements
+#![allow(dead_code)]
+
 use super::comparison_unit::{ComparisonCorrelationStatus, ComparisonUnitAtom, ContentElement};
 use super::settings::WmlComparerSettings;
 use crate::wml::revision::{create_run_property_change, get_next_revision_id, RevisionSettings};
@@ -2652,32 +2655,10 @@ fn group_adjacent_by_correlation_ranges(
                         status_str,
                         atom.formatting_signature.as_deref().unwrap_or("<null>")
                     )
-                } else if atom.correlation_status == ComparisonCorrelationStatus::Inserted
-                    || atom.correlation_status == ComparisonCorrelationStatus::Deleted
-                {
-                    // For Inserted/Deleted, don't include ancestor_unid to allow coalescing
-                    // of contiguous revisions from different source runs
-                    format!(
-                        "{}|SIG:{}",
-                        status_str,
-                        atom.formatting_signature.as_deref().unwrap_or("<null>")
-                    )
                 } else {
-                    // Keep ancestor_unid for Equal content to preserve source structure
                     format!("{}|{}", ancestor_unid, status_str)
                 }
-            } else if atom.correlation_status == ComparisonCorrelationStatus::Inserted
-                || atom.correlation_status == ComparisonCorrelationStatus::Deleted
-            {
-                // For Inserted/Deleted, don't include ancestor_unid to allow coalescing
-                // of contiguous revisions from different source runs
-                format!(
-                    "{}|SIG:{}",
-                    status_str,
-                    atom.formatting_signature.as_deref().unwrap_or("<null>")
-                )
             } else {
-                // Keep ancestor_unid for Equal content to preserve source structure
                 format!("{}|{}", ancestor_unid, status_str)
             }
         };

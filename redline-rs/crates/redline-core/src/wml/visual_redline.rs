@@ -104,7 +104,8 @@ struct RevisionInfo {
     node_id: NodeId,
     /// All w:r elements inside this revision
     runs: Vec<NodeId>,
-    /// Extracted text content
+    /// Extracted text content (kept for debugging via Debug trait)
+    #[allow(dead_code)]
     text: String,
     /// Normalized text for comparison (lowercase, collapsed whitespace)
     normalized_text: String,
@@ -437,8 +438,11 @@ fn apply_run_formatting(
             // Create rPr and insert at beginning of run
             let new_rpr = doc.new_node(XmlNodeData::element(rpr_name.clone()));
 
-            // Get first child before mutating
-            let first_child = doc.children(run_id).next();
+            // Get first child before mutating to avoid borrow conflicts
+            let first_child = {
+                let mut iter = doc.children(run_id);
+                iter.next()
+            };
 
             // Insert before first child or append to run
             if let Some(first) = first_child {

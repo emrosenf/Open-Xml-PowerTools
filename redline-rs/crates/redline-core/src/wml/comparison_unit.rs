@@ -748,6 +748,7 @@ pub struct ComparisonUnitWord {
 // Static sets for relationship tracking - corresponds to C# FrozenSets (lines 8224-8268)
 // In Rust, we use lazy_static or const arrays. For O(1) lookup, we'd use HashSet at runtime.
 // For now, keeping as const arrays since the C# uses FrozenSet for immutable lookup.
+#[allow(dead_code)]
 const ELEMENTS_WITH_RELATIONSHIP_IDS: &[&str] = &[
     "blip",             // A.blip
     "hlinkClick",       // A.hlinkClick
@@ -780,6 +781,7 @@ const ELEMENTS_WITH_RELATIONSHIP_IDS: &[&str] = &[
     "toolbarData",      // WNE.toolbarData
 ];
 
+#[allow(dead_code)]
 const RELATIONSHIP_ATTRIBUTE_NAMES: &[&str] = &[
     "embed", // R.embed
     "link",  // R.link

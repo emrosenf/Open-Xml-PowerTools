@@ -24,13 +24,16 @@ pub use types::{
 };
 
 // Internal signature types used by comparer
+#[allow(unused_imports)]
 pub(crate) use signatures::{
     CellSignature, CommentSignature, DataValidationSignature, HyperlinkSignature,
     WorkbookSignature, WorksheetSignature,
 };
 
 // Internal diff engine
+#[allow(unused_imports)]
 pub(crate) use diff::compute_diff;
 
 // Internal canonicalizer
+#[allow(unused_imports)]
 pub(crate) use canonicalize::SmlCanonicalizer;
