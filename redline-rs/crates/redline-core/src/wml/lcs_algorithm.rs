@@ -176,7 +176,31 @@ pub fn lcs(
         let unknown = set_after_unids(unknown);
 
         // Try ProcessCorrelatedHashes first (fastest)
-        let new_sequences = if let Some(seqs) = process_correlated_hashes(&unknown, settings) {
+        let new_sequences = if let (Some(units1), Some(units2)) =
+            (unknown.units1.as_ref(), unknown.units2.as_ref())
+        {
+            if should_flatten_tabular_units(units1, units2) {
+                let flat1 = flatten_units_for_unknown(units1);
+                let flat2 = flatten_units_for_unknown(units2);
+                vec![CorrelatedSequence::unknown(flat1, flat2)]
+            } else if let Some(seqs) = split_on_tabular_span(units1, units2) {
+                seqs
+            } else if let Some(seqs) = process_correlated_hashes(&unknown, settings) {
+                CORR_HASH_HITS.fetch_add(1, Ordering::Relaxed);
+                seqs
+            } else if !is_tabular_word_sequence(units1, units2) {
+                if let Some(seqs) = find_common_at_beginning_and_end(&unknown, settings) {
+                    BEGIN_END_HITS.fetch_add(1, Ordering::Relaxed);
+                    seqs
+                } else {
+                    LCS_ALGO_HITS.fetch_add(1, Ordering::Relaxed);
+                    do_lcs_algorithm(&unknown, settings)
+                }
+            } else {
+                LCS_ALGO_HITS.fetch_add(1, Ordering::Relaxed);
+                do_lcs_algorithm(&unknown, settings)
+            }
+        } else if let Some(seqs) = process_correlated_hashes(&unknown, settings) {
             CORR_HASH_HITS.fetch_add(1, Ordering::Relaxed);
             seqs
         } else if let Some(seqs) = find_common_at_beginning_and_end(&unknown, settings) {
@@ -894,6 +918,275 @@ fn split_at_paragraph_mark(units: &[ComparisonUnit]) -> Vec<Vec<ComparisonUnit>>
     vec![units.to_vec()]
 }
 
+const TABULAR_TAB_THRESHOLD: usize = 3;
+const TABULAR_WORD_TAB_RATIO_NUM: usize = 3; // 1/3 of tokens or more are tabs
+const TABULAR_LCS_DP_THRESHOLD: usize = 200;
+
+fn is_tab_atom(atom: &ComparisonUnitAtom) -> bool {
+    matches!(
+        atom.content_element,
+        ContentElement::Tab | ContentElement::PositionalTab { .. }
+    )
+}
+
+fn group_tab_count(group: &ComparisonUnitGroup) -> usize {
+    group
+        .descendant_atoms()
+        .iter()
+        .filter(|atom| is_tab_atom(atom))
+        .count()
+}
+
+fn is_tab_only_unit(unit: &ComparisonUnit) -> bool {
+    let Some(word) = unit.as_word() else {
+        return false;
+    };
+
+    !word.atoms.is_empty()
+        && word.atoms.iter().all(|atom| {
+            matches!(
+                atom.content_element,
+                ContentElement::Tab | ContentElement::PositionalTab { .. }
+            )
+        })
+}
+
+fn is_paragraph_mark_unit(unit: &ComparisonUnit) -> bool {
+    unit.as_word().is_some_and(|word| word.is_paragraph_mark())
+}
+
+fn group_has_text_content(group: &ComparisonUnitGroup) -> bool {
+    group.descendant_atoms().iter().any(|atom| {
+        matches!(&atom.content_element, ContentElement::Text(c) if !c.is_whitespace())
+    })
+}
+
+fn group_is_tabular(group: &ComparisonUnitGroup) -> bool {
+    group_tab_count(group) >= TABULAR_TAB_THRESHOLD
+}
+
+fn group_is_empty(group: &ComparisonUnitGroup) -> bool {
+    !group_has_text_content(group) && group_tab_count(group) == 0
+}
+
+fn only_paragraph_groups(units: &[ComparisonUnit]) -> bool {
+    units.iter().all(|unit| {
+        matches!(
+            unit,
+            ComparisonUnit::Group(g) if g.group_type == ComparisonUnitGroupType::Paragraph
+        )
+    })
+}
+
+fn should_flatten_tabular_units(units1: &[ComparisonUnit], units2: &[ComparisonUnit]) -> bool {
+    if !only_paragraph_groups(units1) || !only_paragraph_groups(units2) {
+        return false;
+    }
+
+    let mut left_tabular = 0usize;
+    let mut right_tabular = 0usize;
+    let mut left_non_tabular = 0usize;
+    let mut right_non_tabular = 0usize;
+
+    for unit in units1 {
+        if let Some(group) = unit.as_group() {
+            if group_is_tabular(group) {
+                left_tabular += 1;
+            } else if !group_is_empty(group) {
+                left_non_tabular += 1;
+            }
+        }
+    }
+
+    for unit in units2 {
+        if let Some(group) = unit.as_group() {
+            if group_is_tabular(group) {
+                right_tabular += 1;
+            } else if !group_is_empty(group) {
+                right_non_tabular += 1;
+            }
+        }
+    }
+
+    left_tabular > 0
+        && right_tabular > 0
+        && left_non_tabular == 0
+        && right_non_tabular == 0
+}
+
+#[derive(Clone, Copy)]
+struct TabularSpan {
+    start: usize,
+    end: usize,
+    tabular_count: usize,
+}
+
+fn find_tabular_span(units: &[ComparisonUnit]) -> Option<TabularSpan> {
+    let mut best: Option<TabularSpan> = None;
+    let mut current_start: Option<usize> = None;
+    let mut current_tabular = 0usize;
+
+    for (idx, unit) in units.iter().enumerate() {
+        let Some(group) = unit.as_group() else {
+            if let Some(start) = current_start.take() {
+                if current_tabular > 0 {
+                    let span = TabularSpan {
+                        start,
+                        end: idx,
+                        tabular_count: current_tabular,
+                    };
+                    if best
+                        .map(|b| (span.tabular_count, span.end - span.start)
+                            > (b.tabular_count, b.end - b.start))
+                        .unwrap_or(true)
+                    {
+                        best = Some(span);
+                    }
+                }
+                current_tabular = 0;
+            }
+            continue;
+        };
+        if group.group_type != ComparisonUnitGroupType::Paragraph {
+            if let Some(start) = current_start.take() {
+                if current_tabular > 0 {
+                    let span = TabularSpan {
+                        start,
+                        end: idx,
+                        tabular_count: current_tabular,
+                    };
+                    if best
+                        .map(|b| (span.tabular_count, span.end - span.start)
+                            > (b.tabular_count, b.end - b.start))
+                        .unwrap_or(true)
+                    {
+                        best = Some(span);
+                    }
+                }
+                current_tabular = 0;
+            }
+            continue;
+        }
+        let is_tabular = group_is_tabular(group);
+        let is_empty = group_is_empty(group);
+
+        if is_tabular || is_empty {
+            if current_start.is_none() {
+                current_start = Some(idx);
+                current_tabular = 0;
+            }
+            if is_tabular {
+                current_tabular += 1;
+            }
+        } else if let Some(start) = current_start.take() {
+            if current_tabular > 0 {
+                let span = TabularSpan {
+                    start,
+                    end: idx,
+                    tabular_count: current_tabular,
+                };
+                if best
+                    .map(|b| (span.tabular_count, span.end - span.start)
+                        > (b.tabular_count, b.end - b.start))
+                    .unwrap_or(true)
+                {
+                    best = Some(span);
+                }
+            }
+            current_tabular = 0;
+        }
+    }
+
+    if let Some(start) = current_start {
+        if current_tabular > 0 {
+            let span = TabularSpan {
+                start,
+                end: units.len(),
+                tabular_count: current_tabular,
+            };
+            if best
+                .map(|b| (span.tabular_count, span.end - span.start)
+                    > (b.tabular_count, b.end - b.start))
+                .unwrap_or(true)
+            {
+                best = Some(span);
+            }
+        }
+    }
+
+    best
+}
+
+fn split_on_tabular_span(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+) -> Option<Vec<CorrelatedSequence>> {
+    let span1 = find_tabular_span(units1)?;
+    let span2 = find_tabular_span(units2)?;
+
+    if span1.tabular_count < 2 || span2.tabular_count < 2 {
+        return None;
+    }
+
+    let prefix_delta = if span1.start > span2.start {
+        span1.start - span2.start
+    } else {
+        span2.start - span1.start
+    };
+
+    if prefix_delta > 1 {
+        return None;
+    }
+
+    let mut sequences: Vec<CorrelatedSequence> = Vec::new();
+
+    if span1.start > 0 || span2.start > 0 {
+        sequences.push(CorrelatedSequence::unknown(
+            units1[..span1.start].to_vec(),
+            units2[..span2.start].to_vec(),
+        ));
+    }
+
+    sequences.push(CorrelatedSequence::unknown(
+        flatten_units_for_unknown(&units1[span1.start..span1.end]),
+        flatten_units_for_unknown(&units2[span2.start..span2.end]),
+    ));
+
+    if span1.end < units1.len() || span2.end < units2.len() {
+        sequences.push(CorrelatedSequence::unknown(
+            units1[span1.end..].to_vec(),
+            units2[span2.end..].to_vec(),
+        ));
+    }
+
+    Some(sequences)
+}
+
+fn is_tabular_word_sequence(units1: &[ComparisonUnit], units2: &[ComparisonUnit]) -> bool {
+    let all_words1 = units1.iter().all(|u| u.as_word().is_some());
+    let all_words2 = units2.iter().all(|u| u.as_word().is_some());
+
+    if !all_words1 || !all_words2 {
+        return false;
+    }
+
+    let tab_only1 = units1.iter().filter(|u| is_tab_only_unit(u)).count();
+    let tab_only2 = units2.iter().filter(|u| is_tab_only_unit(u)).count();
+
+    let ratio1 = tab_only1 * TABULAR_WORD_TAB_RATIO_NUM >= units1.len();
+    let ratio2 = tab_only2 * TABULAR_WORD_TAB_RATIO_NUM >= units2.len();
+
+    ratio1 || ratio2
+}
+
+fn matchable_hash<'a>(unit: &'a ComparisonUnit, skip_tab_only: bool) -> Option<&'a str> {
+    if skip_tab_only && (is_tab_only_unit(unit) || is_paragraph_mark_unit(unit)) {
+        None
+    } else {
+        Some(unit.hash())
+    }
+}
+
 /// Find common elements at beginning and end
 ///
 /// Matches C# FindCommonAtBeginningAndEnd (WmlComparer.cs:4489-4972)
@@ -1315,19 +1608,68 @@ fn do_lcs_algorithm(
     let units1 = units1.unwrap();
     let units2 = units2.unwrap();
 
+    if only_paragraph_groups(units1) && only_paragraph_groups(units2) {
+        let mut left_tabular = 0usize;
+        let mut right_tabular = 0usize;
+        let mut left_non_tabular = 0usize;
+        let mut right_non_tabular = 0usize;
+        for unit in units1 {
+            if let Some(group) = unit.as_group() {
+                if group_is_tabular(group) {
+                    left_tabular += 1;
+                } else if !group_is_empty(group) {
+                    left_non_tabular += 1;
+                }
+            }
+        }
+
+        for unit in units2 {
+            if let Some(group) = unit.as_group() {
+                if group_is_tabular(group) {
+                    right_tabular += 1;
+                } else if !group_is_empty(group) {
+                    right_non_tabular += 1;
+                }
+            }
+        }
+
+        if left_tabular > 0
+            && right_tabular > 0
+            && left_non_tabular == 0
+            && right_non_tabular == 0
+        {
+            return flatten_and_create_unknown(units1, units2);
+        }
+    }
+
     // Find longest common subsequence using SHA1Hash
     let mut best_length = 0usize;
     let mut best_i1: isize = -1;
     let mut best_i2: isize = -1;
 
+    let tabular_word_sequence = is_tabular_word_sequence(units1, units2);
+
+    if tabular_word_sequence
+        && units1.iter().all(|u| u.as_word().is_some())
+        && units2.iter().all(|u| u.as_word().is_some())
+        && units1.len() <= TABULAR_LCS_DP_THRESHOLD
+        && units2.len() <= TABULAR_LCS_DP_THRESHOLD
+    {
+        return lcs_dp_for_tabular(units1, units2);
+    }
+
     // Optimization: Index units2 by hash for O(1) lookup
     let mut units2_index: HashMap<&str, Vec<usize>> = HashMap::new();
     for (i2, unit) in units2.iter().enumerate() {
-        units2_index.entry(unit.hash()).or_default().push(i2);
+        if let Some(hash) = matchable_hash(unit, tabular_word_sequence) {
+            units2_index.entry(hash).or_default().push(i2);
+        }
     }
 
     for i1 in 0..units1.len().saturating_sub(best_length) {
-        let hash1 = units1[i1].hash();
+        let Some(hash1) = matchable_hash(&units1[i1], tabular_word_sequence) else {
+            continue;
+        };
 
         if let Some(candidates) = units2_index.get(hash1) {
             for &i2 in candidates {
@@ -1341,7 +1683,15 @@ fn do_lcs_algorithm(
                 let mut cur_i2 = i2;
 
                 while cur_i1 < units1.len() && cur_i2 < units2.len() {
-                    if units1[cur_i1].hash() == units2[cur_i2].hash() {
+                    let Some(cur_hash1) = matchable_hash(&units1[cur_i1], tabular_word_sequence)
+                    else {
+                        break;
+                    };
+                    let Some(cur_hash2) = matchable_hash(&units2[cur_i2], tabular_word_sequence)
+                    else {
+                        break;
+                    };
+                    if cur_hash1 == cur_hash2 {
                         cur_i1 += 1;
                         cur_i2 += 1;
                         seq_length += 1;
@@ -1544,7 +1894,19 @@ fn do_lcs_algorithm(
             });
 
             if !contains_structural {
-                let max_len = units1.len().max(units2.len());
+                let max_len = if tabular_word_sequence {
+                    let len1 = units1
+                        .iter()
+                        .filter(|u| matchable_hash(u, true).is_some())
+                        .count();
+                    let len2 = units2
+                        .iter()
+                        .filter(|u| matchable_hash(u, true).is_some())
+                        .count();
+                    len1.max(len2).max(1)
+                } else {
+                    units1.len().max(units2.len())
+                };
                 let ratio = best_length as f64 / max_len as f64;
                 // Use a lower threshold for pure-text word-level matches
                 // The main detail_threshold controls paragraph-level decisions (flatten vs block)
@@ -1552,7 +1914,8 @@ fn do_lcs_algorithm(
                 // to find matches like "Landlord may request" (7 tokens in 148 = 4.7%)
                 // which would fail the 15% threshold but are meaningful
                 let text_match_threshold = settings.detail_threshold / 5.0; // 3% if default is 15%
-                if ratio < text_match_threshold {
+                let has_strong_anchor = matched_seq.iter().any(is_strong_anchor_unit);
+                if ratio < text_match_threshold && !has_strong_anchor {
                     best_i1 = -1;
                     best_i2 = -1;
                     best_length = 0;
@@ -1769,6 +2132,42 @@ fn do_lcs_algorithm(
     }
 
     new_sequence
+}
+
+fn is_strong_anchor_unit(unit: &ComparisonUnit) -> bool {
+    let Some(word) = unit.as_word() else {
+        return false;
+    };
+
+    let mut text = String::new();
+    for atom in word.atoms.iter() {
+        if let ContentElement::Text(ch) = atom.content_element {
+            text.push(ch);
+        } else {
+            return false;
+        }
+    }
+
+    if text.len() < 3 {
+        return false;
+    }
+
+    let mut has_alpha = false;
+    let mut all_upper = true;
+    for ch in text.chars() {
+        if ch.is_ascii_alphabetic() {
+            has_alpha = true;
+            if !ch.is_ascii_uppercase() {
+                all_upper = false;
+            }
+        }
+    }
+
+    if has_alpha && all_upper {
+        return true;
+    }
+
+    text.chars().any(|ch| ch.is_ascii_digit())
 }
 
 /// Find index of next paragraph mark in comparison unit array
@@ -2188,6 +2587,110 @@ fn flatten_group_children_for_unknown(
     }
 
     flattened
+}
+
+fn tabular_match_weight(unit1: &ComparisonUnit, unit2: &ComparisonUnit) -> Option<usize> {
+    if is_paragraph_mark_unit(unit1) || is_paragraph_mark_unit(unit2) {
+        return None;
+    }
+    if unit1.hash() != unit2.hash() {
+        return None;
+    }
+    if is_tab_only_unit(unit1) && is_tab_only_unit(unit2) {
+        return Some(0);
+    }
+    Some(1)
+}
+
+fn lcs_dp_for_tabular(
+    units1: &[ComparisonUnit],
+    units2: &[ComparisonUnit],
+) -> Vec<CorrelatedSequence> {
+    let m = units1.len();
+    let n = units2.len();
+
+    let mut dp = vec![vec![0usize; n + 1]; m + 1];
+    for i in 1..=m {
+        for j in 1..=n {
+            let mut best = dp[i - 1][j].max(dp[i][j - 1]);
+            if let Some(weight) = tabular_match_weight(&units1[i - 1], &units2[j - 1]) {
+                best = best.max(dp[i - 1][j - 1] + weight);
+            }
+            dp[i][j] = best;
+        }
+    }
+
+    enum Op {
+        Equal(ComparisonUnit, ComparisonUnit),
+        Delete(ComparisonUnit),
+        Insert(ComparisonUnit),
+    }
+
+    let mut ops = Vec::new();
+    let mut i = m;
+    let mut j = n;
+    while i > 0 || j > 0 {
+        if i > 0
+            && j > 0
+            && tabular_match_weight(&units1[i - 1], &units2[j - 1])
+                .is_some_and(|w| dp[i][j] == dp[i - 1][j - 1] + w)
+        {
+            ops.push(Op::Equal(units1[i - 1].clone(), units2[j - 1].clone()));
+            i -= 1;
+            j -= 1;
+        } else if j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j]) {
+            ops.push(Op::Insert(units2[j - 1].clone()));
+            j -= 1;
+        } else if i > 0 {
+            ops.push(Op::Delete(units1[i - 1].clone()));
+            i -= 1;
+        }
+    }
+    ops.reverse();
+
+    let mut sequences: Vec<CorrelatedSequence> = Vec::new();
+    for op in ops {
+        match op {
+            Op::Equal(u1, u2) => {
+                if let Some(last) = sequences.last_mut() {
+                    if last.status == CorrelationStatus::Equal {
+                        if let Some(ref mut left) = last.units1 {
+                            left.push(u1);
+                        }
+                        if let Some(ref mut right) = last.units2 {
+                            right.push(u2);
+                        }
+                        continue;
+                    }
+                }
+                sequences.push(CorrelatedSequence::equal(vec![u1], vec![u2]));
+            }
+            Op::Delete(u1) => {
+                if let Some(last) = sequences.last_mut() {
+                    if last.status == CorrelationStatus::Deleted {
+                        if let Some(ref mut left) = last.units1 {
+                            left.push(u1);
+                        }
+                        continue;
+                    }
+                }
+                sequences.push(CorrelatedSequence::deleted(vec![u1]));
+            }
+            Op::Insert(u2) => {
+                if let Some(last) = sequences.last_mut() {
+                    if last.status == CorrelationStatus::Inserted {
+                        if let Some(ref mut right) = last.units2 {
+                            right.push(u2);
+                        }
+                        continue;
+                    }
+                }
+                sequences.push(CorrelatedSequence::inserted(vec![u2]));
+            }
+        }
+    }
+
+    sequences
 }
 
 /// Handle matching rows by flattening to cells

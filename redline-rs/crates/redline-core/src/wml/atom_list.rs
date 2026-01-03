@@ -373,13 +373,13 @@ fn create_atom_list_recurse(
 
         let mut atom = ComparisonUnitAtom::new(
             ContentElement::ParagraphProperties {
-                element_xml: ppr_xml,
+                element_xml: ppr_xml.clone(),
             },
             ancestors,
             part_name,
             settings,
         );
-        atom.formatting_signature = None;
+        atom.formatting_signature = normalize_ppr_signature(&ppr_xml);
         atoms.push(atom);
         return;
     }
@@ -756,6 +756,15 @@ fn serialize_element_tree(doc: &XmlDocument, node: NodeId) -> String {
     let mut result = String::new();
     serialize_element_recursive(doc, node, &mut result);
     result
+}
+
+fn normalize_ppr_signature(ppr_xml: &str) -> Option<String> {
+    let trimmed = ppr_xml.trim();
+    if trimmed.is_empty() || trimmed == "<w:pPr/>" || trimmed == "<w:pPr />" {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
 }
 
 fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut String) {

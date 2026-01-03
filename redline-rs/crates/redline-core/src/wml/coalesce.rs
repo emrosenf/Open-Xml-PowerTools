@@ -7,7 +7,10 @@
 
 use super::comparison_unit::{ComparisonCorrelationStatus, ComparisonUnitAtom, ContentElement};
 use super::settings::WmlComparerSettings;
-use crate::wml::revision::{create_run_property_change, get_next_revision_id, RevisionSettings};
+use crate::wml::revision::{
+    create_paragraph_property_change, create_run_property_change, get_next_revision_id,
+    RevisionSettings,
+};
 use crate::xml::arena::XmlDocument;
 use crate::xml::namespaces::{W, W16DU};
 use crate::xml::node::XmlNodeData;
@@ -189,6 +192,47 @@ pub fn remove_empty_rpr_elements(doc: &mut XmlDocument, root: NodeId) {
 
     // Remove all empty rPr elements
     for node in empty_rprs {
+        doc.remove(node);
+    }
+}
+
+/// Remove empty w:pPr elements from the document tree.
+/// Empty w:pPr elements add noise and differ from Word output.
+pub fn remove_empty_ppr_elements(doc: &mut XmlDocument, root: NodeId) {
+    let empty_pprs: Vec<NodeId> = std::iter::once(root)
+        .chain(doc.descendants(root))
+        .filter(|&node| {
+            let is_ppr = doc
+                .get(node)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPr")
+                .unwrap_or(false);
+            if !is_ppr {
+                return false;
+            }
+            if let Some(parent) = doc.parent(node) {
+                let parent_is_ppr_change = doc
+                    .get(parent)
+                    .and_then(|d| d.name())
+                    .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPrChange")
+                    .unwrap_or(false);
+                if parent_is_ppr_change {
+                    return false;
+                }
+            }
+            if doc.children(node).next().is_some() {
+                return false;
+            }
+            let has_attrs = doc
+                .get(node)
+                .and_then(|d| d.attributes())
+                .map(|attrs| !attrs.is_empty())
+                .unwrap_or(false);
+            !has_attrs
+        })
+        .collect();
+
+    for node in empty_pprs {
         doc.remove(node);
     }
 }
@@ -1755,6 +1799,11 @@ fn reconstruct_paragraph(
                 let status_arg = spl.get(1).unwrap_or(&"");
                 let content_elem_node = create_content_element(doc, gcc, status_arg);
                 if let Some(node) = content_elem_node {
+                    if settings.track_formatting_changes
+                        && gcc.correlation_status == ComparisonCorrelationStatus::FormatChanged
+                    {
+                        append_paragraph_property_change(doc, node, gcc, settings);
+                    }
                     doc.reparent(para, node);
                 }
             }
@@ -1785,6 +1834,44 @@ fn reconstruct_paragraph(
             coalesce_recurse(doc, para, group_atoms, level + 1, part, settings);
         }
     }
+}
+
+fn append_paragraph_property_change(
+    doc: &mut XmlDocument,
+    ppr: NodeId,
+    atom: &ComparisonUnitAtom,
+    settings: &WmlComparerSettings,
+) {
+    let before_xml = match &atom.content_element_before {
+        Some(ContentElement::ParagraphProperties { element_xml }) => element_xml.as_str(),
+        _ => "",
+    };
+
+    let revision_settings = RevisionSettings {
+        author: settings
+            .author_for_revisions
+            .clone()
+            .unwrap_or_else(|| "Unknown".to_string()),
+        date_time: settings
+            .date_time_for_revisions
+            .clone()
+            .unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()),
+    };
+
+    let change = create_paragraph_property_change(doc, ppr, &revision_settings);
+    let before_node = if is_empty_ppr_xml(before_xml) {
+        doc.new_node(XmlNodeData::element(W::pPr()))
+    } else {
+        parse_xml_fragment(doc, before_xml)
+            .unwrap_or_else(|| doc.new_node(XmlNodeData::element(W::pPr())))
+    };
+
+    doc.reparent(change, before_node);
+}
+
+fn is_empty_ppr_xml(ppr_xml: &str) -> bool {
+    let trimmed = ppr_xml.trim();
+    trimmed.is_empty() || trimmed == "<w:pPr/>" || trimmed == "<w:pPr />"
 }
 
 fn reconstruct_run(
@@ -2375,15 +2462,29 @@ fn create_content_element(
             // Parse and deep-copy the pPr element from stored XML
             // This preserves pStyle, jc, rPr, and other children
             if element_xml.is_empty() {
-                // Fallback: create empty pPr if no stored XML
-                let mut attrs = Vec::new();
-                if !status.is_empty() {
+                if status.is_empty() {
+                    // Suppress empty pPr when there are no stored properties or status markers.
+                    None
+                } else {
+                    // Fallback: create empty pPr if no stored XML but status is required.
+                    let mut attrs = Vec::new();
                     attrs.push(XAttribute::new(pt_status(), status));
+                    Some(doc.new_node(XmlNodeData::element_with_attrs(W::pPr(), attrs)))
                 }
-                Some(doc.new_node(XmlNodeData::element_with_attrs(W::pPr(), attrs)))
             } else {
                 // Parse and deep-copy the original pPr with all children using namespace wrapper
                 if let Some(new_node) = parse_xml_fragment(doc, element_xml) {
+                    if status.is_empty() {
+                        let has_children = doc.children(new_node).next().is_some();
+                        let has_attrs = doc
+                            .get(new_node)
+                            .and_then(|data| data.attributes())
+                            .map(|attrs| !attrs.is_empty())
+                            .unwrap_or(false);
+                        if !has_children && !has_attrs {
+                            return None;
+                        }
+                    }
                     if !status.is_empty() {
                         doc.set_attribute(new_node, &pt_status(), status);
                     }

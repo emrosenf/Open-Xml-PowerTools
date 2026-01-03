@@ -1790,6 +1790,7 @@ fn compare_atoms_internal(
     // This MUST happen after mark_content_as_deleted_or_inserted and coalesce_adjacent_runs
     // because those functions can create new empty rPr elements
     super::coalesce::remove_empty_rpr_elements(&mut coalesce_result.document, coalesce_result.root);
+    super::coalesce::remove_empty_ppr_elements(&mut coalesce_result.document, coalesce_result.root);
     #[cfg(not(target_arch = "wasm32"))]
     if timing_enabled {
         eprintln!("    post_process: {:?}", t0.elapsed());
@@ -2191,6 +2192,7 @@ fn build_note_doc_with_status(
 
     // Clean up empty w:rPr elements after all processing
     super::coalesce::remove_empty_rpr_elements(&mut coalesce_result.document, coalesce_result.root);
+    super::coalesce::remove_empty_ppr_elements(&mut coalesce_result.document, coalesce_result.root);
 
     strip_pt_attributes(&mut coalesce_result.document, coalesce_result.root);
     let fmt = count_revisions(&coalesce_result.document, coalesce_result.root).format_changes;

@@ -1111,7 +1111,7 @@ impl Default for WordSeparatorSettings {
     fn default() -> Self {
         Self {
             word_separators: vec![
-                ' ', '-', ')', '(', ';', ',',
+                ' ', '-', ')', '(', ';', ',', '“', '”',
                 // Currency symbols - treat as word separators to match MS Word behavior
                 '$', '€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '฿', '（', '）', '，', '、', '；',
                 '。', '：', '的',
@@ -1241,6 +1241,35 @@ fn assign_grouping_keys(
                         next_index // Keep in same word
                     } else {
                         // Punctuation is its own word
+                        next_index += 1;
+                        let key = next_index;
+                        next_index += 1;
+                        key
+                    }
+                } else if *ch == '-' {
+                    let before_is_digit = if i > 0 {
+                        matches!(
+                            &atoms[i - 1].content_element,
+                            ContentElement::Text(c) if c.is_ascii_digit()
+                        )
+                    } else {
+                        false
+                    };
+                    let after_is_digit = if i + 1 < atoms.len() {
+                        matches!(
+                            &atoms[i + 1].content_element,
+                            ContentElement::Text(c) if c.is_ascii_digit()
+                        )
+                    } else {
+                        false
+                    };
+
+                    if before_is_digit && after_is_digit {
+                        // Keep hyphen with the preceding number, then force a new word.
+                        let key = next_index;
+                        next_index += 1;
+                        key
+                    } else {
                         next_index += 1;
                         let key = next_index;
                         next_index += 1;
