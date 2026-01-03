@@ -1892,6 +1892,13 @@ fn reconstruct_run(
     part: Option<()>,
     settings: &WmlComparerSettings,
 ) {
+    let format_changed = grouped_children.iter().any(|(_, start, end)| {
+        atoms[*start..*end]
+            .iter()
+            .any(|atom| atom.correlation_status == ComparisonCorrelationStatus::FormatChanged)
+    });
+    let run_text_is_ascii = run_text_is_ascii(atoms);
+
     let mut run_attrs = ancestor.attributes.clone();
     run_attrs.retain(|a| a.name.namespace.as_deref() != Some(PT_STATUS_NS));
     let run = doc.add_child(parent, XmlNodeData::element_with_attrs(W::r(), run_attrs));
@@ -1904,14 +1911,12 @@ fn reconstruct_run(
     if let Some(ref rpr_xml) = ancestor.rpr_xml {
         if let Some(rpr_node) = parse_rpr_xml(doc, rpr_xml) {
             doc.reparent(run, rpr_node);
+            if format_changed && run_text_is_ascii {
+                strip_complex_script_props(doc, rpr_node);
+            }
         }
     }
 
-    let format_changed = grouped_children.iter().any(|(_, start, end)| {
-        atoms[*start..*end]
-            .iter()
-            .any(|atom| atom.correlation_status == ComparisonCorrelationStatus::FormatChanged)
-    });
     for (key, start, end) in grouped_children {
         let group_atoms = &atoms[*start..*end];
         let spl: Vec<&str> = key.split('|').collect();
@@ -1932,6 +1937,9 @@ fn reconstruct_run(
             Some(node) => node,
             None => doc.add_child(run, XmlNodeData::element(W::rPr())),
         };
+        if run_text_is_ascii {
+            strip_complex_script_props(doc, rpr);
+        }
         let revision_settings = RevisionSettings {
             author: settings
                 .author_for_revisions
@@ -1943,6 +1951,38 @@ fn reconstruct_run(
                 .unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()),
         };
         let _rpr_change = create_run_property_change(doc, rpr, &revision_settings);
+    }
+}
+
+fn run_text_is_ascii(atoms: &[ComparisonUnitAtom]) -> bool {
+    let mut has_text = false;
+    for atom in atoms {
+        if let ContentElement::Text(ch) = atom.content_element {
+            has_text = true;
+            if !ch.is_ascii() {
+                return false;
+            }
+        }
+    }
+    has_text
+}
+
+fn strip_complex_script_props(doc: &mut XmlDocument, rpr: NodeId) {
+    let to_remove: Vec<NodeId> = doc
+        .children(rpr)
+        .filter(|&child| {
+            doc.get(child)
+                .and_then(|data| data.name())
+                .map(|name| {
+                    name.namespace.as_deref() == Some(W::NS)
+                        && matches!(name.local_name.as_str(), "bCs" | "iCs" | "szCs")
+                })
+                .unwrap_or(false)
+        })
+        .collect();
+
+    for node in to_remove {
+        doc.remove(node);
     }
 }
 
