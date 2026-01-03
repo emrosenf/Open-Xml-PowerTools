@@ -768,6 +768,10 @@ fn serialize_element_tree_filtered(
     result
 }
 
+pub(crate) fn serialize_ppr_for_signature(doc: &XmlDocument, node: NodeId) -> String {
+    serialize_element_tree_filtered(doc, node, true)
+}
+
 fn normalize_ppr_signature(ppr_xml: &str) -> Option<String> {
     let trimmed = ppr_xml.trim();
     if trimmed.is_empty() || trimmed == "<w:pPr/>" || trimmed == "<w:pPr />" {

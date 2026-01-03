@@ -1842,10 +1842,17 @@ fn append_paragraph_property_change(
     atom: &ComparisonUnitAtom,
     settings: &WmlComparerSettings,
 ) {
-    let before_xml = match &atom.content_element_before {
-        Some(ContentElement::ParagraphProperties { element_xml }) => element_xml.as_str(),
-        _ => "",
-    };
+    let before_xml = atom
+        .formatting_signature_before
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            match &atom.content_element_before {
+                Some(ContentElement::ParagraphProperties { element_xml }) => Some(element_xml.as_str()),
+                _ => None,
+            }
+        })
+        .unwrap_or("");
 
     let revision_settings = RevisionSettings {
         author: settings

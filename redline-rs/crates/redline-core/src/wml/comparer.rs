@@ -17,7 +17,7 @@
 //! 6. FlattenToComparisonUnitAtomList (flatten with status)
 //! 7. ProduceNewWmlMarkupFromCorrelatedSequence (generate result document)
 
-use super::atom_list::create_comparison_unit_atom_list;
+use super::atom_list::{create_comparison_unit_atom_list, serialize_ppr_for_signature};
 use super::change_event::detect_format_changes;
 use super::coalesce::{
     coalesce, coalesce_adjacent_runs, mark_content_as_deleted_or_inserted, strip_pt_attributes,
@@ -47,7 +47,7 @@ use super::types::WmlComparisonResult;
 use crate::error::{RedlineError, Result};
 use crate::util::lcs::{self, compute_correlation, Hashable, LcsSettings};
 use crate::xml::arena::XmlDocument;
-use crate::xml::namespaces::W;
+use crate::xml::namespaces::{PT, W};
 use crate::xml::node::XmlNodeData;
 use crate::xml::xname::{XAttribute, XName};
 use chrono::Utc;
@@ -504,6 +504,9 @@ impl WmlComparer {
             eprintln!("  preprocess: {:?}", t0.elapsed());
         }
 
+        let ppr_change_before_by_unid =
+            collect_ppr_change_before_by_paragraph_unid(&doc1, body1);
+
         // C# WmlComparer.cs:255-256 - Accept revisions before comparison
         // This ensures documents with tracked changes are compared by their final content
         // IMPORTANT: Pass the document root, not just the body, to preserve full document structure
@@ -542,7 +545,8 @@ impl WmlComparer {
             eprintln!("  accept_revisions: {:?}", t0.elapsed());
         }
 
-        let atoms1 = create_comparison_unit_atom_list(&mut doc1, body1, "main", &settings);
+        let mut atoms1 = create_comparison_unit_atom_list(&mut doc1, body1, "main", &settings);
+        apply_ppr_change_before_signatures(&mut atoms1, &ppr_change_before_by_unid);
         let atoms2 = create_comparison_unit_atom_list(&mut doc2, body2, "main", &settings);
         #[cfg(not(target_arch = "wasm32"))]
         if timing_enabled {
@@ -1058,6 +1062,88 @@ fn count_del_ins(doc: &XmlDocument, root: NodeId) -> (usize, usize) {
         }
     }
     (del_count, ins_count)
+}
+
+fn collect_ppr_change_before_by_paragraph_unid(
+    doc: &XmlDocument,
+    body: NodeId,
+) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    let pt_unid = PT::Unid();
+
+    for node in doc.descendants(body) {
+        let is_paragraph = doc
+            .get(node)
+            .and_then(|d| d.name())
+            .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "p")
+            .unwrap_or(false);
+        if !is_paragraph {
+            continue;
+        }
+
+        let para_unid = doc
+            .get(node)
+            .and_then(|d| d.attributes())
+            .and_then(|attrs| attrs.iter().find(|a| a.name == pt_unid))
+            .map(|a| a.value.clone());
+        let Some(para_unid) = para_unid else {
+            continue;
+        };
+
+        let Some(ppr_node) = doc.children(node).find(|&child| {
+            doc.get(child)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPr")
+                .unwrap_or(false)
+        }) else {
+            continue;
+        };
+
+        let Some(ppr_change) = doc.children(ppr_node).find(|&child| {
+            doc.get(child)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPrChange")
+                .unwrap_or(false)
+        }) else {
+            continue;
+        };
+
+        let Some(before_ppr) = doc.children(ppr_change).find(|&child| {
+            doc.get(child)
+                .and_then(|d| d.name())
+                .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPr")
+                .unwrap_or(false)
+        }) else {
+            continue;
+        };
+
+        let serialized = serialize_ppr_for_signature(doc, before_ppr);
+        if !serialized.is_empty() {
+            map.insert(para_unid, serialized);
+        }
+    }
+
+    map
+}
+
+fn apply_ppr_change_before_signatures(
+    atoms: &mut [ComparisonUnitAtom],
+    before_map: &HashMap<String, String>,
+) {
+    for atom in atoms.iter_mut() {
+        if !matches!(
+            atom.content_element,
+            ContentElement::ParagraphProperties { .. }
+        ) {
+            continue;
+        }
+        let Some(para_unid) = atom.paragraph_unid() else {
+            continue;
+        };
+        if let Some(before_xml) = before_map.get(para_unid) {
+            atom.formatting_signature = Some(before_xml.clone());
+        }
+    }
 }
 
 fn reconcile_formatting_changes(atoms: &mut [ComparisonUnitAtom], settings: &WmlComparerSettings) {
