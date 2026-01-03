@@ -338,7 +338,7 @@ fn create_atom_list_recurse(
                     .map(|n| n.namespace.as_deref() == Some(W::NS) && n.local_name == "pPr")
                     .unwrap_or(false)
             })
-            .map(|&ppr_node| serialize_element_tree(doc, ppr_node))
+            .map(|&ppr_node| serialize_element_tree_filtered(doc, ppr_node, true))
             .unwrap_or_else(String::new);
 
         for child in children {
@@ -754,7 +754,17 @@ fn extract_rpr_xml(doc: &XmlDocument, run_id: NodeId) -> Option<String> {
 /// This produces a compact XML representation without unnecessary whitespace.
 fn serialize_element_tree(doc: &XmlDocument, node: NodeId) -> String {
     let mut result = String::new();
-    serialize_element_recursive(doc, node, &mut result);
+    serialize_element_recursive(doc, node, &mut result, false);
+    result
+}
+
+fn serialize_element_tree_filtered(
+    doc: &XmlDocument,
+    node: NodeId,
+    filter_ppr_children: bool,
+) -> String {
+    let mut result = String::new();
+    serialize_element_recursive(doc, node, &mut result, filter_ppr_children);
     result
 }
 
@@ -767,11 +777,22 @@ fn normalize_ppr_signature(ppr_xml: &str) -> Option<String> {
     }
 }
 
-fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut String) {
+fn serialize_element_recursive(
+    doc: &XmlDocument,
+    node: NodeId,
+    result: &mut String,
+    filter_ppr_children: bool,
+) {
     let Some(data) = doc.get(node) else { return };
 
     match data {
         XmlNodeData::Element { name, attributes } => {
+            if filter_ppr_children
+                && name.namespace.as_deref() == Some(W::NS)
+                && matches!(name.local_name.as_str(), "widowControl" | "keepNext" | "keepLines")
+            {
+                return;
+            }
             result.push('<');
 
             // Add namespace prefix
@@ -809,7 +830,7 @@ fn serialize_element_recursive(doc: &XmlDocument, node: NodeId, result: &mut Str
             } else {
                 result.push('>');
                 for child in children {
-                    serialize_element_recursive(doc, child, result);
+                    serialize_element_recursive(doc, child, result, filter_ppr_children);
                 }
                 result.push_str("</");
                 if let Some(ns) = &name.namespace {
